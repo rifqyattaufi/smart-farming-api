@@ -1,5 +1,11 @@
-const app = require('express')();
+const express = require('express');
+
+const app = express();
 const PORT = 8080;
+
+const usersRouter = require('./src/routes/users');
+
+app.use('/api/users', usersRouter);
 
 app.listen(
     PORT,
