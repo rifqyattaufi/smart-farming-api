@@ -1,8 +1,8 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
 
-router.get('/', (req, res) => {
-    res.send('Welcome to Peternakan API!');
-});
+const kandangRouter = require("./kandang");
+
+router.use("/kandang", kandangRouter);
 
 module.exports = router;

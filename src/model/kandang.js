@@ -1,8 +1,9 @@
 const { DataTypes } = require("sequelize");
+const Ayam = require("./ayam");
 const db = require("../config/database");
 
-const User = db.define(
-  "User",
+const Kandang = db.define(
+  "Kandang",
   {
     id: {
       type: DataTypes.UUID,
@@ -11,17 +12,14 @@ const User = db.define(
       allowNull: false,
       unique: true,
     },
-    nama: {
-      type: DataTypes.STRING,
+    kategori: {
+      type: DataTypes.ENUM,
+      values: ["Ayam", "Kepiting", "Lele"],
       allowNull: false,
     },
-    nim: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
-    alamat: {
-      type: DataTypes.STRING,
-      allowNull: false,
+    isDeleted: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
     },
   },
   {
@@ -29,6 +27,10 @@ const User = db.define(
   }
 );
 
+Kandang.hasMany(Ayam, {
+  foreignKey: "kandangId",
+});
+
 db.sync();
 
-module.exports = User;
+module.exports = Kandang;

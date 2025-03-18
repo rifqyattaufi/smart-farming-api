@@ -1,8 +1,9 @@
 const { DataTypes } = require("sequelize");
 const db = require("../config/database");
+const Ayam = require("./ayam");
 
-const User = db.define(
-  "User",
+const Telur = db.define(
+  "Telur",
   {
     id: {
       type: DataTypes.UUID,
@@ -11,17 +12,13 @@ const User = db.define(
       allowNull: false,
       unique: true,
     },
-    nama: {
-      type: DataTypes.STRING,
+    jumlah: {
+      type: DataTypes.INTEGER,
       allowNull: false,
     },
-    nim: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
-    alamat: {
-      type: DataTypes.STRING,
-      allowNull: false,
+    isDeleted: {
+      type: DataTypes.BOOLEAN,
+      defaultValue: false,
     },
   },
   {
@@ -31,4 +28,4 @@ const User = db.define(
 
 db.sync();
 
-module.exports = User;
+module.exports = Telur;
