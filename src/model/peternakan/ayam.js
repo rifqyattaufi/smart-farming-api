@@ -1,6 +1,5 @@
 const { DataTypes } = require("sequelize");
-const db = require("../config/database");
-const Kandang = require("./kandang");
+const db = require("../../config/database");
 const Telur = require("./telur");
 
 const Ayam = db.define(

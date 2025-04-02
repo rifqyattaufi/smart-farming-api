@@ -1,5 +1,5 @@
 const { where } = require("sequelize");
-const Kandang = require("../../model/kandang");
+const Kandang = require("../../model/peternakan/kandang");
 
 const getAllKandang = async (req, res) => {
   try {
