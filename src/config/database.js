@@ -1,6 +1,6 @@
-const Sequilize = require("sequelize");
+const Sequelize = require("sequelize");
 
-const db = new Sequilize(
+const db = new Sequelize(
   process.env.DB_NAME || "db_name",
   process.env.DB_USERNAME || "",
   process.env.DB_PASSWORD || "",
@@ -11,6 +11,7 @@ const db = new Sequilize(
       useUTC: false,
     },
     timezone: "Asia/Jakarta",
+    logging: false, // Disable debug connection messages
   }
 );
 

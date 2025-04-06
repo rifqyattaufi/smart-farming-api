@@ -1,6 +1,7 @@
 require("dotenv").config();
 const PORT = process.env.PORT || 5000;
 const express = require("express");
+const cors = require("cors");
 
 const app = express();
 
@@ -19,6 +20,15 @@ apiRouter.use("/perkebunan", perkebunanRouter);
 apiRouter.use("/store", storeRouter);
 
 //middleware
+app.use(
+  cors({
+    origin: true,
+    credential: true,
+    preflightContinue: false,
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+  })
+);
+app.options("*", cors());
 app.use(express.json());
 
 app.use("/api", apiRouter);
@@ -36,37 +46,6 @@ app.use((err, req, res, next) => {
     message: "Internal Server Error",
   });
 });
-
-// const User = require("./src/model/user");
-// app.get("/", (req, res) => {
-//   try {
-//     User.findAll().then((data) => {
-//       res.json(data);
-//     });
-//   } catch (error) {
-//     res.status(500).json({
-//       message: error.message,
-//       detail: error,
-//     });
-//   }
-// });
-
-// app.post("/", (req, res) => {
-//   try {
-//     User.create(req.body).then((data) => {
-//       res.status(201).json({
-//         message: "User created",
-//         data: data,
-//       });
-//     });
-//   } catch (error) {
-//     res.status(500).json({
-//       message: error.message,
-//       detail: error,
-//     });
-//   }
-// });
-
 app.listen(PORT, () =>
   console.log(`Server is running on http://localhost:${PORT}`)
 );
