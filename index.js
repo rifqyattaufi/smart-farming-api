@@ -2,6 +2,8 @@ require("dotenv").config();
 const PORT = process.env.PORT || 5000;
 const express = require("express");
 const cors = require("cors");
+const passport = require("passport");
+require("./src/config/passport");
 
 const app = express();
 
@@ -20,6 +22,7 @@ apiRouter.use("/perkebunan", perkebunanRouter);
 apiRouter.use("/store", storeRouter);
 
 //middleware
+app.use(passport.initialize());
 app.use(
   cors({
     origin: true,

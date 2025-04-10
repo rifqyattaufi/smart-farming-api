@@ -11,6 +11,8 @@ const {
 } = require("../config/jwt");
 const { client } = require("../config/redis");
 const { generateOTP } = require("../config/otp");
+const passport = require("passport");
+const { where } = require("sequelize");
 
 const login = async (req, res, next) => {
   try {
@@ -426,6 +428,79 @@ const resetPassword = async (req, res, next) => {
   }
 };
 
+const googleLogin = async (req, res, next) => {
+  console.log("🔁 Redirecting to Google...");
+  return passport.authenticate("google", {
+    scope: ["profile", "email"],
+    session: false,
+  })(req, res, next);
+};
+
+const googleCallback = (req, res, next) => {
+  passport.authenticate(
+    "google",
+    { session: false },
+    async (err, googleUser) => {
+      if (err || !googleUser) {
+        console.error(err);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+
+      try {
+        let user = await User.findOne({
+          where: {
+            email: googleUser.email,
+          },
+        });
+
+        if (!user) {
+          user = await User.create({
+            name: googleUser.name,
+            email: googleUser.email,
+            password: null,
+            role: "user",
+            isActive: true,
+            isDeleted: false,
+            avatar_url: googleUser.avatar_url,
+            expiredTime: null,
+          });
+        }
+
+        const token = generateAccessToken({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        });
+
+        const refreshToken = generateRefreshToken({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        });
+
+        return res.status(200).json({
+          message: "Login success",
+          data: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+          },
+          token: token,
+          refreshToken: refreshToken,
+        });
+      } catch (error) {
+        console.error(error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  )(req, res, next);
+  // console.log("📥 Callback hit!");
+  // res.send("Callback berhasil!");
+};
+
 module.exports = {
   login,
   register,
@@ -433,4 +508,6 @@ module.exports = {
   refreshToken,
   forgotPassword,
   resetPassword,
+  googleLogin,
+  googleCallback,
 };

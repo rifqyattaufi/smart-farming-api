@@ -30,15 +30,23 @@ const User = db.define(
     },
     password: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
       set(value) {
-        this.setDataValue("password", encrypt(value));
+        if (value !== null) {
+          this.setDataValue("password", encrypt(value));
+        }
       },
     },
     role: {
       type: DataTypes.ENUM,
       values: ["inventor", "user", "petugas", "pjawab"],
       allowNull: false,
+    },
+    avatar_url: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      defaultValue:
+        "https://api.dicebear.com/9.x/thumbs/svg?eyes=variant6W12&mouth=variant2&backgroundColor=5fd15e",
     },
     isActive: {
       type: DataTypes.BOOLEAN,
