@@ -1,36 +1,40 @@
-const { DataTypes } = require("sequelize");
-const Ayam = require("./ayam");
-const db = require("../../config/database");
+// const { DataTypes } = require("sequelize");
+// const Ayam = require("./ayam");
+// const db = require("../../config/database");
 
-const Kandang = db.define(
-  "Kandang",
-  {
-    id: {
-      type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4,
-      primaryKey: true,
-      allowNull: false,
-      unique: true,
+module.exports = (sequelize, DataTypes) => {
+  const Kandang = sequelize.define(
+    "Kandang",
+    {
+      id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true,
+        allowNull: false,
+        unique: true,
+      },
+      kategori: {
+        type: DataTypes.ENUM,
+        values: ["Ayam", "Kepiting", "Lele"],
+        allowNull: false,
+      },
+      isDeleted: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+      },
     },
-    kategori: {
-      type: DataTypes.ENUM,
-      values: ["Ayam", "Kepiting", "Lele"],
-      allowNull: false,
-    },
-    isDeleted: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: false,
-    },
-  },
-  {
-    freezeTableName: true,
-  }
-);
+    {
+      freezeTableName: true,
+    }
+  );
 
-Kandang.hasMany(Ayam, {
-  foreignKey: "kandangId",
-});
+  return Kandang;
+};
 
-db.sync();
+// Kandang.hasMany(Ayam, {
+//   foreignKey: "kandangId",
+// });
 
-module.exports = Kandang;
+// db.sync();
+
+// module.exports = Kandang;

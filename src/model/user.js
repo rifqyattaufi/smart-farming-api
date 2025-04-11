@@ -1,77 +1,84 @@
-const { DataTypes } = require("sequelize");
-const db = require("../config/database");
 const { encrypt } = require("../config/bcrypt");
 const moment = require("moment/moment");
 
-const User = db.define(
-  "User",
-  {
-    id: {
-      type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4,
-      primaryKey: true,
-      allowNull: false,
-      unique: true,
-    },
-    name: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
-    email: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      unique: true,
-      validate: {
-        isEmail: true,
+module.exports = (sequelize, DataTypes) => {
+  const User = sequelize.define(
+    "User",
+    {
+      id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true,
+        allowNull: false,
+        unique: true,
       },
-      set(value) {
-        this.setDataValue("email", value.toLowerCase());
+      name: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
+      email: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true,
+        validate: {
+          isEmail: true,
+        },
+        set(value) {
+          this.setDataValue("email", value.toLowerCase());
+        },
+      },
+      password: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        set(value) {
+          if (value !== null) {
+            this.setDataValue("password", encrypt(value));
+          }
+        },
+      },
+      role: {
+        type: DataTypes.ENUM,
+        values: ["inventor", "user", "petugas", "pjawab"],
+        allowNull: false,
+      },
+      avatar_url: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        defaultValue:
+          "https://api.dicebear.com/9.x/thumbs/svg?eyes=variant6W12&mouth=variant2&backgroundColor=5fd15e",
+      },
+      isActive: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+      },
+      expiredTime: {
+        type: DataTypes.DATE,
+        set(value) {
+          if (value !== null) {
+            this.setDataValue("expiredTime", moment(value).add(1, "hours"));
+          } else {
+            this.setDataValue("expiredTime", null);
+          }
+        },
+      },
+      isDeleted: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+      },
+      oAuthStatus: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+        allowNull: false,
       },
     },
-    password: {
-      type: DataTypes.STRING,
-      allowNull: true,
-      set(value) {
-        if (value !== null) {
-          this.setDataValue("password", encrypt(value));
-        }
-      },
-    },
-    role: {
-      type: DataTypes.ENUM,
-      values: ["inventor", "user", "petugas", "pjawab"],
-      allowNull: false,
-    },
-    avatar_url: {
-      type: DataTypes.STRING,
-      allowNull: true,
-      defaultValue:
-        "https://api.dicebear.com/9.x/thumbs/svg?eyes=variant6W12&mouth=variant2&backgroundColor=5fd15e",
-    },
-    isActive: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: false,
-    },
-    expiredTime: {
-      type: DataTypes.DATE,
-      set(value) {
-        if (value !== null) {
-          this.setDataValue("expiredTime", moment(value).add(1, "hours"));
-        } else {
-          this.setDataValue("expiredTime", null);
-        }
-      },
-    },
-    isDeleted: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: false,
-    },
-  },
-  {
-    freezeTableName: true,
-  }
-);
+    {
+      freezeTableName: true,
+    }
+  );
 
-db.sync();
+  User.associate = function (models) {
+    // Define your associations here, if needed
+  };
 
-module.exports = User;
+  return User;
+};

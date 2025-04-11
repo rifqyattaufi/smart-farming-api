@@ -1,30 +1,34 @@
-const { DataTypes } = require("sequelize");
-const db = require("../../config/database");
+// const { DataTypes } = require("sequelize");
+// const db = require("../index");
 
-const Telur = db.define(
-  "Telur",
-  {
-    id: {
-      type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4,
-      primaryKey: true,
-      allowNull: false,
-      unique: true,
+module.exports = (sequelize, DataTypes) => {
+  const Telur = sequelize.define(
+    "Telur",
+    {
+      id: {
+        type: DataTypes.UUID,
+        defaultValue: DataTypes.UUIDV4,
+        primaryKey: true,
+        allowNull: false,
+        unique: true,
+      },
+      jumlah: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+      },
+      isDeleted: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+      },
     },
-    jumlah: {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-    },
-    isDeleted: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: false,
-    },
-  },
-  {
-    freezeTableName: true,
-  }
-);
+    {
+      freezeTableName: true,
+    }
+  );
 
-db.sync();
+  return Telur;
+};
 
-module.exports = Telur;
+// db.sync();
+
+// module.exports = Telur;

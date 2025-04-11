@@ -1,6 +1,7 @@
 const e = require("express");
-const User = require("../model/user");
-const db = require("../config/database");
+const sequelize = require("../model/index");
+const db = sequelize.sequelize;
+const User = sequelize.User;
 const { sendMail, sendResetPasswordMail } = require("../config/sendMail");
 const { dataValid } = require("../validation/dataValidation");
 const { compare } = require("bcrypt");
@@ -429,10 +430,10 @@ const resetPassword = async (req, res, next) => {
 };
 
 const googleLogin = async (req, res, next) => {
-  console.log("🔁 Redirecting to Google...");
   return passport.authenticate("google", {
     scope: ["profile", "email"],
     session: false,
+    state: "login",
   })(req, res, next);
 };
 
@@ -441,20 +442,86 @@ const googleCallback = (req, res, next) => {
     "google",
     { session: false },
     async (err, googleUser) => {
-      if (err || !googleUser) {
-        console.error(err);
-        return res.status(500).json({ message: "Internal server error" });
-      }
+      let user;
+      const state = req.query.state;
+      const t = await db.transaction();
 
       try {
-        let user = await User.findOne({
+        if (err || !googleUser) {
+          console.error(err);
+          return res.status(500).json({ message: "Internal server error" });
+        }
+
+        user = await User.findOne({
           where: {
             email: googleUser.email,
           },
         });
 
-        if (!user) {
-          user = await User.create({
+        if (state == "login" && user) {
+          if (user.isDeleted) {
+            return res.status(400).json({
+              message: "Email is banned",
+            });
+          }
+
+          if (!user.oAuthStatus) {
+            return res.status(400).json({
+              message: "Account not linked with Google",
+            });
+          }
+
+          const usr = {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+          };
+
+          const token = generateAccessToken(usr);
+          const refreshToken = generateRefreshToken(usr);
+          return res.status(200).json({
+            message: "Login success",
+            data: usr,
+            token: token,
+            refreshToken: refreshToken,
+          });
+        }
+
+        if (state == "link") {
+          user = await User.findOne({
+            where: {
+              email: googleUser.email,
+            },
+          });
+
+          if (!user) {
+            return res.status(400).json({
+              message:
+                "The account being used does not match the registered account",
+            });
+          }
+
+          user.oAuthStatus = true;
+          user.avatar_url = googleUser.avatar_url;
+          await user.save({
+            transaction: t,
+          });
+
+          await t.commit();
+          return res.status(200).json({
+            message: "Account linked with Google",
+            data: {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              role: user.role,
+            },
+          });
+        }
+
+        user = await User.create(
+          {
             name: googleUser.name,
             email: googleUser.email,
             password: null,
@@ -463,8 +530,12 @@ const googleCallback = (req, res, next) => {
             isDeleted: false,
             avatar_url: googleUser.avatar_url,
             expiredTime: null,
-          });
-        }
+            oAuthStatus: true,
+          },
+          {
+            transaction: t,
+          }
+        );
 
         const token = generateAccessToken({
           id: user.id,
@@ -480,6 +551,7 @@ const googleCallback = (req, res, next) => {
           role: user.role,
         });
 
+        await t.commit();
         return res.status(200).json({
           message: "Login success",
           data: {
@@ -492,13 +564,79 @@ const googleCallback = (req, res, next) => {
           refreshToken: refreshToken,
         });
       } catch (error) {
-        console.error(error);
-        return res.status(500).json({ message: "Internal server error" });
+        await t.rollback();
+        next(new Error("controller/auth.js:googleCallback: " + error.message));
+        console.log(error);
       }
+      // try {
+      //   let user = await User.findOne({
+      //     where: {
+      //       email: googleUser.email,
+      //     },
+      //   });
+
+      //   if (!user) {
+      //     user = await User.create({
+      //       name: googleUser.name,
+      //       email: googleUser.email,
+      //       password: null,
+      //       role: "user",
+      //       isActive: true,
+      //       isDeleted: false,
+      //       avatar_url: googleUser.avatar_url,
+      //       expiredTime: null,
+      //     });
+      //   }
+
+      //   const token = generateAccessToken({
+      //     id: user.id,
+      //     name: user.name,
+      //     email: user.email,
+      //     role: user.role,
+      //   });
+
+      //   const refreshToken = generateRefreshToken({
+      //     id: user.id,
+      //     name: user.name,
+      //     email: user.email,
+      //     role: user.role,
+      //   });
+
+      //   return res.status(200).json({
+      //     message: "Login success",
+      //     data: {
+      //       id: user.id,
+      //       name: user.name,
+      //       email: user.email,
+      //       role: user.role,
+      //     },
+      //     token: token,
+      //     refreshToken: refreshToken,
+      //   });
+      // } catch (error) {
+      //   console.error(error);
+      //   return res.status(500).json({ message: "Internal server error" });
+      // }
     }
   )(req, res, next);
   // console.log("📥 Callback hit!");
   // res.send("Callback berhasil!");
+};
+
+const googleRegister = async (req, res, next) => {
+  return passport.authenticate("google", {
+    scope: ["profile", "email"],
+    session: false,
+    state: "register",
+  })(req, res, next);
+};
+
+const googleLink = async (req, res, next) => {
+  return passport.authenticate("google", {
+    scope: ["profile", "email"],
+    session: false,
+    state: "link",
+  })(req, res, next);
 };
 
 module.exports = {
@@ -510,4 +648,6 @@ module.exports = {
   resetPassword,
   googleLogin,
   googleCallback,
+  googleRegister,
+  googleLink,
 };
