@@ -1,9 +1,6 @@
-// const { DataTypes } = require("sequelize");
-// const db = require("../index");
-
 module.exports = (sequelize, DataTypes) => {
-  const Telur = sequelize.define(
-    "Telur",
+  const JenisHama = sequelize.define(
+    "JenisHama",
     {
       id: {
         type: DataTypes.UUID,
@@ -12,9 +9,8 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
         unique: true,
       },
-      jumlah: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
+      nama: {
+        type: DataTypes.STRING,
       },
       isDeleted: {
         type: DataTypes.BOOLEAN,
@@ -26,9 +22,9 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  return Telur;
+  JenisHama.associate = (models) => {
+    JenisHama.hasMany(models.Hama);
+  };
+
+  return JenisHama;
 };
-
-// db.sync();
-
-// module.exports = Telur;
