@@ -3,6 +3,7 @@ const sequelize = require("../model/index");
 const db = sequelize.sequelize;
 const User = sequelize.User;
 const { sendMail, sendResetPasswordMail } = require("../config/sendMail");
+const { sendOTP } = require("./otpController");
 const { dataValid } = require("../validation/dataValidation");
 const { compare } = require("bcrypt");
 const {
@@ -67,6 +68,7 @@ const login = async (req, res, next) => {
       id: userExist.id,
       name: userExist.name,
       email: userExist.email,
+      phone_number: userExist.phone_number,
       role: userExist.role,
     };
 
@@ -91,9 +93,10 @@ const register = async (req, res, next) => {
   const valid = {
     name: "required|string",
     email: "required|email",
+    phone_number: "required|phone",
     password: "required|strongPassword",
     confirmPassword: "required|same:password",
-    role: "required|contains:inventor,user,petugas,pjawab",
+    role: "required|contains:inventor,pembeli,penjual,petugas,pjawab",
   };
 
   try {
@@ -155,20 +158,25 @@ const register = async (req, res, next) => {
 
     if (newUser.role === "user") {
       const otp = await generateOTP(newUser.id);
-      result = await sendMail(newUser.email, otp);
+      // result = await sendMail(newUser.email, otp);
+      const phoneNumber = newUser.phone_number; 
+      const otpResponse = await sendOTP({ body: { otp, phoneNumber } }, res, next); 
+      result = otpResponse.status === 200; 
     }
 
     if (!result) {
       await t.rollback();
-      next(new Error("Failed to send email"));
+      next(new Error("Failed to send OTP"));
     } else {
       await t.commit();
+
       return res.status(201).json({
         message: "User created",
         data: {
           id: newUser.id,
           name: newUser.name,
           email: newUser.email,
+          phone_number: newUser.phone_number,
           expiredTime: newUser.expiredTime,
         },
       });

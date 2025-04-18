@@ -36,9 +36,16 @@ module.exports = (sequelize, DataTypes) => {
           }
         },
       },
+      phone_number: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        validate: {
+          isNumeric: true,
+        },
+      },
       role: {
         type: DataTypes.ENUM,
-        values: ["inventor", "user", "petugas", "pjawab"],
+        values: ["inventor", "pembeli", "penjual", "petugas", "pjawab"],
         allowNull: false,
       },
       avatar_url: {

@@ -50,6 +50,11 @@ const dataValid = async (valid, dt) => {
                 ms.push(key + " must be a string");
               }
               break;
+            case "phone":
+              if (isExist(data[key]) && typeof data[key] !== "string") {
+                ms.push(key + " must be a string");
+              }
+              break;
             case "int":
               if (isExist(data[key]) && !validator.isAlphanumeric(data[key])) {
                 ms.push(key + " must be a number");
