@@ -1,6 +1,5 @@
 const validator = require("validator");
 const { sanitize, isExist } = require("./sanitization");
-const { options, param } = require("../routes/auth");
 
 const dataValid = async (valid, dt) => {
   let msg = [];

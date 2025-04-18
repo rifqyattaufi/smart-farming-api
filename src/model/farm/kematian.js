@@ -1,6 +1,6 @@
 module.exports = (sequelize, DataTypes) => {
-  const Ayam = sequelize.define(
-    "Ayam",
+  const Kematian = sequelize.define(
+    "Kematian",
     {
       id: {
         type: DataTypes.UUID,
@@ -9,15 +9,13 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
         unique: true,
       },
-      berat: {
-        type: DataTypes.FLOAT,
-        allowNull: false,
+      tanggal: {
+        type: DataTypes.DATE,
       },
-      isProductive: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: true,
+      penyebab: {
+        type: DataTypes.STRING,
       },
-      idDeleted: {
+      isDeleted: {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
       },
@@ -27,12 +25,9 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  return Ayam;
+  Kematian.associate = (models) => {
+    Kematian.belongsTo(models.Laporan);
+  };
+
+  return Kematian;
 };
-// db.sync();
-
-// Ayam.hasMany(Telur, {
-//   foreignKey: "ayamId",
-// });
-
-// module.exports = Ayam;

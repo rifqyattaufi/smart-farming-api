@@ -27,6 +27,11 @@ module.exports = (sequelize, DataTypes) => {
           this.setDataValue("email", value.toLowerCase());
         },
       },
+      phone: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        defaultValue: null,
+      },
       password: {
         type: DataTypes.STRING,
         allowNull: true,
@@ -84,7 +89,7 @@ module.exports = (sequelize, DataTypes) => {
   );
 
   User.associate = function (models) {
-    // Define your associations here, if needed
+    User.hasMany(models.Laporan);
   };
 
   return User;
