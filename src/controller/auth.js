@@ -68,7 +68,7 @@ const login = async (req, res, next) => {
       id: userExist.id,
       name: userExist.name,
       email: userExist.email,
-      phone_number: userExist.phone_number,
+      phone: userExist.phone,
       role: userExist.role,
     };
 
@@ -93,7 +93,7 @@ const register = async (req, res, next) => {
   const valid = {
     name: "required|string",
     email: "required|email",
-    phone_number: "required|phone",
+    phone: "required|phone",
     password: "required|strongPassword",
     confirmPassword: "required|same:password",
     role: "required|contains:inventor,user,penjual,petugas,pjawab",
@@ -133,7 +133,7 @@ const register = async (req, res, next) => {
     ) {
       return res.status(400).json({
         message:
-          "Email already registered, please check your email to activate your account",
+          "Email already registered, please check your WhatsApp to activate your account",
       });
     }
 
@@ -158,28 +158,26 @@ const register = async (req, res, next) => {
 
     if (newUser.role === "user") {
       const otp = await generateOTP(newUser.id);
-      // result = await sendMail(newUser.email, otp);
-      const phoneNumber = newUser.phone_number; 
-      result = await sendOTP(user.data.phone_number, otp); 
-    }
-    if (result === false) {
-      await t.rollback();
-      next(new Error("Failed to send OTP"));
-    } else {
-      await t.commit();
+      result = await sendOTP(user.data.phone, otp);
 
-      return res.status(201).json({
-        message: "User created",
-        data: {
-          id: newUser.id,
-          name: newUser.name,
-          email: newUser.email,
-          phone_number: newUser.phone_number,
-          expiredTime: newUser.expiredTime,
-          role : newUser.role,
-        },
-      });
+      if (result === false) {
+        await t.rollback();
+        next(new Error("Failed to send OTP"));
+      }
     }
+
+    await t.commit();
+    return res.status(201).json({
+      message: "User created",
+      data: {
+        id: newUser.id,
+        name: newUser.name,
+        email: newUser.email,
+        phone: newUser.phone,
+        expiredTime: newUser.expiredTime,
+        role: newUser.role,
+      },
+    });
   } catch (error) {
     await t.rollback();
     next(new Error("controller/auth.js:register: " + error.message));
@@ -190,31 +188,31 @@ const register = async (req, res, next) => {
 const activatePhone = async (req, res, next) => {
   console.log("activatePhone function called");
   try {
-    const { phone_number, otp } = req.body;
+    const { phone, otp } = req.body;
 
     const user = await User.findOne({
       where: {
-        phone_number: phone_number,
+        phone: phone,
       },
     });
 
     if (!user) {
       return res.status(200).json({
-        status : false,
+        status: false,
         message: "Phone number not registered",
       });
     }
 
     if (user.isActive) {
       return res.status(200).json({
-        status : false,
+        status: false,
         message: "Phone number already activated",
       });
     }
 
     if (user.isDeleted) {
       return res.status(200).json({
-        status : false,
+        status: false,
         message: "Phone number is banned",
       });
     }
@@ -222,14 +220,14 @@ const activatePhone = async (req, res, next) => {
 
     if (!savedOTP) {
       return res.status(200).json({
-        status : false,
+        status: false,
         message: "Kode OTP sudah kadaluarsa",
       });
     }
 
     if (savedOTP !== otp) {
       return res.status(200).json({
-        status : false,
+        status: false,
         message: "Kode Otp tidak valid",
       });
     }
@@ -239,12 +237,12 @@ const activatePhone = async (req, res, next) => {
     await user.save();
 
     return res.status(200).json({
-      status : true,
+      status: true,
       message: "Akun anda telah Aktif",
       data: {
         id: user.id,
         name: user.name,
-        phone_number: user.phone_number,
+        phone: user.phone,
       },
     });
   } catch (error) {
@@ -254,11 +252,11 @@ const activatePhone = async (req, res, next) => {
 };
 const resendOtp = async (req, res, next) => {
   try {
-    const { phone_number } = req.body;
+    const { phone } = req.body;
 
     const user = await User.findOne({
       where: {
-        phone_number: phone_number,
+        phone: phone,
       },
     });
 
@@ -281,9 +279,9 @@ const resendOtp = async (req, res, next) => {
     }
 
     const otp = await generateOTP(user.id);
-    const result = await sendOTP(phone_number, otp);
+    const result = await sendOTP(phone, otp);
 
-    if (result == false) {  
+    if (result == false) {
       return res.status(500).json({
         message: "OTP Gagal dikirim",
       });
@@ -309,23 +307,23 @@ const getPhoneByEmail = async (req, res, next) => {
 
     if (!user) {
       return res.status(400).json({
-        success : false,
+        success: false,
         message: "Email not registered",
       });
     }
 
     if (user.isDeleted) {
       return res.status(400).json({
-        success : false,
+        success: false,
         message: "Email is banned",
       });
     }
 
     return res.status(200).json({
-      success : true,
+      success: true,
       message: "Phone number retrieved successfully",
       user: {
-        phone_number: user.phone_number,
+        phone: user.phone,
       },
     });
   } catch (error) {
@@ -657,7 +655,7 @@ const googleCallback = (req, res, next) => {
           }
 
           user.oAuthStatus = true;
-          user.avatar_url = googleUser.avatar_url;
+          user.avatarUrl = googleUser.avatarUrl;
           await user.save({
             transaction: t,
           });
@@ -682,7 +680,7 @@ const googleCallback = (req, res, next) => {
             role: "user",
             isActive: true,
             isDeleted: false,
-            avatar_url: googleUser.avatar_url,
+            avatarUrl: googleUser.avatarUrl,
             expiredTime: null,
             oAuthStatus: true,
           },
@@ -722,59 +720,8 @@ const googleCallback = (req, res, next) => {
         next(new Error("controller/auth.js:googleCallback: " + error.message));
         console.log(error);
       }
-      // try {
-      //   let user = await User.findOne({
-      //     where: {
-      //       email: googleUser.email,
-      //     },
-      //   });
-
-      //   if (!user) {
-      //     user = await User.create({
-      //       name: googleUser.name,
-      //       email: googleUser.email,
-      //       password: null,
-      //       role: "user",
-      //       isActive: true,
-      //       isDeleted: false,
-      //       avatar_url: googleUser.avatar_url,
-      //       expiredTime: null,
-      //     });
-      //   }
-
-      //   const token = generateAccessToken({
-      //     id: user.id,
-      //     name: user.name,
-      //     email: user.email,
-      //     role: user.role,
-      //   });
-
-      //   const refreshToken = generateRefreshToken({
-      //     id: user.id,
-      //     name: user.name,
-      //     email: user.email,
-      //     role: user.role,
-      //   });
-
-      //   return res.status(200).json({
-      //     message: "Login success",
-      //     data: {
-      //       id: user.id,
-      //       name: user.name,
-      //       email: user.email,
-      //       role: user.role,
-      //     },
-      //     token: token,
-      //     refreshToken: refreshToken,
-      //   });
-      // } catch (error) {
-      //   console.error(error);
-      //   return res.status(500).json({ message: "Internal server error" });
-      // }
     }
   )(req, res, next);
-  // console.log("📥 Callback hit!");
-  // res.send("Callback berhasil!");
 };
 
 const googleRegister = async (req, res, next) => {

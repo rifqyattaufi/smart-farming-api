@@ -36,7 +36,7 @@ module.exports = (sequelize, DataTypes) => {
           }
         },
       },
-      phone_number: {
+      phone: {
         type: DataTypes.STRING,
         allowNull: true,
         validate: {
@@ -48,7 +48,7 @@ module.exports = (sequelize, DataTypes) => {
         values: ["inventor", "user", "penjual", "petugas", "pjawab"],
         allowNull: false,
       },
-      avatar_url: {
+      avatarUrl: {
         type: DataTypes.STRING,
         allowNull: true,
         defaultValue:
