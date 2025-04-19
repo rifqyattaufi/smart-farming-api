@@ -23,9 +23,6 @@ module.exports = {
       tipe: {
         type: Sequelize.ENUM("hewan", "tumbuhan"),
       },
-      latin: {
-        type: Sequelize.STRING,
-      },
       gambar: {
         type: Sequelize.STRING,
       },
