@@ -29,7 +29,7 @@ module.exports = {
       },
       password: {
         type: Sequelize.STRING,
-        allowNull: true,
+        allowNull: true,  
       },
       phone_number: {
         type: Sequelize.STRING,

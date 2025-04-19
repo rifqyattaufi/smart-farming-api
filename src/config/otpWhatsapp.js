@@ -1,13 +1,8 @@
 const axios = require('axios');
 const FONNTE_API_KEY = process.env.FONNTE_API_KEY;
 
-const sendOTP = async (req, res, next) => {
+const sendOTP = async (phoneNumber, otp) => {
   try {
-    const { otp, phoneNumber } = req.body;
-
-    if (!otp || !phoneNumber) {
-      return res.status(400).json({ message: 'OTP dan Nomor telepon diperlukan' });
-    }
 
     const message = `Kode OTP Anda untuk Rooftop Farming Center adalah: ${otp}. Jangan bagikan kode ini kepada siapa pun.`;
 
@@ -25,10 +20,9 @@ const sendOTP = async (req, res, next) => {
         },
       }
     );
-
-    console.log('SMS sent:', response.data);
-    return res.status(200).json({ message: 'OTP berhasil dikirim', otp: otp }); // Kirim OTP ke client untuk testing
+    return response.status
   } catch (error) {
+    new Error("controller/auth.js:register: " + error.message);
     console.error('Error sending SMS:', error.response ? error.response.data : error.message);
     return res.status(500).json({ message: 'Gagal mengirim OTP' });
   }

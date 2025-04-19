@@ -2,8 +2,8 @@ const e = require("express");
 const sequelize = require("../model/index");
 const db = sequelize.sequelize;
 const User = sequelize.User;
+const { sendOTP } = require("../config/otpWhatsapp");
 const { sendMail, sendResetPasswordMail } = require("../config/sendMail");
-const { sendOTP } = require("./otpController");
 const { dataValid } = require("../validation/dataValidation");
 const { compare } = require("bcrypt");
 const {
@@ -95,7 +95,7 @@ const register = async (req, res, next) => {
     phone_number: "required|phone",
     password: "required|strongPassword",
     confirmPassword: "required|same:password",
-    role: "required|contains:inventor,pembeli,penjual,petugas,pjawab",
+    role: "required|contains:inventor,user,penjual,petugas,pjawab",
   };
 
   try {
@@ -146,24 +146,22 @@ const register = async (req, res, next) => {
     };
 
     if (user.data.role !== "user") {
-      userData.isActive = true;
+      userData.isActive = true;82
     }
 
     const newUser = await User.create(userData, {
       transaction: t,
     });
 
-    let result = true;
+    let result = false;
 
     if (newUser.role === "user") {
       const otp = await generateOTP(newUser.id);
       // result = await sendMail(newUser.email, otp);
       const phoneNumber = newUser.phone_number; 
-      const otpResponse = await sendOTP({ body: { otp, phoneNumber } }, res, next); 
-      result = otpResponse.status === 200; 
+      result = await sendOTP(user.data.phone_number, otp); 
     }
-
-    if (!result) {
+    if (result === false) {
       await t.rollback();
       next(new Error("Failed to send OTP"));
     } else {
@@ -177,6 +175,7 @@ const register = async (req, res, next) => {
           email: newUser.email,
           phone_number: newUser.phone_number,
           expiredTime: newUser.expiredTime,
+          role : newUser.role,
         },
       });
     }
@@ -187,7 +186,153 @@ const register = async (req, res, next) => {
   }
 };
 
-const activate = async (req, res, next) => {
+const activatePhone = async (req, res, next) => {
+  console.log("activatePhone function called");
+  try {
+    const { phone_number, otp } = req.body;
+
+    const user = await User.findOne({
+      where: {
+        phone_number: phone_number,
+      },
+    });
+
+    if (!user) {
+      return res.status(200).json({
+        status : false,
+        message: "Phone number not registered",
+      });
+    }
+
+    if (user.isActive) {
+      return res.status(200).json({
+        status : false,
+        message: "Phone number already activated",
+      });
+    }
+
+    if (user.isDeleted) {
+      return res.status(200).json({
+        status : false,
+        message: "Phone number is banned",
+      });
+    }
+    const savedOTP = await client.get(`otp:${user.id}`);
+
+    if (!savedOTP) {
+      return res.status(200).json({
+        status : false,
+        message: "Kode OTP sudah kadaluarsa",
+      });
+    }
+
+    if (savedOTP !== otp) {
+      return res.status(200).json({
+        status : false,
+        message: "Kode Otp tidak valid",
+      });
+    }
+
+    await client.del(`otp:${user.id}`);
+    user.isActive = true;
+    await user.save();
+
+    return res.status(200).json({
+      status : true,
+      message: "Akun anda telah Aktif",
+      data: {
+        id: user.id,
+        name: user.name,
+        phone_number: user.phone_number,
+      },
+    });
+  } catch (error) {
+    next(new Error("controller/auth.js:activatePhone: " + error.message));
+    console.log(error);
+  }
+};
+const resendOtp = async (req, res, next) => {
+  try {
+    const { phone_number } = req.body;
+
+    const user = await User.findOne({
+      where: {
+        phone_number: phone_number,
+      },
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        message: "Nomor telepon tidak terdaftar",
+      });
+    }
+
+    if (user.isDeleted) {
+      return res.status(400).json({
+        message: "Akun sudah dibanned",
+      });
+    }
+
+    if (user.isActive) {
+      return res.status(400).json({
+        message: "Nomor telepon sudah diaktifkan",
+      });
+    }
+
+    const otp = await generateOTP(user.id);
+    const result = await sendOTP(phone_number, otp);
+
+    if (result == false) {  
+      return res.status(500).json({
+        message: "OTP Gagal dikirim",
+      });
+    }
+
+    return res.status(200).json({
+      message: "OTP Berhasil dikirim",
+    });
+  } catch (error) {
+    next(new Error("controller/auth.js:resendOtp: " + error.message));
+    console.log(error);
+  }
+};
+const getPhoneByEmail = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+
+    const user = await User.findOne({
+      where: {
+        email: email,
+      },
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success : false,
+        message: "Email not registered",
+      });
+    }
+
+    if (user.isDeleted) {
+      return res.status(400).json({
+        success : false,
+        message: "Email is banned",
+      });
+    }
+
+    return res.status(200).json({
+      success : true,
+      message: "Phone number retrieved successfully",
+      user: {
+        phone_number: user.phone_number,
+      },
+    });
+  } catch (error) {
+    next(new Error("controller/auth.js:getPhoneByEmail: " + error.message));
+    console.log(error);
+  }
+};
+const activateEmail = async (req, res, next) => {
   try {
     const user = await User.findOne({
       where: {
@@ -649,7 +794,10 @@ const googleLink = async (req, res, next) => {
 module.exports = {
   login,
   register,
-  activate,
+  activateEmail,
+  activatePhone,
+  resendOtp,
+  getPhoneByEmail,
   refreshToken,
   forgotPassword,
   resetPassword,

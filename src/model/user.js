@@ -27,11 +27,6 @@ module.exports = (sequelize, DataTypes) => {
           this.setDataValue("email", value.toLowerCase());
         },
       },
-      phone: {
-        type: DataTypes.STRING,
-        allowNull: true,
-        defaultValue: null,
-      },
       password: {
         type: DataTypes.STRING,
         allowNull: true,
@@ -50,7 +45,7 @@ module.exports = (sequelize, DataTypes) => {
       },
       role: {
         type: DataTypes.ENUM,
-        values: ["inventor", "pembeli", "penjual", "petugas", "pjawab"],
+        values: ["inventor", "user", "penjual", "petugas", "pjawab"],
         allowNull: false,
       },
       avatar_url: {
