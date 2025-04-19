@@ -8,7 +8,7 @@ const ObjekBudidaya = sequelize.ObjekBudidaya;
 const getAllUnitBudidaya = async (req, res) => {
   try {
     const data = await UnitBudidaya.findAll();
-    
+
     return res.json({
       message: "Success get all Unit Budidaya",
       data: data,
@@ -52,22 +52,28 @@ const createUnitBudidaya = async (req, res) => {
     if (!jenisBudidaya) {
       await t.rollback();
       return res.status(404).json({ message: "Jenis Budidaya not found" });
-    };
+    }
 
-    const data = await UnitBudidaya.create({
-      ...req.body,
-      isDeleted: false,
-    }, { transaction: t });
+    const data = await UnitBudidaya.create(
+      {
+        ...req.body,
+        isDeleted: false,
+      },
+      { transaction: t }
+    );
 
     let objekList = [];
 
-    if (tipe === 'individu') {
+    if (tipe === "individu") {
       objekList = Array.from({ length: jumlah }, (_, i) => {
-        const prefix = jenisBudidaya.tipe === 'hewan' ? 'Ternak' : 'Tanaman';
-        const deskripsi = `${prefix} ${jenisBudidaya.nama} pada ${data.nama} nomor ${i + 1}`;
+        const prefix = jenisBudidaya.tipe === "hewan" ? "Ternak" : "Tanaman";
+        const deskripsi = `${prefix} ${jenisBudidaya.nama} pada ${
+          data.nama
+        } nomor ${i + 1}`;
 
         return {
           unitBudidayaId: data.id,
+          namaId: `${jenisBudidaya.nama} #${i + 1}`,
           status: true,
           deskripsi,
           isDeleted: false,
@@ -87,6 +93,7 @@ const createUnitBudidaya = async (req, res) => {
       },
     });
   } catch (error) {
+    t.rollback();
     res.status(500).json({
       message: error.message,
       detail: error,
@@ -133,18 +140,20 @@ const updateUnitBudidaya = async (req, res) => {
 
 const deleteUnitBudidaya = async (req, res) => {
   try {
-    const unit = await UnitBudidaya.findOne({ where: { id: req.params.id, isDeleted: false } });
-    
+    const unit = await UnitBudidaya.findOne({
+      where: { id: req.params.id, isDeleted: false },
+    });
+
     if (!unit) {
-        return res.status(404).json({ message: "Unit Budidaya not found" });
+      return res.status(404).json({ message: "Unit Budidaya not found" });
     }
 
     unit.isDeleted = true;
     await unit.save();
     res.status(200).json({ message: "Unit Budidaya deleted successfully" });
   } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Error deleting Unit Budidaya", error });
+    console.error(error);
+    res.status(500).json({ message: "Error deleting Unit Budidaya", error });
   }
 };
 
