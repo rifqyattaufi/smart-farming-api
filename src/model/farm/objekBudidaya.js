@@ -9,6 +9,10 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
         unique: true,
       },
+      namaId: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
       status: {
         type: DataTypes.BOOLEAN,
         defaultValue: true,

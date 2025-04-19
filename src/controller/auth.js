@@ -268,7 +268,7 @@ const resendOtp = async (req, res, next) => {
 
     if (user.isDeleted) {
       return res.status(400).json({
-        message: "Akun sudah dibanned",
+        message: "Akun sudah di   banned",
       });
     }
 
