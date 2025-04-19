@@ -1,6 +1,7 @@
 const e = require("express");
 const sequelize = require("../../model/index");
 const db = sequelize.sequelize;
+const JenisBudidaya = sequelize.JenisBudidaya;
 const UnitBudidaya = sequelize.UnitBudidaya;
 const ObjekBudidaya = sequelize.ObjekBudidaya;
 
@@ -40,24 +41,38 @@ const createUnitBudidaya = async (req, res) => {
   const t = await db.transaction();
 
   try {
+    const { jumlah = 0, tipe, jenisBudidayaId } = req.body;
+
+    const jenisBudidaya = await JenisBudidaya.findOne({
+      where: { id: jenisBudidayaId },
+      isDeleted: false,
+      transaction: t,
+    });
+
+    if (!jenisBudidaya) {
+      await t.rollback();
+      return res.status(404).json({ message: "Jenis Budidaya not found" });
+    };
+
     const data = await UnitBudidaya.create({
       ...req.body,
       isDeleted: false,
     }, { transaction: t });
 
-    // get jumlah ternak
-    const { jumlah = 0, tipe } = req.body;
-
     let objekList = [];
 
-    // Check if the type is 'kolektif' or 'individu', if 'individu' create the objects
     if (tipe === 'individu') {
-      objekList = Array.from({ length: jumlah }, (_, i) => ({
-        unitBudidayaId: data.id,
-        status: true,
-        deskripsi: `objek-${i + 1}`,
-        isDeleted: false,
-      }));
+      objekList = Array.from({ length: jumlah }, (_, i) => {
+        const prefix = jenisBudidaya.tipe === 'hewan' ? 'Ternak' : 'Tanaman';
+        const deskripsi = `${prefix} ${jenisBudidaya.nama} pada ${data.nama} nomor ${i + 1}`;
+
+        return {
+          unitBudidayaId: data.id,
+          status: true,
+          deskripsi,
+          isDeleted: false,
+        };
+      });
 
       await ObjekBudidaya.bulkCreate(objekList, { transaction: t });
     }
