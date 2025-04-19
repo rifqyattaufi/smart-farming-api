@@ -40,6 +40,12 @@ const login = async (req, res, next) => {
       },
     });
 
+    if (!userExist) {
+      return res.status(400).json({
+        message: "Email not registered",
+      });
+    }
+
     if (!userExist.isActive) {
       return res.status(400).json({
         message: "Email is not activated",
@@ -52,11 +58,6 @@ const login = async (req, res, next) => {
       });
     }
 
-    if (!userExist) {
-      return res.status(400).json({
-        message: "Email not registered",
-      });
-    }
     if (!(await compare(data.password, userExist.password))) {
       return res.status(400).json({
         message: "Wrong password",
@@ -146,7 +147,7 @@ const register = async (req, res, next) => {
     };
 
     if (user.data.role !== "user") {
-      userData.isActive = true;82
+      userData.isActive = true;
     }
 
     const newUser = await User.create(userData, {
@@ -401,7 +402,7 @@ const refreshToken = async (req, res, next) => {
     }
 
     const data = verifyRefreshToken(token);
-    const user = User.findOne({
+    const user = await User.findOne({
       where: {
         id: data.id,
       },
@@ -564,7 +565,8 @@ const resetPassword = async (req, res, next) => {
     }
 
     await client.del(`otp:${userExist.id}`);
-    userExist.password = user.data.password;
+    const hashedPassword = await bcrypt.hash(user.data.password, 10);
+    userExist.password = hashedPassword;
     await userExist.save({ transaction: t });
     await t.commit();
     return res.status(200).json({

@@ -43,7 +43,7 @@ module.exports = (sequelize, DataTypes) => {
   );
 
   UnitBudidaya.associate = (models) => {
-    UnitBudidaya.belongsTo(models.JenisBudaya);
+    UnitBudidaya.belongsTo(models.JenisBudidaya);
 
     UnitBudidaya.hasMany(models.Laporan);
     UnitBudidaya.hasMany(models.ObjekBudidaya);

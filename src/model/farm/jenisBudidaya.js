@@ -1,6 +1,6 @@
 module.exports = (sequelize, DataTypes) => {
-    const JenisBudaya = sequelize.define(
-        "JenisBudaya",
+    const JenisBudidaya = sequelize.define(
+        "JenisBudidaya",
         {
             id: {
                 type: DataTypes.UUID,
@@ -32,10 +32,10 @@ module.exports = (sequelize, DataTypes) => {
         }
     );
 
-    JenisBudaya.associate = (models) => {
-        JenisBudaya.hasMany(models.UnitBudidaya)
-        JenisBudaya.hasMany(models.Komoditas)
+    JenisBudidaya.associate = (models) => {
+        JenisBudidaya.hasMany(models.UnitBudidaya)
+        JenisBudidaya.hasMany(models.Komoditas)
     };
 
-    return JenisBudaya;
+    return JenisBudidaya;
 }

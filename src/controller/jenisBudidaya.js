@@ -1,12 +1,13 @@
 const e = require("express");
 const sequelize = require("../model/index");
 const db = sequelize.sequelize;
-const User = sequelize.User;
+const JenisBudidaya = sequelize.JenisBudidaya;
 
-const getAllUsers = async (req, res) => {
-  try {
-    const data = await User.findAll();
-
+const getAllJenisBudidaya = async (req, res) => {
+    try {
+        const data = await JenisBudidaya.findAll();
+        
+        console.log(JenisBudidaya);
     return res.json({
       message: "Success",
       data: data,
@@ -19,12 +20,12 @@ const getAllUsers = async (req, res) => {
   }
 };
 
-const createUser = async (req, res) => {
+const createJenisBudidaya = async (req, res) => {
   try {
-    const data = await User.create(req.body);
+    const data = await JenisBudidaya.create(req.body);
 
     return res.status(201).json({
-      message: "User created",
+      message: "Jenis Budidaya created",
       data: data,
     });
   } catch (error) {
@@ -35,16 +36,16 @@ const createUser = async (req, res) => {
   }
 };
 
-const updateUser = async (req, res) => {
+const updateJenisBudidaya = async (req, res) => {
   try {
-    await User.update(req.body, {
+    await JenisBudidaya.update(req.body, {
       where: {
         id: req.params.id,
       },
     });
 
     return res.status(201).json({
-      message: "User updated",
+      message: "Jenis Budidaya updated",
       data: {
         id: req.params.id,
         ...req.body,
@@ -58,16 +59,16 @@ const updateUser = async (req, res) => {
   }
 };
 
-const deleteUser = async (req, res) => {
+const deleteJenisBudidaya = async (req, res) => {
   try {
-    await User.destroy({
+    await JenisBudidaya.destroy({
       where: {
         id: req.params.id,
       },
     });
 
     return res.json({
-      message: "User deleted",
+      message: "Jenis Budidaya deleted",
       data: null,
     });
   } catch (error) {
@@ -79,8 +80,8 @@ const deleteUser = async (req, res) => {
 };
 
 module.exports = {
-  getAllUsers,
-  createUser,
-  updateUser,
-  deleteUser,
+  getAllJenisBudidaya,
+  createJenisBudidaya,
+  updateJenisBudidaya,
+  deleteJenisBudidaya,
 };
