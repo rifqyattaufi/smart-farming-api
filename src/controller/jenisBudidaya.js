@@ -61,22 +61,36 @@ const updateJenisBudidaya = async (req, res) => {
 
 const deleteJenisBudidaya = async (req, res) => {
   try {
-    await JenisBudidaya.destroy({
-      where: {
-        id: req.params.id,
-      },
-    });
+    const jenisBudidaya = await JenisBudidaya.findOne({ where: { id: req.params.id, isDeleted: false } });
+    
+    if (!jenisBudidaya) {
+        return res.status(404).json({ message: "JenisBudidaya not found" });
+    }
 
-    return res.json({
-      message: "Jenis Budidaya deleted",
-      data: null,
-    });
+    jenisBudidaya.isDeleted = true;
+    await jenisBudidaya.save();
+    res.status(200).json({ message: "JenisBudidaya deleted successfully" });
   } catch (error) {
-    res.status(500).json({
-      message: error.message,
-      detail: error,
-    });
+      console.error(error);
+      res.status(500).json({ message: "Error deleting JenisBudidaya", error });
   }
+  // try {
+  //   await JenisBudidaya.destroy({
+  //     where: {
+  //       id: req.params.id,
+  //     },
+  //   });
+
+  //   return res.json({
+  //     message: "Jenis Budidaya deleted",
+  //     data: null,
+  //   });
+  // } catch (error) {
+  //   res.status(500).json({
+  //     message: error.message,
+  //     detail: error,
+  //   });
+  // }
 };
 
 module.exports = {
