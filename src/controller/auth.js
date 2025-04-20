@@ -48,18 +48,27 @@ const login = async (req, res, next) => {
 
     if (!userExist.isActive) {
       return res.status(400).json({
+        status: false,
         message: "Email is not activated",
       });
     }
 
     if (userExist.isDeleted) {
       return res.status(400).json({
+        status: false,
         message: "Email is banned",
       });
     }
 
+    if (!userExist) {
+      return res.status(400).json({
+        status: false,
+        message: "Email not registered",
+      });
+    }
     if (!(await compare(data.password, userExist.password))) {
       return res.status(400).json({
+        status: false,
         message: "Wrong password",
       });
     }
@@ -76,6 +85,7 @@ const login = async (req, res, next) => {
     const refreshToken = generateRefreshToken(usr);
 
     return res.status(200).json({
+      status: true,
       message: "Login success",
       data: usr,
       token: token,
@@ -147,7 +157,7 @@ const register = async (req, res, next) => {
     };
 
     if (user.data.role !== "user") {
-      userData.isActive = true;
+      userData.isActive = true; 
     }
 
     const newUser = await User.create(userData, {
@@ -262,18 +272,21 @@ const resendOtp = async (req, res, next) => {
 
     if (!user) {
       return res.status(400).json({
+        status: false,
         message: "Nomor telepon tidak terdaftar",
       });
     }
 
     if (user.isDeleted) {
       return res.status(400).json({
-        message: "Akun sudah di   banned",
+        status: false,
+        message: "Akun sudah dibanned",
       });
     }
 
     if (user.isActive) {
       return res.status(400).json({
+        status: false,
         message: "Nomor telepon sudah diaktifkan",
       });
     }
@@ -283,11 +296,13 @@ const resendOtp = async (req, res, next) => {
 
     if (result == false) {
       return res.status(500).json({
-        message: "OTP Gagal dikirim",
+        status: false,
+        message: "OTP Gagal dikirim, silahkan coba beberapa saat lagi",
       });
     }
 
     return res.status(200).json({
+      status: true,
       message: "OTP Berhasil dikirim",
     });
   } catch (error) {
@@ -307,23 +322,23 @@ const getPhoneByEmail = async (req, res, next) => {
 
     if (!user) {
       return res.status(400).json({
-        success: false,
+        status: false,
         message: "Email not registered",
       });
     }
 
     if (user.isDeleted) {
       return res.status(400).json({
-        success: false,
+        status: false,
         message: "Email is banned",
       });
     }
 
     return res.status(200).json({
-      success: true,
+      status: true,
       message: "Phone number retrieved successfully",
-      user: {
-        phone: user.phone,
+      data: {
+        phone_number: user.phone_number,
       },
     });
   } catch (error) {
