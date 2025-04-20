@@ -12,7 +12,7 @@ router.use("/user", authenticate(["pjawab"]), userRouter);
 router.use("/auth", authRouter);
 
 router.use("/perkebunan", perkebunanRouter);
-router.use("/jenis-budidaya", jenisBudidayaRouter);
-router.use("/unit-budidaya", unitBudidayaRouter);
+router.use("/jenis-budidaya", authenticate(), jenisBudidayaRouter);
+router.use("/unit-budidaya", authenticate(), unitBudidayaRouter);
 
 module.exports = router;

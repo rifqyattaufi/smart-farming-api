@@ -39,6 +39,8 @@ const createJenisBudidaya = async (req, res) => {
   try {
     const data = await JenisBudidaya.create(req.body);
 
+    res.locals.createdData = data.toJSON();
+
     return res.status(201).json({
       message: "Jenis Budidaya created successfully",
       data: data,
@@ -55,13 +57,7 @@ const updateJenisBudidaya = async (req, res) => {
   try {
     const jenis = await JenisBudidaya.findOne({ where: { id: req.params.id } });
 
-    if (!jenis) {
-      return res.status(404).json({
-        message: "Jenis Budidaya not found",
-      });
-    }
-
-    if (jenis.isDeleted) {
+    if (!jenis || jenis.isDeleted) {
       return res.status(404).json({
         message: "Jenis Budidaya not found",
       });
@@ -72,6 +68,10 @@ const updateJenisBudidaya = async (req, res) => {
         id: req.params.id,
       },
     });
+
+    const updated = await JenisBudidaya.findOne({ where: { id: req.params.id } });
+
+    res.locals.updatedData = updated.toJSON();
 
     return res.status(201).json({
       message: "Jenis Budidaya updated successfully",
@@ -100,6 +100,9 @@ const deleteJenisBudidaya = async (req, res) => {
 
     jenis.isDeleted = true;
     await jenis.save();
+
+    res.locals.updatedData = jenis;
+
     res.status(200).json({ 
       message: "Jenis Budidaya deleted successfully" 
     });

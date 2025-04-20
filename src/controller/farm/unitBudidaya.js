@@ -4,6 +4,7 @@ const db = sequelize.sequelize;
 const JenisBudidaya = sequelize.JenisBudidaya;
 const UnitBudidaya = sequelize.UnitBudidaya;
 const ObjekBudidaya = sequelize.ObjekBudidaya;
+const Logs = sequelize.Logs;
 
 const getAllUnitBudidaya = async (req, res) => {
   try {
@@ -80,16 +81,33 @@ const createUnitBudidaya = async (req, res) => {
         };
       });
 
-      await ObjekBudidaya.bulkCreate(objekList, { transaction: t });
+      createdObjekList = await ObjekBudidaya.bulkCreate(objekList, {
+        transaction: t,
+        returning: true,
+      });
+
+      for (const obj of createdObjekList) {
+        await Logs.create({
+          tableName: "ObjekBudidaya",
+          action: "create",
+          recordId: obj.id,
+          before: null,
+          after: obj.toJSON(),
+          changedBy: req.user?.id,
+        });
+      }
+      
     }
 
     await t.commit();
+
+    res.locals.createdData = data.toJSON();
 
     return res.status(201).json({
       message: "Unit Budidaya created successfully",
       data: {
         unitBudidaya: data,
-        objekBudidaya: objekList,
+        objekBudidaya: createdObjekList,
       },
     });
   } catch (error) {
@@ -105,13 +123,7 @@ const updateUnitBudidaya = async (req, res) => {
   try {
     const unit = await UnitBudidaya.findOne({ where: { id: req.params.id } });
 
-    if (!unit) {
-      return res.status(404).json({
-        message: "Unit Budidaya not found",
-      });
-    }
-
-    if (unit.isDeleted) {
+    if (!unit || unit.isDeleted) {
       return res.status(404).json({
         message: "Unit Budidaya not found",
       });
@@ -122,6 +134,10 @@ const updateUnitBudidaya = async (req, res) => {
         id: req.params.id,
       },
     });
+
+    const updated = await UnitBudidaya.findOne({ where: { id: req.params.id } });
+
+    res.locals.updatedData = updated.toJSON();
 
     return res.status(201).json({
       message: "Unit Budidaya updated successfully",
@@ -138,6 +154,7 @@ const updateUnitBudidaya = async (req, res) => {
   }
 };
 
+// *PR kalau mau delete unit budidaya, harus perhatikan relasi yg dimiliki unit budidaya tsb !!!
 const deleteUnitBudidaya = async (req, res) => {
   try {
     const unit = await UnitBudidaya.findOne({
@@ -150,6 +167,9 @@ const deleteUnitBudidaya = async (req, res) => {
 
     unit.isDeleted = true;
     await unit.save();
+
+    res.locals.updatedData = unit;
+
     res.status(200).json({ message: "Unit Budidaya deleted successfully" });
   } catch (error) {
     console.error(error);
