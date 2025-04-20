@@ -1,4 +1,7 @@
-const User = require("../model/user");
+const e = require("express");
+const sequelize = require("../model/index");
+const db = sequelize.sequelize;
+const User = sequelize.User;
 
 const getAllUsers = async (req, res) => {
   try {
@@ -57,22 +60,36 @@ const updateUser = async (req, res) => {
 
 const deleteUser = async (req, res) => {
   try {
-    await User.destroy({
-      where: {
-        id: req.params.id,
-      },
-    });
+    const usr = await User.findOne({ where: { id: req.params.id, isDeleted: false } });
+    
+    if (!usr) {
+        return res.status(404).json({ message: "User not found" });
+    }
 
-    return res.json({
-      message: "User deleted",
-      data: null,
-    });
+      usr.isDeleted = true;
+      await usr.save();
+      res.status(200).json({ message: "User deleted successfully" });
   } catch (error) {
-    res.status(500).json({
-      message: error.message,
-      detail: error,
-    });
+      console.error(error);
+      res.status(500).json({ message: "Error deleting user", error });
   }
+  // try {
+  //   await User.destroy({
+  //     where: {
+  //       id: req.params.id,
+  //     },
+  //   });
+
+  //   return res.json({
+  //     message: "User deleted",
+  //     data: null,
+  //   });
+  // } catch (error) {
+  //   res.status(500).json({
+  //     message: error.message,
+  //     detail: error,
+  //   });
+  // }
 };
 
 module.exports = {

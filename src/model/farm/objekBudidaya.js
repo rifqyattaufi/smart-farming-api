@@ -9,6 +9,10 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
         unique: true,
       },
+      namaId: {
+        type: DataTypes.STRING,
+        allowNull: false,
+      },
       status: {
         type: DataTypes.BOOLEAN,
         defaultValue: true,
@@ -19,6 +23,14 @@ module.exports = (sequelize, DataTypes) => {
       isDeleted: {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
+      },
+      unitBudidayaId: {
+        type: DataTypes.UUID,
+        allowNull: false,
+        references: {
+          model: "UnitBudidaya",
+          key: "id",
+        },
       },
     },
     {

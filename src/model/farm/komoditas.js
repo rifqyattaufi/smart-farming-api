@@ -32,7 +32,7 @@ module.exports = (sequelize, DataTypes) => {
         Komoditas.hasMany(models.Panen);
 
         Komoditas.belongsTo(models.Satuan);
-        Komoditas.belongsTo(models.JenisBudaya);
+        Komoditas.belongsTo(models.JenisBudidaya);
     };
 
     return Komoditas;

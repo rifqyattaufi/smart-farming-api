@@ -36,6 +36,14 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
       },
+      jenisBudidayaId: {
+        type: DataTypes.UUID,
+        allowNull: false,
+        references: {
+          model: "JenisBudidaya",
+          key: "id"
+        }
+      }
     },
     {
       freezeTableName: true,
@@ -43,7 +51,7 @@ module.exports = (sequelize, DataTypes) => {
   );
 
   UnitBudidaya.associate = (models) => {
-    UnitBudidaya.belongsTo(models.JenisBudaya);
+    UnitBudidaya.belongsTo(models.JenisBudidaya);
 
     UnitBudidaya.hasMany(models.Laporan);
     UnitBudidaya.hasMany(models.ObjekBudidaya);
