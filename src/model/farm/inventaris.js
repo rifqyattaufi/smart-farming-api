@@ -22,6 +22,22 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
       },
+      satuanId: {
+          type: DataTypes.UUID,
+          allowNull: false,
+          references: {
+              model: "Satuan",
+              key: "id",
+          },
+      },
+      kategoriInventarisId: {
+        type: DataTypes.UUID,
+        allowNull: false,
+        references: {
+          model: "KategoriInventaris",
+          key: "id",
+        },
+      },
     },
     {
       freezeTableName: true,
