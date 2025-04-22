@@ -50,7 +50,9 @@ module.exports = (sequelize, DataTypes) => {
 
     Inventaris.belongsTo(models.KategoriInventaris, {
       foreignKey: "kategoriInventarisId",
+      as: "kategoriInventaris",
     });
+    
     Inventaris.belongsTo(models.Satuan);
   };
 

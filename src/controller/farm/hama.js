@@ -1,12 +1,12 @@
 const e = require("express");
 const sequelize = require("../../model/index");
 const db = sequelize.sequelize;
-const Inventaris = sequelize.Inventaris;
+const Hama = sequelize.Hama;
 const Op = sequelize.Sequelize.Op;
 
-const getAllInventaris = async (req, res) => {
+const getAllHama = async (req, res) => {
   try {
-    const data = await Inventaris.findAll({
+    const data = await Hama.findAll({
       where: {
         isDeleted: false,
       },
@@ -19,7 +19,7 @@ const getAllInventaris = async (req, res) => {
     }
       
     return res.status(200).json({
-      message: "Successfully retrieved all inventaris data",
+      message: "Successfully retrieved all hama data",
       data: data,
     });
   } catch (error) {
@@ -30,9 +30,9 @@ const getAllInventaris = async (req, res) => {
   }
 };
 
-const getInventarisById = async (req, res) => {
+const getHamaById = async (req, res) => {
   try {
-    const data = await Inventaris.findOne({ 
+    const data = await Hama.findOne({ 
       where: { 
         id: req.params.id,
         isDeleted: false
@@ -46,7 +46,7 @@ const getInventarisById = async (req, res) => {
     }
 
     return res.status(200).json({
-      message: "Successfully retrieved inventaris data",
+      message: "Successfully retrieved hama data",
       data: data,
     });
   } catch (error) {
@@ -57,11 +57,11 @@ const getInventarisById = async (req, res) => {
   }
 };
 
-const getInventarisByName = async (req, res) => {
+const getHamaByName = async (req, res) => {
   try {
     const { nama } = req.params;
 
-    const data = await Inventaris.findAll({
+    const data = await Hama.findAll({
       where: {
         nama: {
           [Op.like]: `%${nama}%`,
@@ -75,7 +75,7 @@ const getInventarisByName = async (req, res) => {
     }
 
     return res.status(200).json({
-      message: "Successfully retrieved inventaris data",
+      message: "Successfully retrieved hama data",
       data: data,
     });
   } catch (error) {
@@ -86,14 +86,14 @@ const getInventarisByName = async (req, res) => {
   }
 };
 
-const createInventaris = async (req, res) => {
+const createHama = async (req, res) => {
   try {
-    const data = await Inventaris.create(req.body);
+    const data = await JenisHama.create(req.body);
 
     res.locals.createdData = data.toJSON();
 
     return res.status(201).json({
-      message: "Successfully created new inventaris data",
+      message: "Successfully created new hama data",
       data: data,
     });
   } catch (error) {
@@ -104,9 +104,9 @@ const createInventaris = async (req, res) => {
   }
 };
 
-const updateInventaris = async (req, res) => {
+const updateHama = async (req, res) => {
   try {
-    const data = await Inventaris.findOne({ where: { id: req.params.id, isDeleted: false } });
+    const data = await JenisHama.findOne({ where: { id: req.params.id, isDeleted: false } });
 
     if (!data || data.isDeleted) {
       return res.status(404).json({
@@ -114,18 +114,18 @@ const updateInventaris = async (req, res) => {
       });
     }
 
-    await Inventaris.update(req.body, {
+    await Hama.update(req.body, {
       where: {
         id: req.params.id,
       },
     });
 
-    const updated = await Inventaris.findOne({ where: { id: req.params.id } });
+    const updated = await Hama.findOne({ where: { id: req.params.id } });
 
     res.locals.updatedData = updated.toJSON();
 
     return res.status(200).json({
-      message: "Successfully updated inventaris data",
+      message: "Successfully updated hama data",
       data: {
         id: req.params.id,
         ...req.body,
@@ -139,9 +139,9 @@ const updateInventaris = async (req, res) => {
   }
 };
 
-const deleteInventaris = async (req, res) => {
+const deleteHama = async (req, res) => {
   try {
-    const data = await Inventaris.findOne({ where: { id: req.params.id, isDeleted: false } });
+    const data = await Hama.findOne({ where: { id: req.params.id, isDeleted: false } });
     
     if (!data || data.isDeleted) {
       return res.status(404).json({ 
@@ -155,7 +155,7 @@ const deleteInventaris = async (req, res) => {
     res.locals.updatedData = data;
 
     return res.status(200).json({ 
-      message: "Successfully deleted inventaris data",
+      message: "Successfully deleted hama data",
     });
   } catch (error) {
     res.status(500).json({
@@ -166,10 +166,10 @@ const deleteInventaris = async (req, res) => {
 };
 
 module.exports = {
-  getAllInventaris,
-  getInventarisById,
-  getInventarisByName,
-  createInventaris,
-  updateInventaris,
-  deleteInventaris,
+  getAllHama,
+  getHamaById,
+  getHamaByName,
+  createHama,
+  updateHama,
+  deleteHama,
 };

@@ -9,11 +9,11 @@ const Satuan = sequelize.Satuan;
 
 router.get('/', SatuanController.getAllSatuan);
 
-router.post('/', auditMiddleware({ model: Satuan, tableName: "Satuan" }), SatuanController.createSatuan);
-
 router.get('/:id', SatuanController.getSatuanById);
 
 router.get('/search/:nama', SatuanController.getSatuanByName);
+
+router.post('/', auditMiddleware({ model: Satuan, tableName: "Satuan" }), SatuanController.createSatuan);
 
 router.put('/:id', auditMiddleware({ model: Satuan, tableName: "Satuan" }), SatuanController.updateSatuan);
 

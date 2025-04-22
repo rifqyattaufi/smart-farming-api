@@ -10,9 +10,15 @@ const getAllJenisBudidaya = async (req, res) => {
         isDeleted: false,
       },
     });
+
+    if (data.length === 0) {
+      return res.status(404).json({
+        message: "Data not found",
+      });
+    }
       
-    return res.json({
-      message: "Success get all Jenis Budidaya",
+    return res.status(200).json({
+      message: "Successfully retrieved all jenis budidaya data",
       data: data,
     });
   } catch (error) {
@@ -27,14 +33,43 @@ const getJenisBudidayaById = async (req, res) => {
   try {
     const data = await JenisBudidaya.findOne({ where: { id: req.params.id, isDeleted: false } });
 
-    if (!data) {
+    if (!data || data.isDeleted) {
       return res.status(404).json({
-        message: "Jenis Budidaya not found",
+        message: "Data not found",
       });
     }
 
-    return res.json({
-      message: "Success get Jenis Budidaya",
+    return res.status(200).json({
+      message: "Successfully retrieved jenis budidaya data",
+      data: data,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
+  }
+};
+
+const getJenisBudidayaByName = async (req, res) => {
+  try {
+    const { nama } = req.params;
+
+    const data = await JenisBudidaya.findAll({
+      where: {
+        nama: {
+          [Op.like]: `%${nama}%`,
+        },
+        isDeleted: false,
+      },
+    });
+
+    if (data.length === 0) {
+      return res.status(404).json({ message: "Data not found" });
+    }
+
+    return res.status(200).json({
+      message: "Successfully retrieved jenis budidaya data",
       data: data,
     });
   } catch (error) {
@@ -52,7 +87,7 @@ const createJenisBudidaya = async (req, res) => {
     res.locals.createdData = data.toJSON();
 
     return res.status(201).json({
-      message: "Jenis Budidaya created successfully",
+      message: "Successfully created new jenis budidaya data",
       data: data,
     });
   } catch (error) {
@@ -65,11 +100,11 @@ const createJenisBudidaya = async (req, res) => {
 
 const updateJenisBudidaya = async (req, res) => {
   try {
-    const data = await JenisBudidaya.findOne({ where: { id: req.params.id } });
+    const data = await JenisBudidaya.findOne({ where: { id: req.params.id, isDeleted: false } });
 
     if (!data || data.isDeleted) {
       return res.status(404).json({
-        message: "Jenis Budidaya not found",
+        message: "Data not found",
       });
     }
 
@@ -83,8 +118,8 @@ const updateJenisBudidaya = async (req, res) => {
 
     res.locals.updatedData = updated.toJSON();
 
-    return res.status(201).json({
-      message: "Jenis Budidaya updated successfully",
+    return res.status(200).json({
+      message: "Successfully updated jenis budidaya data",
       data: {
         id: req.params.id,
         ...req.body,
@@ -102,9 +137,9 @@ const deleteJenisBudidaya = async (req, res) => {
   try {
     const data = await JenisBudidaya.findOne({ where: { id: req.params.id, isDeleted: false } });
     
-    if (!data) {
+    if (!data || data.isDeleted) {
       return res.status(404).json({ 
-        message: "Jenis Budidaya not found" 
+        message: "Data not found" 
       });
     }
 
@@ -113,18 +148,21 @@ const deleteJenisBudidaya = async (req, res) => {
 
     res.locals.updatedData = data;
 
-    res.status(200).json({ 
+    return res.status(200).json({ 
       message: "Jenis Budidaya deleted successfully" 
     });
   } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Error deleting Jenis Budidaya", error });
+    res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
   }
 };
 
 module.exports = {
   getAllJenisBudidaya,
   getJenisBudidayaById,
+  getJenisBudidayaByName,
   createJenisBudidaya,
   updateJenisBudidaya,
   deleteJenisBudidaya,

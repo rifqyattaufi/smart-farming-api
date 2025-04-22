@@ -2,6 +2,7 @@ const e = require("express");
 const sequelize = require("../../model/index");
 const db = sequelize.sequelize;
 const Komoditas = sequelize.Komoditas;
+const Op = sequelize.Sequelize.Op;
 
 const getAllKomoditas = async (req, res) => {
   try {
@@ -10,9 +11,15 @@ const getAllKomoditas = async (req, res) => {
         isDeleted: false,
       },
     });
+
+    if (data.length === 0) {
+      return res.status(404).json({
+        message: "Data not found",
+      });
+    }
       
-    return res.json({
-      message: "Success get all Komoditas",
+    return res.status(200).json({
+      message: "Successfully retrieved all komoditas data",
       data: data,
     });
   } catch (error) {
@@ -32,14 +39,43 @@ const getKomoditasById = async (req, res) => {
       } 
     });
 
-    if (!data) {
+    if (!data || data.isDeleted) {
       return res.status(404).json({
-        message: "Komoditas not found",
+        message: "Data not found",
       });
     }
 
-    return res.json({
-      message: "Success get Komoditas",
+    return res.status(200).json({
+      message: "Successfully retrieved komoditas data",
+      data: data,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
+  }
+};
+
+const getKomoditasByName = async (req, res) => {
+  try {
+    const { nama } = req.params;
+
+    const data = await Komoditas.findAll({
+      where: {
+        nama: {
+          [Op.like]: `%${nama}%`,
+        },
+        isDeleted: false,
+      },
+    });
+
+    if (data.length === 0) {
+      return res.status(404).json({ message: "Data not found" });
+    }
+
+    return res.status(200).json({
+      message: "Successfully retrieved komoditas data",
       data: data,
     });
   } catch (error) {
@@ -57,7 +93,7 @@ const createKomoditas = async (req, res) => {
     res.locals.createdData = data.toJSON();
 
     return res.status(201).json({
-      message: "Komoditas created successfully",
+      message: "Successfully created new komoditas data",
       data: data,
     });
   } catch (error) {
@@ -70,11 +106,11 @@ const createKomoditas = async (req, res) => {
 
 const updateKomoditas = async (req, res) => {
   try {
-    const data = await Komoditas.findOne({ where: { id: req.params.id } });
+    const data = await Komoditas.findOne({ where: { id: req.params.id, isDeleted: false } });
 
     if (!data || data.isDeleted) {
       return res.status(404).json({
-        message: "Komoditas not found",
+        message: "Data not found",
       });
     }
 
@@ -88,8 +124,8 @@ const updateKomoditas = async (req, res) => {
 
     res.locals.updatedData = updated.toJSON();
 
-    return res.status(201).json({
-      message: "Komoditas updated successfully",
+    return res.status(200).json({
+      message: "Successfully updated komoditas data",
       data: {
         id: req.params.id,
         ...req.body,
@@ -107,9 +143,9 @@ const deleteKomoditas = async (req, res) => {
   try {
     const data = await Komoditas.findOne({ where: { id: req.params.id, isDeleted: false } });
     
-    if (!data) {
+    if (!data || data.isDeleted) {
       return res.status(404).json({ 
-        message: "Komoditas not found" 
+        message: "Data not found" 
       });
     }
 
@@ -118,18 +154,21 @@ const deleteKomoditas = async (req, res) => {
 
     res.locals.updatedData = data;
 
-    res.status(200).json({ 
-      message: "Komoditas deleted successfully" 
+    return res.status(200).json({ 
+      message: "Successfully deleted komoditas data",
     });
   } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Error deleting Komoditas", error });
+    res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
   }
 };
 
 module.exports = {
   getAllKomoditas,
   getKomoditasById,
+  getKomoditasByName,
   createKomoditas,
   updateKomoditas,
   deleteKomoditas,

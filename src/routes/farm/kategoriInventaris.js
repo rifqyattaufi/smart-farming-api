@@ -9,9 +9,11 @@ const KategoriInventaris = sequelize.KategoriInventaris;
 
 router.get('/', kategoriInventarisController.getAllkategoriInventaris);
 
-router.post('/', auditMiddleware({ model: KategoriInventaris, tableName: "KategoriInventaris" }), kategoriInventarisController.createkategoriInventaris);
-
 router.get('/:id', kategoriInventarisController.getkategoriInventarisById);
+
+router.get('/search/:nama', kategoriInventarisController.getkategoriInventarisByName);
+
+router.post('/', auditMiddleware({ model: KategoriInventaris, tableName: "KategoriInventaris" }), kategoriInventarisController.createkategoriInventaris);
 
 router.put('/:id', auditMiddleware({ model: KategoriInventaris, tableName: "KategoriInventaris" }), kategoriInventarisController.updatekategoriInventaris);
 

@@ -9,9 +9,11 @@ const JenisHama = sequelize.JenisHama;
 
 router.get('/', jenisHamaController.getAlljenisHama);
 
-router.post('/', auditMiddleware({ model: JenisHama, tableName: "JenisHama" }), jenisHamaController.createjenisHama);
-
 router.get('/:id', jenisHamaController.getjenisHamaById);
+
+router.get('/search/:nama', jenisHamaController.getjenisHamaByName);
+
+router.post('/', auditMiddleware({ model: JenisHama, tableName: "JenisHama" }), jenisHamaController.createjenisHama);
 
 router.put('/:id', auditMiddleware({ model: JenisHama, tableName: "JenisHama" }), jenisHamaController.updatejenisHama);
 

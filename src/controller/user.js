@@ -7,8 +7,14 @@ const getAllUsers = async (req, res) => {
   try {
     const data = await User.findAll();
 
-    return res.json({
-      message: "Success",
+    if (data.length === 0) {
+      return res.status(404).json({
+        message: "Data not found",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Successfully retrieved all user data",
       data: data,
     });
   } catch (error) {
@@ -19,12 +25,34 @@ const getAllUsers = async (req, res) => {
   }
 };
 
+const getUserById = async (req, res) => {
+  try {
+    const data = await User.findOne({ where: { id: req.params.id, isDeleted: false } });
+
+    if (!data || data.isDeleted) {
+      return res.status(404).json({
+        message: "Data not found",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Successfully retrieved user data",
+      data: data,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
+  }
+}
+
 const createUser = async (req, res) => {
   try {
     const data = await User.create(req.body);
 
     return res.status(201).json({
-      message: "User created",
+      message: "Successfully created new user data",
       data: data,
     });
   } catch (error) {
@@ -37,14 +65,23 @@ const createUser = async (req, res) => {
 
 const updateUser = async (req, res) => {
   try {
+
+    const data = await User.findOne({ where: { id: req.params.id } });
+
+    if (!data) {
+      return res.status(404).json({
+        message: "Data not found",
+      });
+    }
+
     await User.update(req.body, {
       where: {
         id: req.params.id,
       },
     });
 
-    return res.status(201).json({
-      message: "User updated",
+    return res.status(200).json({
+      message: "Successfully updated user data",
       data: {
         id: req.params.id,
         ...req.body,
@@ -60,40 +97,27 @@ const updateUser = async (req, res) => {
 
 const deleteUser = async (req, res) => {
   try {
-    const usr = await User.findOne({ where: { id: req.params.id, isDeleted: false } });
+    const data = await User.findOne({ where: { id: req.params.id, isDeleted: false } });
     
-    if (!usr) {
-        return res.status(404).json({ message: "User not found" });
+    if (!data || data.isDeleted) {
+        return res.status(404).json({ message: "Data not found" });
     }
 
-      usr.isDeleted = true;
-      await usr.save();
-      res.status(200).json({ message: "User deleted successfully" });
-  } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Error deleting user", error });
-  }
-  // try {
-  //   await User.destroy({
-  //     where: {
-  //       id: req.params.id,
-  //     },
-  //   });
+    data.isDeleted = true;
+    await data.save();
 
-  //   return res.json({
-  //     message: "User deleted",
-  //     data: null,
-  //   });
-  // } catch (error) {
-  //   res.status(500).json({
-  //     message: error.message,
-  //     detail: error,
-  //   });
-  // }
+    return res.status(200).json({ message: "Successfully deleted user data" });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
+  }
 };
 
 module.exports = {
   getAllUsers,
+  getUserById,
   createUser,
   updateUser,
   deleteUser,

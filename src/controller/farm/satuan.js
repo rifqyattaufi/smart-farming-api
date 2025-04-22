@@ -11,9 +11,15 @@ const getAllSatuan = async (req, res) => {
         isDeleted: false,
       },
     });
+
+    if (data.length === 0) {
+      return res.status(404).json({
+        message: "Data not found",
+      });
+    }
       
-    return res.json({
-      message: "Success get all Satuan",
+    return res.status(200).json({
+      message: "Successfully retrieved all satuan data",
       data: data,
     });
   } catch (error) {
@@ -26,10 +32,45 @@ const getAllSatuan = async (req, res) => {
 
 const getSatuanById = async (req, res) => {
   try {
-    const data = await Satuan.findOne({ where: { id: req.params.id } });
+    const data = await Satuan.findOne({ where: { id: req.params.id, isDeleted: false } });
 
-    return res.json({
-      message: "Success get Satuan",
+    if (!data || data.isDeleted) {
+      return res.status(404).json({
+        message: "Data not found",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Successfully retrieved satuan data",
+      data: data,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
+  }
+};
+
+const getSatuanByName = async (req, res) => {
+  try {
+    const { nama } = req.params;
+
+    const data = await Satuan.findAll({
+      where: {
+        nama: {
+          [Op.like]: `%${nama}%`,
+        },
+        isDeleted: false,
+      },
+    });
+
+    if (data.length === 0) {
+      return res.status(404).json({ message: "Data not found" });
+    }
+
+    return res.status(200).json({
+      message: "Successfully retrieved satuan data",
       data: data,
     });
   } catch (error) {
@@ -47,7 +88,7 @@ const createSatuan = async (req, res) => {
     res.locals.createdData = data.toJSON();
 
     return res.status(201).json({
-      message: "Satuan created successfully",
+      message: "Successfully created new satuan data",
       data: data,
     });
   } catch (error) {
@@ -60,11 +101,11 @@ const createSatuan = async (req, res) => {
 
 const updateSatuan = async (req, res) => {
   try {
-    const data = await Satuan.findOne({ where: { id: req.params.id } });
+    const data = await Satuan.findOne({ where: { id: req.params.id, isDeleted: false } });
 
     if (!data || data.isDeleted) {
       return res.status(404).json({
-        message: "Satuan not found",
+        message: "Data not found",
       });
     }
 
@@ -78,8 +119,8 @@ const updateSatuan = async (req, res) => {
 
     res.locals.updatedData = updated.toJSON();
 
-    return res.status(201).json({
-      message: "Satuan updated successfully",
+    return res.status(200).json({
+      message: "Successfully updated satuan data",
       data: {
         id: req.params.id,
         ...req.body,
@@ -97,9 +138,9 @@ const deleteSatuan = async (req, res) => {
   try {
     const data = await Satuan.findOne({ where: { id: req.params.id, isDeleted: false } });
     
-    if (!data) {
+    if (!data || data.isDeleted) {
       return res.status(404).json({ 
-        message: "Satuan not found" 
+        message: "Data not found" 
       });
     }
 
@@ -108,23 +149,21 @@ const deleteSatuan = async (req, res) => {
 
     res.locals.updatedData = data;
 
-    res.status(200).json({ 
-      message: "Satuan deleted successfully" 
+    return res.status(200).json({ 
+      message: "Successfully deleted satuan data"
     });
   } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Error deleting Satuan", error });
+    res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
   }
-};
-
-const getSatuanByName = async (req, res) => {
-    
 };
 
 module.exports = {
   getAllSatuan,
-  getSatuanByName,
   getSatuanById,
+  getSatuanByName,
   createSatuan,
   updateSatuan,
   deleteSatuan,

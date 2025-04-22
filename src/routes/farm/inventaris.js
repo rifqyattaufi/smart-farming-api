@@ -9,9 +9,11 @@ const Inventaris = sequelize.Inventaris;
 
 router.get('/', inventarisController.getAllInventaris);
 
-router.post('/', auditMiddleware({ model: Inventaris, tableName: "Inventaris" }), inventarisController.createInventaris);
-
 router.get('/:id', inventarisController.getInventarisById);
+
+router.get('/search/:nama', inventarisController.getInventarisByName);
+
+router.post('/', auditMiddleware({ model: Inventaris, tableName: "Inventaris" }), inventarisController.createInventaris);
 
 router.put('/:id', auditMiddleware({ model: Inventaris, tableName: "Inventaris" }), inventarisController.updateInventaris);
 

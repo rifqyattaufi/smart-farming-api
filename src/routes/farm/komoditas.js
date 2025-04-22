@@ -9,9 +9,11 @@ const Komoditas = sequelize.Komoditas;
 
 router.get('/', komoditasController.getAllKomoditas);
 
-router.post('/', auditMiddleware({ model: Komoditas, tableName: "Komoditas" }), komoditasController.createKomoditas);
-
 router.get('/:id', komoditasController.getKomoditasById);
+
+router.get('/search/:nama', komoditasController.getKomoditasByName);
+
+router.post('/', auditMiddleware({ model: Komoditas, tableName: "Komoditas" }), komoditasController.createKomoditas);
 
 router.put('/:id', auditMiddleware({ model: Komoditas, tableName: "Komoditas" }), komoditasController.updateKomoditas);
 

@@ -9,9 +9,11 @@ const JenisBudidaya = sequelize.JenisBudidaya;
 
 router.get('/', JenisBudidayaController.getAllJenisBudidaya);
 
-router.post('/', auditMiddleware({ model: JenisBudidaya, tableName: "JenisBudidaya" }), JenisBudidayaController.createJenisBudidaya);
-
 router.get('/:id', JenisBudidayaController.getJenisBudidayaById);
+
+router.get('/search/:nama', JenisBudidayaController.getJenisBudidayaByName);
+
+router.post('/', auditMiddleware({ model: JenisBudidaya, tableName: "JenisBudidaya" }), JenisBudidayaController.createJenisBudidaya);
 
 router.put('/:id', auditMiddleware({ model: JenisBudidaya, tableName: "JenisBudidaya" }), JenisBudidayaController.updateJenisBudidaya);
 

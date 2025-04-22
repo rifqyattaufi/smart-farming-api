@@ -1,7 +1,9 @@
 const e = require("express");
 const sequelize = require("../../model/index");
+const { get } = require("../../routes/farm/satuan");
 const db = sequelize.sequelize;
 const KategoriInventaris = sequelize.KategoriInventaris;
+const Op = sequelize.Sequelize.Op;
 
 const getAllkategoriInventaris = async (req, res) => {
   try {
@@ -10,9 +12,15 @@ const getAllkategoriInventaris = async (req, res) => {
         isDeleted: false,
       },
     });
+
+    if (data.length === 0) {
+      return res.status(404).json({
+        message: "Data not found",
+      });
+    }
       
-    return res.json({
-      message: "Success get all Kategori Inventaris",
+    return res.status(200).json({
+      message: "Successfully retrieved all kategori inventaris data",
       data: data,
     });
   } catch (error) {
@@ -32,14 +40,43 @@ const getkategoriInventarisById = async (req, res) => {
       } 
     });
 
-    if (!data) {
+    if (!data || data.isDeleted) {
       return res.status(404).json({
-        message: "Kategori Inventaris not found",
+        message: "Data not found",
       });
     }
 
-    return res.json({
-      message: "Success get Kategori Inventaris",
+    return res.status(200).json({
+      message: "Successfully retrieved kategori inventaris data",
+      data: data,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
+  }
+};
+
+const getkategoriInventarisByName = async (req, res) => {
+  try {
+    const { nama } = req.params;
+
+    const data = await KategoriInventaris.findAll({
+      where: {
+        nama: {
+          [Op.like]: `%${nama}%`,
+        },
+        isDeleted: false,
+      },
+    });
+
+    if (data.length === 0) {
+      return res.status(404).json({ message: "Data not found" });
+    }
+
+    return res.status(200).json({
+      message: "Successfully retrieved kategori inventaris data",
       data: data,
     });
   } catch (error) {
@@ -57,7 +94,7 @@ const createkategoriInventaris = async (req, res) => {
     res.locals.createdData = data.toJSON();
 
     return res.status(201).json({
-      message: "Kategori Inventaris created successfully",
+      message: "Successfully created new kategori inventaris data",
       data: data,
     });
   } catch (error) {
@@ -70,11 +107,11 @@ const createkategoriInventaris = async (req, res) => {
 
 const updatekategoriInventaris = async (req, res) => {
   try {
-    const data = await KategoriInventaris.findOne({ where: { id: req.params.id } });
+    const data = await KategoriInventaris.findOne({ where: { id: req.params.id, isDeleted: false } });
 
     if (!data || data.isDeleted) {
       return res.status(404).json({
-        message: "Kategori Inventaris not found",
+        message: "Data not found",
       });
     }
 
@@ -88,8 +125,8 @@ const updatekategoriInventaris = async (req, res) => {
 
     res.locals.updatedData = updated.toJSON();
 
-    return res.status(201).json({
-      message: "Kategori Inventaris updated successfully",
+    return res.status(200).json({
+      message: "Successfully updated kategori inventaris data",
       data: {
         id: req.params.id,
         ...req.body,
@@ -107,9 +144,9 @@ const deletekategoriInventaris = async (req, res) => {
   try {
     const data = await KategoriInventaris.findOne({ where: { id: req.params.id, isDeleted: false } });
     
-    if (!data) {
+    if (!data || data.isDeleted) {
       return res.status(404).json({ 
-        message: "Kategori Inventaris not found" 
+        message: "Data not found" 
       });
     }
 
@@ -118,18 +155,21 @@ const deletekategoriInventaris = async (req, res) => {
 
     res.locals.updatedData = data;
 
-    res.status(200).json({ 
-      message: "Kategori Inventaris deleted successfully" 
+    return res.status(200).json({ 
+      message: "Successfully deleted kategori inventaris data",
     });
   } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Error deleting Kategori Inventaris", error });
+    res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
   }
 };
 
 module.exports = {
   getAllkategoriInventaris,
   getkategoriInventarisById,
+  getkategoriInventarisByName,
   createkategoriInventaris,
   updatekategoriInventaris,
   deletekategoriInventaris,

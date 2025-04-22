@@ -2,6 +2,7 @@ const e = require("express");
 const sequelize = require("../../model/index");
 const db = sequelize.sequelize;
 const JenisHama = sequelize.JenisHama;
+const Op = sequelize.Sequelize.Op;
 
 const getAlljenisHama = async (req, res) => {
   try {
@@ -10,9 +11,15 @@ const getAlljenisHama = async (req, res) => {
         isDeleted: false,
       },
     });
+
+    if (data.length === 0) {
+      return res.status(404).json({
+        message: "Data not found",
+      });
+    }
       
-    return res.json({
-      message: "Success get all Jenis Hama",
+    return res.status(200).json({
+      message: "Successfully retrieved all jenis hama data",
       data: data,
     });
   } catch (error) {
@@ -32,14 +39,43 @@ const getjenisHamaById = async (req, res) => {
       } 
     });
 
-    if (!data) {
+    if (!data || data.isDeleted) {
       return res.status(404).json({
-        message: "Jenis Hama not found",
+        message: "Data not found",
       });
     }
 
-    return res.json({
-      message: "Success get Jenis Hama",
+    return res.status(200).json({
+      message: "Successfully retrieved jenis hama data",
+      data: data,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
+  }
+};
+
+const getjenisHamaByName = async (req, res) => {
+  try {
+    const { nama } = req.params;
+
+    const data = await JenisHama.findAll({
+      where: {
+        nama: {
+          [Op.like]: `%${nama}%`,
+        },
+        isDeleted: false,
+      },
+    });
+
+    if (data.length === 0) {
+      return res.status(404).json({ message: "Data not found" });
+    }
+
+    return res.status(200).json({
+      message: "Successfully retrieved jenis hama data",
       data: data,
     });
   } catch (error) {
@@ -57,7 +93,7 @@ const createjenisHama = async (req, res) => {
     res.locals.createdData = data.toJSON();
 
     return res.status(201).json({
-      message: "Jenis Hama created successfully",
+      message: "Successfully created new jenis hama data",
       data: data,
     });
   } catch (error) {
@@ -70,11 +106,11 @@ const createjenisHama = async (req, res) => {
 
 const updatejenisHama = async (req, res) => {
   try {
-    const data = await JenisHama.findOne({ where: { id: req.params.id } });
+    const data = await JenisHama.findOne({ where: { id: req.params.id, isDeleted: false } });
 
     if (!data || data.isDeleted) {
       return res.status(404).json({
-        message: "Jenis Hama not found",
+        message: "Data not found",
       });
     }
 
@@ -88,8 +124,8 @@ const updatejenisHama = async (req, res) => {
 
     res.locals.updatedData = updated.toJSON();
 
-    return res.status(201).json({
-      message: "Jenis Hama updated successfully",
+    return res.status(200).json({
+      message: "Successfully updated jenis hama data",
       data: {
         id: req.params.id,
         ...req.body,
@@ -107,9 +143,9 @@ const deletejenisHama = async (req, res) => {
   try {
     const data = await JenisHama.findOne({ where: { id: req.params.id, isDeleted: false } });
     
-    if (!data) {
+    if (!data || data.isDeleted) {
       return res.status(404).json({ 
-        message: "Jenis Hama not found" 
+        message: "Data not found" 
       });
     }
 
@@ -118,18 +154,21 @@ const deletejenisHama = async (req, res) => {
 
     res.locals.updatedData = data;
 
-    res.status(200).json({ 
-      message: "Jenis Hama deleted successfully" 
+    return res.status(200).json({ 
+      message: "Successfully deleted jenis hama data",
     });
   } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Error deleting Jenis Hama", error });
+    res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
   }
 };
 
 module.exports = {
   getAlljenisHama,
   getjenisHamaById,
+  getjenisHamaByName,
   createjenisHama,
   updatejenisHama,
   deletejenisHama,
