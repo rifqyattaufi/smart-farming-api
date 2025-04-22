@@ -1,18 +1,19 @@
 const e = require("express");
 const sequelize = require("../../model/index");
 const db = sequelize.sequelize;
-const JenisBudidaya = sequelize.JenisBudidaya;
+const Satuan = sequelize.Satuan;
+const Op = sequelize.Sequelize.Op;
 
-const getAllJenisBudidaya = async (req, res) => {
+const getAllSatuan = async (req, res) => {
   try {
-    const data = await JenisBudidaya.findAll({
+    const data = await Satuan.findAll({
       where: {
         isDeleted: false,
       },
     });
       
     return res.json({
-      message: "Success get all Jenis Budidaya",
+      message: "Success get all Satuan",
       data: data,
     });
   } catch (error) {
@@ -23,18 +24,12 @@ const getAllJenisBudidaya = async (req, res) => {
   }
 };
 
-const getJenisBudidayaById = async (req, res) => {
+const getSatuanById = async (req, res) => {
   try {
-    const data = await JenisBudidaya.findOne({ where: { id: req.params.id, isDeleted: false } });
-
-    if (!data) {
-      return res.status(404).json({
-        message: "Jenis Budidaya not found",
-      });
-    }
+    const data = await Satuan.findOne({ where: { id: req.params.id } });
 
     return res.json({
-      message: "Success get Jenis Budidaya",
+      message: "Success get Satuan",
       data: data,
     });
   } catch (error) {
@@ -45,14 +40,14 @@ const getJenisBudidayaById = async (req, res) => {
   }
 };
 
-const createJenisBudidaya = async (req, res) => {
+const createSatuan = async (req, res) => {
   try {
-    const data = await JenisBudidaya.create(req.body);
+    const data = await Satuan.create(req.body);
 
     res.locals.createdData = data.toJSON();
 
     return res.status(201).json({
-      message: "Jenis Budidaya created successfully",
+      message: "Satuan created successfully",
       data: data,
     });
   } catch (error) {
@@ -63,28 +58,28 @@ const createJenisBudidaya = async (req, res) => {
   }
 };
 
-const updateJenisBudidaya = async (req, res) => {
+const updateSatuan = async (req, res) => {
   try {
-    const data = await JenisBudidaya.findOne({ where: { id: req.params.id } });
+    const data = await Satuan.findOne({ where: { id: req.params.id } });
 
     if (!data || data.isDeleted) {
       return res.status(404).json({
-        message: "Jenis Budidaya not found",
+        message: "Satuan not found",
       });
     }
 
-    await JenisBudidaya.update(req.body, {
+    await Satuan.update(req.body, {
       where: {
         id: req.params.id,
       },
     });
 
-    const updated = await JenisBudidaya.findOne({ where: { id: req.params.id } });
+    const updated = await Satuan.findOne({ where: { id: req.params.id } });
 
     res.locals.updatedData = updated.toJSON();
 
     return res.status(201).json({
-      message: "Jenis Budidaya updated successfully",
+      message: "Satuan updated successfully",
       data: {
         id: req.params.id,
         ...req.body,
@@ -98,13 +93,13 @@ const updateJenisBudidaya = async (req, res) => {
   }
 };
 
-const deleteJenisBudidaya = async (req, res) => {
+const deleteSatuan = async (req, res) => {
   try {
-    const data = await JenisBudidaya.findOne({ where: { id: req.params.id, isDeleted: false } });
+    const data = await Satuan.findOne({ where: { id: req.params.id, isDeleted: false } });
     
     if (!data) {
       return res.status(404).json({ 
-        message: "Jenis Budidaya not found" 
+        message: "Satuan not found" 
       });
     }
 
@@ -114,18 +109,23 @@ const deleteJenisBudidaya = async (req, res) => {
     res.locals.updatedData = data;
 
     res.status(200).json({ 
-      message: "Jenis Budidaya deleted successfully" 
+      message: "Satuan deleted successfully" 
     });
   } catch (error) {
       console.error(error);
-      res.status(500).json({ message: "Error deleting Jenis Budidaya", error });
+      res.status(500).json({ message: "Error deleting Satuan", error });
   }
 };
 
+const getSatuanByName = async (req, res) => {
+    
+};
+
 module.exports = {
-  getAllJenisBudidaya,
-  getJenisBudidayaById,
-  createJenisBudidaya,
-  updateJenisBudidaya,
-  deleteJenisBudidaya,
+  getAllSatuan,
+  getSatuanByName,
+  getSatuanById,
+  createSatuan,
+  updateSatuan,
+  deleteSatuan,
 };

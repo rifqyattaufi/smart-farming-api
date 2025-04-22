@@ -8,7 +8,11 @@ const Logs = sequelize.Logs;
 
 const getAllUnitBudidaya = async (req, res) => {
   try {
-    const data = await UnitBudidaya.findAll();
+    const data = await UnitBudidaya.findAll({
+      where: {
+        isDeleted: false,
+      },
+    });
 
     return res.json({
       message: "Success get all Unit Budidaya",
@@ -24,7 +28,13 @@ const getAllUnitBudidaya = async (req, res) => {
 
 const getUnitBudidayaById = async (req, res) => {
   try {
-    const unit = await UnitBudidaya.findOne({ where: { id: req.params.id } });
+    const data = await UnitBudidaya.findOne({ where: { id: req.params.id, isDeleted: false } });
+
+    if (!data) {
+      return res.status(404).json({
+        message: "Unit Budidaya not found",
+      });
+    }
 
     return res.json({
       message: "Success get Unit Budidaya",
@@ -121,9 +131,9 @@ const createUnitBudidaya = async (req, res) => {
 
 const updateUnitBudidaya = async (req, res) => {
   try {
-    const unit = await UnitBudidaya.findOne({ where: { id: req.params.id } });
+    const data = await UnitBudidaya.findOne({ where: { id: req.params.id } });
 
-    if (!unit || unit.isDeleted) {
+    if (!data || data.isDeleted) {
       return res.status(404).json({
         message: "Unit Budidaya not found",
       });
@@ -157,18 +167,18 @@ const updateUnitBudidaya = async (req, res) => {
 // *PR kalau mau delete unit budidaya, harus perhatikan relasi yg dimiliki unit budidaya tsb !!!
 const deleteUnitBudidaya = async (req, res) => {
   try {
-    const unit = await UnitBudidaya.findOne({
+    const data = await UnitBudidaya.findOne({
       where: { id: req.params.id, isDeleted: false },
     });
 
-    if (!unit) {
+    if (!data) {
       return res.status(404).json({ message: "Unit Budidaya not found" });
     }
 
-    unit.isDeleted = true;
-    await unit.save();
+    data.isDeleted = true;
+    await data.save();
 
-    res.locals.updatedData = unit;
+    res.locals.updatedData = data;
 
     res.status(200).json({ message: "Unit Budidaya deleted successfully" });
   } catch (error) {

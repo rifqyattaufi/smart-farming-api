@@ -1,18 +1,18 @@
 const e = require("express");
 const sequelize = require("../../model/index");
 const db = sequelize.sequelize;
-const JenisBudidaya = sequelize.JenisBudidaya;
+const JenisHama = sequelize.JenisHama;
 
-const getAllJenisBudidaya = async (req, res) => {
+const getAlljenisHama = async (req, res) => {
   try {
-    const data = await JenisBudidaya.findAll({
+    const data = await JenisHama.findAll({
       where: {
         isDeleted: false,
       },
     });
       
     return res.json({
-      message: "Success get all Jenis Budidaya",
+      message: "Success get all Jenis Hama",
       data: data,
     });
   } catch (error) {
@@ -23,18 +23,23 @@ const getAllJenisBudidaya = async (req, res) => {
   }
 };
 
-const getJenisBudidayaById = async (req, res) => {
+const getjenisHamaById = async (req, res) => {
   try {
-    const data = await JenisBudidaya.findOne({ where: { id: req.params.id, isDeleted: false } });
+    const data = await JenisHama.findOne({ 
+      where: { 
+        id: req.params.id,
+        isDeleted: false
+      } 
+    });
 
     if (!data) {
       return res.status(404).json({
-        message: "Jenis Budidaya not found",
+        message: "Jenis Hama not found",
       });
     }
 
     return res.json({
-      message: "Success get Jenis Budidaya",
+      message: "Success get Jenis Hama",
       data: data,
     });
   } catch (error) {
@@ -45,14 +50,14 @@ const getJenisBudidayaById = async (req, res) => {
   }
 };
 
-const createJenisBudidaya = async (req, res) => {
+const createjenisHama = async (req, res) => {
   try {
-    const data = await JenisBudidaya.create(req.body);
+    const data = await JenisHama.create(req.body);
 
     res.locals.createdData = data.toJSON();
 
     return res.status(201).json({
-      message: "Jenis Budidaya created successfully",
+      message: "Jenis Hama created successfully",
       data: data,
     });
   } catch (error) {
@@ -63,28 +68,28 @@ const createJenisBudidaya = async (req, res) => {
   }
 };
 
-const updateJenisBudidaya = async (req, res) => {
+const updatejenisHama = async (req, res) => {
   try {
-    const data = await JenisBudidaya.findOne({ where: { id: req.params.id } });
+    const data = await JenisHama.findOne({ where: { id: req.params.id } });
 
     if (!data || data.isDeleted) {
       return res.status(404).json({
-        message: "Jenis Budidaya not found",
+        message: "Jenis Hama not found",
       });
     }
 
-    await JenisBudidaya.update(req.body, {
+    await JenisHama.update(req.body, {
       where: {
         id: req.params.id,
       },
     });
 
-    const updated = await JenisBudidaya.findOne({ where: { id: req.params.id } });
+    const updated = await JenisHama.findOne({ where: { id: req.params.id } });
 
     res.locals.updatedData = updated.toJSON();
 
     return res.status(201).json({
-      message: "Jenis Budidaya updated successfully",
+      message: "Jenis Hama updated successfully",
       data: {
         id: req.params.id,
         ...req.body,
@@ -98,13 +103,13 @@ const updateJenisBudidaya = async (req, res) => {
   }
 };
 
-const deleteJenisBudidaya = async (req, res) => {
+const deletejenisHama = async (req, res) => {
   try {
-    const data = await JenisBudidaya.findOne({ where: { id: req.params.id, isDeleted: false } });
+    const data = await JenisHama.findOne({ where: { id: req.params.id, isDeleted: false } });
     
     if (!data) {
       return res.status(404).json({ 
-        message: "Jenis Budidaya not found" 
+        message: "Jenis Hama not found" 
       });
     }
 
@@ -114,18 +119,18 @@ const deleteJenisBudidaya = async (req, res) => {
     res.locals.updatedData = data;
 
     res.status(200).json({ 
-      message: "Jenis Budidaya deleted successfully" 
+      message: "Jenis Hama deleted successfully" 
     });
   } catch (error) {
       console.error(error);
-      res.status(500).json({ message: "Error deleting Jenis Budidaya", error });
+      res.status(500).json({ message: "Error deleting Jenis Hama", error });
   }
 };
 
 module.exports = {
-  getAllJenisBudidaya,
-  getJenisBudidayaById,
-  createJenisBudidaya,
-  updateJenisBudidaya,
-  deleteJenisBudidaya,
+  getAlljenisHama,
+  getjenisHamaById,
+  createjenisHama,
+  updatejenisHama,
+  deletejenisHama,
 };
