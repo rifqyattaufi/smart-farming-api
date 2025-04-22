@@ -6,6 +6,7 @@ const unitBudidayaRouter = require("./unitBudidaya");
 const satuanRouter = require("./satuan");
 const kategoriInventarisRouter = require("./kategoriInventaris");
 const jenisHamaRouter = require("./jenisHama");
+const komoditasRouter = require("./komoditas");
 
 const { authenticate } = require("../../middleware/validation");
 
@@ -14,5 +15,6 @@ router.use("/unit-budidaya", authenticate(), unitBudidayaRouter);
 router.use("/satuan", authenticate(), satuanRouter);
 router.use("/kategori-inventaris", authenticate(), kategoriInventarisRouter);
 router.use("/jenis-hama", authenticate(), jenisHamaRouter);
+router.use("/komoditas", authenticate(), komoditasRouter);
 
 module.exports = router;
