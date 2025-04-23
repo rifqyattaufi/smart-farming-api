@@ -19,7 +19,7 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
       },
-      jenisHamaId: {
+      jenisHamaID: {
           type: DataTypes.UUID,
           allowNull: false,
           references: {
@@ -27,7 +27,7 @@ module.exports = (sequelize, DataTypes) => {
               key: "id",
           },
       },
-      laporanId: {
+      laporanID: {
         type: DataTypes.UUID,
         allowNull: false,
         references: {

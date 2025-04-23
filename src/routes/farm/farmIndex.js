@@ -9,6 +9,7 @@ const jenisHamaRouter = require("./jenisHama");
 const komoditasRouter = require("./komoditas");
 const inventarisRouter = require("./inventaris");
 const hamaRouter = require("./hama");
+const laporanRouter = require("./laporan");
 
 const { authenticate } = require("../../middleware/validation");
 
@@ -16,10 +17,11 @@ router.use("/jenis-budidaya", authenticate(), jenisBudidayaRouter);
 router.use("/unit-budidaya", authenticate(), unitBudidayaRouter);
 router.use("/komoditas", authenticate(), komoditasRouter);
 router.use("/jenis-hama", authenticate(), jenisHamaRouter);
-router.use("/hama", authenticate(), hamaRouter);
 
 router.use("/satuan", authenticate(), satuanRouter);
 router.use("/kategori-inventaris", authenticate(), kategoriInventarisRouter);
 router.use("/inventaris", authenticate(), inventarisRouter);
+
+router.use("/laporan", authenticate(), laporanRouter);
 
 module.exports = router;
