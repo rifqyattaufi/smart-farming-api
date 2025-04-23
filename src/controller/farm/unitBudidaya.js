@@ -1,4 +1,3 @@
-const e = require("express");
 const sequelize = require("../../model/index");
 const db = sequelize.sequelize;
 const JenisBudidaya = sequelize.JenisBudidaya;
@@ -35,7 +34,9 @@ const getAllUnitBudidaya = async (req, res) => {
 
 const getUnitBudidayaById = async (req, res) => {
   try {
-    const data = await UnitBudidaya.findOne({ where: { id: req.params.id, isDeleted: false } });
+    const data = await UnitBudidaya.findOne({
+      where: { id: req.params.id, isDeleted: false },
+    });
 
     if (!data || data.isDeleted) {
       return res.status(404).json({
@@ -104,14 +105,16 @@ const createUnitBudidaya = async (req, res) => {
     const data = await UnitBudidaya.create(
       {
         ...req.body,
+        JenisBudidayaId: jenisBudidayaId,
         isDeleted: false,
       },
       { transaction: t }
     );
 
     let objekList = [];
+    let createdObjekList = [];
 
-    if (tipe === "individu") {
+    if (tipe == "individu") {
       objekList = Array.from({ length: jumlah }, (_, i) => {
         const prefix = jenisBudidaya.tipe === "hewan" ? "Ternak" : "Tanaman";
         const deskripsi = `${prefix} ${jenisBudidaya.nama} pada ${
@@ -119,7 +122,7 @@ const createUnitBudidaya = async (req, res) => {
         } nomor ${i + 1}`;
 
         return {
-          unitBudidayaId: data.id,
+          UnitBudidayaId: data.id,
           namaId: `${jenisBudidaya.nama} #${i + 1}`,
           status: true,
           deskripsi,
@@ -142,7 +145,6 @@ const createUnitBudidaya = async (req, res) => {
           changedBy: req.user?.id,
         });
       }
-      
     }
 
     await t.commit();
@@ -167,7 +169,9 @@ const createUnitBudidaya = async (req, res) => {
 
 const updateUnitBudidaya = async (req, res) => {
   try {
-    const data = await UnitBudidaya.findOne({ where: { id: req.params.id, isDeleted: false } });
+    const data = await UnitBudidaya.findOne({
+      where: { id: req.params.id, isDeleted: false },
+    });
 
     if (!data || data.isDeleted) {
       return res.status(404).json({
@@ -181,7 +185,9 @@ const updateUnitBudidaya = async (req, res) => {
       },
     });
 
-    const updated = await UnitBudidaya.findOne({ where: { id: req.params.id } });
+    const updated = await UnitBudidaya.findOne({
+      where: { id: req.params.id },
+    });
 
     res.locals.updatedData = updated.toJSON();
 
@@ -216,7 +222,9 @@ const deleteUnitBudidaya = async (req, res) => {
 
     res.locals.updatedData = data;
 
-    return res.status(200).json({ message: "Successfully deleted unit budidaya data" });
+    return res
+      .status(200)
+      .json({ message: "Successfully deleted unit budidaya data" });
   } catch (error) {
     res.status(500).json({
       message: error.message,

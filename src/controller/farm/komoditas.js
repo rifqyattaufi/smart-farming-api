@@ -17,7 +17,7 @@ const getAllKomoditas = async (req, res) => {
         message: "Data not found",
       });
     }
-      
+
     return res.status(200).json({
       message: "Successfully retrieved all komoditas data",
       data: data,
@@ -32,11 +32,11 @@ const getAllKomoditas = async (req, res) => {
 
 const getKomoditasById = async (req, res) => {
   try {
-    const data = await Komoditas.findOne({ 
-      where: { 
+    const data = await Komoditas.findOne({
+      where: {
         id: req.params.id,
-        isDeleted: false
-      } 
+        isDeleted: false,
+      },
     });
 
     if (!data || data.isDeleted) {
@@ -88,7 +88,11 @@ const getKomoditasByName = async (req, res) => {
 
 const createKomoditas = async (req, res) => {
   try {
-    const data = await Komoditas.create(req.body);
+    const data = await Komoditas.create({
+      ...req.body,
+      SatuanId: req.body.satuanId,
+      JenisBudidayaId: req.body.jenisBudidayaId,
+    });
 
     res.locals.createdData = data.toJSON();
 
@@ -106,7 +110,9 @@ const createKomoditas = async (req, res) => {
 
 const updateKomoditas = async (req, res) => {
   try {
-    const data = await Komoditas.findOne({ where: { id: req.params.id, isDeleted: false } });
+    const data = await Komoditas.findOne({
+      where: { id: req.params.id, isDeleted: false },
+    });
 
     if (!data || data.isDeleted) {
       return res.status(404).json({
@@ -141,11 +147,13 @@ const updateKomoditas = async (req, res) => {
 
 const deleteKomoditas = async (req, res) => {
   try {
-    const data = await Komoditas.findOne({ where: { id: req.params.id, isDeleted: false } });
-    
+    const data = await Komoditas.findOne({
+      where: { id: req.params.id, isDeleted: false },
+    });
+
     if (!data || data.isDeleted) {
-      return res.status(404).json({ 
-        message: "Data not found" 
+      return res.status(404).json({
+        message: "Data not found",
       });
     }
 
@@ -154,7 +162,7 @@ const deleteKomoditas = async (req, res) => {
 
     res.locals.updatedData = data;
 
-    return res.status(200).json({ 
+    return res.status(200).json({
       message: "Successfully deleted komoditas data",
     });
   } catch (error) {

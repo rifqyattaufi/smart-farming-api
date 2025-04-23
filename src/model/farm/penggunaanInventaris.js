@@ -18,22 +18,6 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
       },
-      inventarisId: {
-        type: DataTypes.UUID,
-        allowNull: false,
-        references: {
-          model: "Inventaris",
-          key: "id",
-        },
-      },
-      laporanId: {
-        type: DataTypes.UUID,
-        allowNull: false,
-        references: {
-          model: "Laporan",
-          key: "id",
-        },
-      },
     },
     {
       freezeTableName: true,
@@ -41,7 +25,9 @@ module.exports = (sequelize, DataTypes) => {
   );
 
   PenggunaanInventaris.associate = (models) => {
-    PenggunaanInventaris.belongsTo(models.Inventaris);
+    PenggunaanInventaris.belongsTo(models.Inventaris, {
+      foreignKey: "inventarisId",
+    });
     PenggunaanInventaris.belongsTo(models.Laporan);
   };
 

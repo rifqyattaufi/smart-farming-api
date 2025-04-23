@@ -1,11 +1,12 @@
 const e = require("express");
 const sequelize = require("../../model/index");
 const { get } = require("../../routes/farm/satuan");
+const { dataValid } = require("../../validation/dataValidation");
 const db = sequelize.sequelize;
 const KategoriInventaris = sequelize.KategoriInventaris;
 const Op = sequelize.Sequelize.Op;
 
-const getAllkategoriInventaris = async (req, res) => {
+const getAllKategoriInventaris = async (req, res) => {
   try {
     const data = await KategoriInventaris.findAll({
       where: {
@@ -18,7 +19,7 @@ const getAllkategoriInventaris = async (req, res) => {
         message: "Data not found",
       });
     }
-      
+
     return res.status(200).json({
       message: "Successfully retrieved all kategori inventaris data",
       data: data,
@@ -31,13 +32,13 @@ const getAllkategoriInventaris = async (req, res) => {
   }
 };
 
-const getkategoriInventarisById = async (req, res) => {
+const getKategoriInventarisById = async (req, res) => {
   try {
-    const data = await KategoriInventaris.findOne({ 
-      where: { 
+    const data = await KategoriInventaris.findOne({
+      where: {
         id: req.params.id,
-        isDeleted: false
-      } 
+        isDeleted: false,
+      },
     });
 
     if (!data || data.isDeleted) {
@@ -58,7 +59,7 @@ const getkategoriInventarisById = async (req, res) => {
   }
 };
 
-const getkategoriInventarisByName = async (req, res) => {
+const getKategoriInventarisByName = async (req, res) => {
   try {
     const { nama } = req.params;
 
@@ -87,7 +88,17 @@ const getkategoriInventarisByName = async (req, res) => {
   }
 };
 
-const createkategoriInventaris = async (req, res) => {
+const createKategoriInventaris = async (req, res) => {
+  const valid = {
+    nama: "required",
+  };
+  const validation = await dataValid(valid, req.body);
+  if (validation.message.length > 0) {
+    return res.status(400).json({
+      error: validation.message,
+      message: "Validation error",
+    });
+  }
   try {
     const data = await KategoriInventaris.create(req.body);
 
@@ -105,9 +116,11 @@ const createkategoriInventaris = async (req, res) => {
   }
 };
 
-const updatekategoriInventaris = async (req, res) => {
+const updateKategoriInventaris = async (req, res) => {
   try {
-    const data = await KategoriInventaris.findOne({ where: { id: req.params.id, isDeleted: false } });
+    const data = await KategoriInventaris.findOne({
+      where: { id: req.params.id, isDeleted: false },
+    });
 
     if (!data || data.isDeleted) {
       return res.status(404).json({
@@ -121,7 +134,9 @@ const updatekategoriInventaris = async (req, res) => {
       },
     });
 
-    const updated = await KategoriInventaris.findOne({ where: { id: req.params.id } });
+    const updated = await KategoriInventaris.findOne({
+      where: { id: req.params.id },
+    });
 
     res.locals.updatedData = updated.toJSON();
 
@@ -140,13 +155,15 @@ const updatekategoriInventaris = async (req, res) => {
   }
 };
 
-const deletekategoriInventaris = async (req, res) => {
+const deleteKategoriInventaris = async (req, res) => {
   try {
-    const data = await KategoriInventaris.findOne({ where: { id: req.params.id, isDeleted: false } });
-    
+    const data = await KategoriInventaris.findOne({
+      where: { id: req.params.id, isDeleted: false },
+    });
+
     if (!data || data.isDeleted) {
-      return res.status(404).json({ 
-        message: "Data not found" 
+      return res.status(404).json({
+        message: "Data not found",
       });
     }
 
@@ -155,7 +172,7 @@ const deletekategoriInventaris = async (req, res) => {
 
     res.locals.updatedData = data;
 
-    return res.status(200).json({ 
+    return res.status(200).json({
       message: "Successfully deleted kategori inventaris data",
     });
   } catch (error) {
@@ -167,10 +184,10 @@ const deletekategoriInventaris = async (req, res) => {
 };
 
 module.exports = {
-  getAllkategoriInventaris,
-  getkategoriInventarisById,
-  getkategoriInventarisByName,
-  createkategoriInventaris,
-  updatekategoriInventaris,
-  deletekategoriInventaris,
+  getAllKategoriInventaris,
+  getKategoriInventarisById,
+  getKategoriInventarisByName,
+  createKategoriInventaris,
+  updateKategoriInventaris,
+  deleteKategoriInventaris,
 };

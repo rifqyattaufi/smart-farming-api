@@ -4,7 +4,6 @@ const UnitBudidayaController = require('../../controller/farm/unitBudidaya.js');
 const auditMiddleware = require('../../middleware/auditTrail.js');
 
 const sequelize = require("../../model/index");
-const db = sequelize.sequelize;
 const UnitBudidaya = sequelize.UnitBudidaya;
 
 router.get('/', UnitBudidayaController.getAllUnitBudidaya);

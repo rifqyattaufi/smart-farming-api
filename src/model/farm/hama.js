@@ -19,22 +19,6 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
       },
-      jenisHamaID: {
-          type: DataTypes.UUID,
-          allowNull: false,
-          references: {
-              model: "JenisHama",
-              key: "id",
-          },
-      },
-      laporanID: {
-        type: DataTypes.UUID,
-        allowNull: false,
-        references: {
-          model: "Laporan",
-          key: "id",
-        },
-      },
     },
     {
       freezeTableName: true,

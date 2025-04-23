@@ -1,5 +1,6 @@
 const e = require("express");
 const sequelize = require("../../model/index");
+const { dataValid } = require("../../validation/dataValidation");
 const db = sequelize.sequelize;
 const Satuan = sequelize.Satuan;
 const Op = sequelize.Sequelize.Op;
@@ -17,7 +18,7 @@ const getAllSatuan = async (req, res) => {
         message: "Data not found",
       });
     }
-      
+
     return res.status(200).json({
       message: "Successfully retrieved all satuan data",
       data: data,
@@ -32,7 +33,9 @@ const getAllSatuan = async (req, res) => {
 
 const getSatuanById = async (req, res) => {
   try {
-    const data = await Satuan.findOne({ where: { id: req.params.id, isDeleted: false } });
+    const data = await Satuan.findOne({
+      where: { id: req.params.id, isDeleted: false },
+    });
 
     if (!data || data.isDeleted) {
       return res.status(404).json({
@@ -82,6 +85,18 @@ const getSatuanByName = async (req, res) => {
 };
 
 const createSatuan = async (req, res) => {
+  const valid = {
+    nama: "required",
+    lambang: "required",
+  };
+  const validation = await dataValid(valid, req.body);
+  if (validation.message.length > 0) {
+    return res.status(400).json({
+      error: validation.message,
+      message: "Validation error",
+    });
+  }
+
   try {
     const data = await Satuan.create(req.body);
 
@@ -101,7 +116,9 @@ const createSatuan = async (req, res) => {
 
 const updateSatuan = async (req, res) => {
   try {
-    const data = await Satuan.findOne({ where: { id: req.params.id, isDeleted: false } });
+    const data = await Satuan.findOne({
+      where: { id: req.params.id, isDeleted: false },
+    });
 
     if (!data || data.isDeleted) {
       return res.status(404).json({
@@ -136,11 +153,13 @@ const updateSatuan = async (req, res) => {
 
 const deleteSatuan = async (req, res) => {
   try {
-    const data = await Satuan.findOne({ where: { id: req.params.id, isDeleted: false } });
-    
+    const data = await Satuan.findOne({
+      where: { id: req.params.id, isDeleted: false },
+    });
+
     if (!data || data.isDeleted) {
-      return res.status(404).json({ 
-        message: "Data not found" 
+      return res.status(404).json({
+        message: "Data not found",
       });
     }
 
@@ -149,8 +168,8 @@ const deleteSatuan = async (req, res) => {
 
     res.locals.updatedData = data;
 
-    return res.status(200).json({ 
-      message: "Successfully deleted satuan data"
+    return res.status(200).json({
+      message: "Successfully deleted satuan data",
     });
   } catch (error) {
     res.status(500).json({

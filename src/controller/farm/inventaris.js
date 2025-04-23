@@ -1,5 +1,7 @@
 const e = require("express");
 const sequelize = require("../../model/index");
+const kategoriInventaris = require("../../model/farm/kategoriInventaris");
+const { dataValid } = require("../../validation/dataValidation");
 const db = sequelize.sequelize;
 const Inventaris = sequelize.Inventaris;
 const Op = sequelize.Sequelize.Op;
@@ -17,7 +19,7 @@ const getAllInventaris = async (req, res) => {
         message: "Data not found",
       });
     }
-      
+
     return res.status(200).json({
       message: "Successfully retrieved all inventaris data",
       data: data,
@@ -32,11 +34,11 @@ const getAllInventaris = async (req, res) => {
 
 const getInventarisById = async (req, res) => {
   try {
-    const data = await Inventaris.findOne({ 
-      where: { 
+    const data = await Inventaris.findOne({
+      where: {
         id: req.params.id,
-        isDeleted: false
-      } 
+        isDeleted: false,
+      },
     });
 
     if (!data || data.isDeleted) {
@@ -87,8 +89,27 @@ const getInventarisByName = async (req, res) => {
 };
 
 const createInventaris = async (req, res) => {
+  // const valid = {
+  //   satuanId: "required",
+  //   kategoriInventarisId: "required",
+  //   nama: "required",
+  //   gambar: "required",
+  //   jumlah: "required",
+  // };
+  // const validation = await dataValid(valid, req.body);
+  // if (validation.message.length > 0) {
+  //   return res.status(400).json({
+  //     error: validation.message,
+  //     message: "Validation error",
+  //   });
+  // }
+
   try {
-    const data = await Inventaris.create(req.body);
+    const data = await Inventaris.create({
+      SatuanId: req.body.satuanId,
+      KategoriInventarisId: req.body.kategoriInventarisId,
+      ...req.body,
+    });
 
     res.locals.createdData = data.toJSON();
 
@@ -106,7 +127,9 @@ const createInventaris = async (req, res) => {
 
 const updateInventaris = async (req, res) => {
   try {
-    const data = await Inventaris.findOne({ where: { id: req.params.id, isDeleted: false } });
+    const data = await Inventaris.findOne({
+      where: { id: req.params.id, isDeleted: false },
+    });
 
     if (!data || data.isDeleted) {
       return res.status(404).json({
@@ -141,11 +164,13 @@ const updateInventaris = async (req, res) => {
 
 const deleteInventaris = async (req, res) => {
   try {
-    const data = await Inventaris.findOne({ where: { id: req.params.id, isDeleted: false } });
-    
+    const data = await Inventaris.findOne({
+      where: { id: req.params.id, isDeleted: false },
+    });
+
     if (!data || data.isDeleted) {
-      return res.status(404).json({ 
-        message: "Data not found" 
+      return res.status(404).json({
+        message: "Data not found",
       });
     }
 
@@ -154,7 +179,7 @@ const deleteInventaris = async (req, res) => {
 
     res.locals.updatedData = data;
 
-    return res.status(200).json({ 
+    return res.status(200).json({
       message: "Successfully deleted inventaris data",
     });
   } catch (error) {

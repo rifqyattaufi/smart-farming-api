@@ -9,11 +9,13 @@ const jenisHamaRouter = require("./jenisHama");
 const komoditasRouter = require("./komoditas");
 const inventarisRouter = require("./inventaris");
 const laporanRouter = require("./laporan");
+const objekBudidayaRouter = require("./objekBudidaya");
 
 const { authenticate } = require("../../middleware/validation");
 
 router.use("/jenis-budidaya", authenticate(), jenisBudidayaRouter);
 router.use("/unit-budidaya", authenticate(), unitBudidayaRouter);
+router.use("/objek-budidaya", authenticate(), objekBudidayaRouter);
 router.use("/komoditas", authenticate(), komoditasRouter);
 router.use("/jenis-hama", authenticate(), jenisHamaRouter);
 

@@ -22,22 +22,6 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
       },
-      satuanId: {
-          type: DataTypes.UUID,
-          allowNull: false,
-          references: {
-              model: "Satuan",
-              key: "id",
-          },
-      },
-      kategoriInventarisId: {
-        type: DataTypes.UUID,
-        allowNull: false,
-        references: {
-          model: "KategoriInventaris",
-          key: "id",
-        },
-      },
     },
     {
       freezeTableName: true,
@@ -50,9 +34,8 @@ module.exports = (sequelize, DataTypes) => {
 
     Inventaris.belongsTo(models.KategoriInventaris, {
       foreignKey: "kategoriInventarisId",
-      as: "kategoriInventaris",
     });
-    
+
     Inventaris.belongsTo(models.Satuan);
   };
 
