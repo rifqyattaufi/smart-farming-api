@@ -8,7 +8,6 @@ const kategoriInventarisRouter = require("./kategoriInventaris");
 const jenisHamaRouter = require("./jenisHama");
 const komoditasRouter = require("./komoditas");
 const inventarisRouter = require("./inventaris");
-const hamaRouter = require("./hama");
 const laporanRouter = require("./laporan");
 
 const { authenticate } = require("../../middleware/validation");
