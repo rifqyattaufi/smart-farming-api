@@ -15,6 +15,7 @@ const { client } = require("../config/redis");
 const { generateOTP } = require("../config/otp");
 const passport = require("passport");
 const { where } = require("sequelize");
+const { encrypt } = require("../config/bcrypt");
 
 const login = async (req, res, next) => {
   try {
@@ -30,7 +31,7 @@ const login = async (req, res, next) => {
     if (user.message.length > 0) {
       return res.status(400).json({
         error: user.message,
-        message: "Login failed",
+        message: "Login Gagal, silahkan coba lagi",
       });
     }
 
@@ -42,34 +43,35 @@ const login = async (req, res, next) => {
 
     if (!userExist) {
       return res.status(400).json({
-        message: "Email not registered",
+        status: false,
+        message: "Email belum terdaftar",
+      });
+    }
+    if (!(await compare(data.password, userExist.password))) {
+      return res.status(400).json({
+        status: false,
+        message: "Password salah, silahkan coba lagi",
       });
     }
 
     if (!userExist.isActive) {
       return res.status(400).json({
         status: false,
-        message: "Email is not activated",
+        message: "Email belum diaktifkan",
       });
     }
 
     if (userExist.isDeleted) {
       return res.status(400).json({
         status: false,
-        message: "Email is banned",
+        message: "Email sudah dibanned",
       });
     }
 
     if (!userExist) {
       return res.status(400).json({
         status: false,
-        message: "Email not registered",
-      });
-    }
-    if (!(await compare(data.password, userExist.password))) {
-      return res.status(400).json({
-        status: false,
-        message: "Wrong password",
+        message: "Email Belum Terdaftar",
       });
     }
 
@@ -157,7 +159,7 @@ const register = async (req, res, next) => {
     };
 
     if (user.data.role !== "user") {
-      userData.isActive = true; 
+      userData.isActive = true;
     }
 
     const newUser = await User.create(userData, {
@@ -338,7 +340,7 @@ const getPhoneByEmail = async (req, res, next) => {
       status: true,
       message: "Phone number retrieved successfully",
       data: {
-        phone_number: user.phone_number,
+        phone: user.phone,
       },
     });
   } catch (error) {
@@ -483,37 +485,44 @@ const forgotPassword = async (req, res, next) => {
 
     if (!userExist) {
       return res.status(400).json({
-        message: "Email not registered",
+        status: false,
+        message: "Email belum terdaftar",
+        data: null,
       });
     }
 
     if (userExist.isDeleted) {
       return res.status(400).json({
-        message: "Email is banned",
+        status: false,
+        message: "Email sudah dibanned",
+        data: null,
       });
     }
 
     if (!userExist.isActive) {
       return res.status(400).json({
-        message: "Email is not activated",
+        status: false,
+        message: "Email belum diaktifkan",
+        data: null,
       });
     }
-
-    const otp = await generateOTP(userExist.id);
-    const result = await sendResetPasswordMail(userExist.email, otp);
-
-    if (!result) {
-      await t.rollback();
-      next(new Error("Failed to send email"));
-    } else {
+    if (userExist) {
+      const otp = await generateOTP(userExist.id);
+      const result = await sendOTP(userExist.phone, otp);
+      if (result == false) {
+        return res.status(500).json({
+          status: false,
+          message: "OTP Gagal dikirim, silahkan coba beberapa saat lagi",
+          data: null,
+        });
+      }
       await t.commit();
       return res.status(200).json({
-        message: "Email sent",
+        status: true,
+        message: "OTP Berhasil dikirim",
         data: {
-          id: userExist.id,
-          name: userExist.name,
-          email: userExist.email,
-        },
+          phone: userExist.phone,
+        }
       });
     }
   } catch (error) {
@@ -547,19 +556,25 @@ const resetPassword = async (req, res, next) => {
 
     if (!userExist) {
       return res.status(400).json({
+        status: false,
         message: "User not found",
+        data: null,
       });
     }
 
     if (userExist.isDeleted) {
       return res.status(400).json({
+        status: false,
         message: "Email is banned",
+        data: null,
       });
     }
 
     if (!userExist.isActive) {
       return res.status(400).json({
+        status: false,
         message: "Email is not activated",
+        data: null,
       });
     }
 
@@ -567,22 +582,27 @@ const resetPassword = async (req, res, next) => {
 
     if (!saved) {
       return res.status(400).json({
+        status: false,
         message: "OTP expired",
+        data: null,
       });
     }
 
     if (saved !== user.data.otp) {
       return res.status(400).json({
+        status: false,
         message: "Wrong OTP",
+        data: null,
       });
     }
 
     await client.del(`otp:${userExist.id}`);
-    const hashedPassword = await bcrypt.hash(user.data.password, 10);
+    const hashedPassword = await encrypt(user.data.password);
     userExist.password = hashedPassword;
     await userExist.save({ transaction: t });
     await t.commit();
     return res.status(200).json({
+      status: true,
       message: "Password changed",
       data: {
         id: userExist.id,

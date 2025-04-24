@@ -29,14 +29,10 @@ module.exports = {
       },
       password: {
         type: Sequelize.STRING,
-        allowNull: true,  
-      },
-      phone_number: {
-        type: Sequelize.STRING,
         allowNull: true,
       },
       role: {
-        type: Sequelize.ENUM("inventor", "pembeli","penjual", "petugas", "pjawab"),
+        type: Sequelize.ENUM("inventor", "user", "petugas", "pjawab"),
         allowNull: false,
       },
       avatar_url: {
