@@ -31,4 +31,6 @@ module.exports = (sequelize, DataTypes) => {
   Artikel.associate = (models) => {
     Artikel.belongsTo(models.User);
   };
+
+  return Artikel;
 };
