@@ -126,9 +126,17 @@ const register = async (req, res, next) => {
       },
     });
 
+    const phoneExisted = await User.findOne({
+      where: {
+        phone: user.data.phone,
+      },
+    });
+
+
+
     if (userExisted && userExisted.isDeleted) {
       return res.status(400).json({
-        message: "this email has been banned",
+        message: "This email has been banned",
       });
     }
 
@@ -145,7 +153,12 @@ const register = async (req, res, next) => {
     ) {
       return res.status(400).json({
         message:
-          "Email already registered, please check your WhatsApp to activate your account",
+          "Email sudah terdaftar namun belum diaktifkan, silahkan melakukan login untuk mengaktifkan akun",
+      });
+    }
+    if (phoneExisted) {
+      return res.status(400).json({
+        message: "Nomor telepon sudah terdaftar, coba gunakan nomor telepon yang lain",
       });
     }
 
@@ -598,7 +611,7 @@ const resetPassword = async (req, res, next) => {
 
     await client.del(`otp:${userExist.id}`);
     const hashedPassword = await encrypt(user.data.password);
-    userExist.password = hashedPassword;
+    userExist.password = user.data.password;
     await userExist.save({ transaction: t });
     await t.commit();
     return res.status(200).json({
