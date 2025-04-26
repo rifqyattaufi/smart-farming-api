@@ -7,7 +7,7 @@ const farmRouter = require("./farm/farmIndex");
 
 const { authenticate } = require("../middleware/validation");
 
-router.use("/user", authenticate(["pjawab"]), userRouter);
+router.use("/user", userRouter);
 router.use("/auth", authRouter);
 
 router.use("/farm", farmRouter);
