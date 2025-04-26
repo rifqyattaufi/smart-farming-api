@@ -13,16 +13,14 @@ const objekBudidayaRouter = require("./objekBudidaya");
 
 const { authenticate } = require("../../middleware/validation");
 
-router.use("/jenis-budidaya", authenticate(), jenisBudidayaRouter);
-router.use("/unit-budidaya", authenticate(), unitBudidayaRouter);
-router.use("/objek-budidaya", authenticate(), objekBudidayaRouter);
-router.use("/komoditas", authenticate(), komoditasRouter);
-router.use("/jenis-hama", authenticate(), jenisHamaRouter);
-
-router.use("/satuan", authenticate(), satuanRouter);
-router.use("/kategori-inventaris", authenticate(), kategoriInventarisRouter);
-router.use("/inventaris", authenticate(), inventarisRouter);
-
-router.use("/laporan", authenticate(), laporanRouter);
+router.use("/jenis-budidaya", jenisBudidayaRouter);
+router.use("/unit-budidaya", unitBudidayaRouter);
+router.use("/objek-budidaya", objekBudidayaRouter);
+router.use("/komoditas", komoditasRouter);
+router.use("/jenis-hama", jenisHamaRouter);
+router.use("/satuan", satuanRouter);
+router.use("/kategori-inventaris", kategoriInventarisRouter);
+router.use("/inventaris", inventarisRouter);
+router.use("/laporan", laporanRouter);
 
 module.exports = router;
