@@ -1,5 +1,5 @@
 module.exports = (sequelize, DataTypes) => {
-  const keranjang = sequelize.define(
+  const Keranjang = sequelize.define(
     "Keranjang",
     {
       id: {
@@ -22,8 +22,10 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
 
-  keranjang.associate = (models) => {
-    keranjang.belongsTo(models.User);
-    keranjang.belongsTo(models.Produk);
+  Keranjang.associate = (models) => {
+    Keranjang.belongsTo(models.User);
+    Keranjang.belongsTo(models.Produk);
   };
+
+  return Keranjang;
 };

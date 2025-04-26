@@ -40,4 +40,6 @@ module.exports = (sequelize, DataTypes) => {
 
     Toko.belongsTo(models.User);
   };
+
+  return Toko;
 };

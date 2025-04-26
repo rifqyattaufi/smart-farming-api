@@ -26,4 +26,6 @@ module.exports = (sequelize, DataTypes) => {
     PesananDetail.belongsTo(models.Pesanan);
     PesananDetail.belongsTo(models.Produk);
   };
+
+  return PesananDetail;
 };

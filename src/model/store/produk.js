@@ -40,4 +40,6 @@ module.exports = (sequelize, DataTypes) => {
     Produk.hasMany(models.Keranjang);
     Produk.hasMany(models.PesananDetail);
   };
+
+  return Produk;
 };

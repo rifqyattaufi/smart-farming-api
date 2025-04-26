@@ -10,6 +10,6 @@ const { authenticate } = require("../middleware/validation");
 router.use("/user", userRouter);
 router.use("/auth", authRouter);
 
-router.use("/farm", farmRouter);
+router.use("/farm", authenticate(["pjawab", "inventor", "petugas"]), farmRouter);
 
 module.exports = router;

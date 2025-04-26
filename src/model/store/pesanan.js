@@ -30,4 +30,6 @@ module.exports = (sequelize, DataTypes) => {
     Pesanan.belongsTo(models.User);
     Pesanan.hasMany(models.PesananDetail);
   };
+
+  return Pesanan;
 };

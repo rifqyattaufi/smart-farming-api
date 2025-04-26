@@ -28,4 +28,6 @@ module.exports = (sequelize, DataTypes) => {
   Rekening.associate = (models) => {
     Rekening.belongsTo(models.User);
   };
+
+  return Rekening;
 };
