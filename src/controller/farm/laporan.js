@@ -141,7 +141,7 @@ const createLaporanSakit = async (req, res) => {
 
     const laporanSakit = await Sakit.create(
       {
-        laporanID: data.id,
+        LaporanId: data.id,
         penyakit: sakit.penyakit,
       },
       { transaction: t }
@@ -285,14 +285,14 @@ const createLaporanPanen = async (req, res) => {
     const laporanPanen = await Panen.create(
       {
         LaporanId: data.id,
-        komoditasID: panen.komoditasID,
+        KomoditasId: panen.komoditasId,
         jumlah: panen.jumlah,
       },
       { transaction: t }
     );
 
     const komoditas = await Komoditas.findOne({
-      where: { id: panen.komoditasID },
+      where: { id: panen.komoditasId },
     });
 
     komoditas.jumlah += panen.jumlah;
@@ -338,7 +338,7 @@ const createLaporanHama = async (req, res) => {
     const laporanHama = await Hama.create(
       {
         LaporanId: data.id,
-        jenisHamaID: hama.jenisHamaID,
+        JenisHamaId: hama.jenisHamaId,
         jumlah: hama.jumlah,
         status: hama.status,
       },
