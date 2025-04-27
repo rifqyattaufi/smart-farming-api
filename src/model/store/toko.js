@@ -28,6 +28,19 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
       },
+      tokoStatus: {
+        type: DataTypes.ENUM,
+        values: ['request', 'active', 'delete', 'reject'],
+        defaultValue: 'request',
+      },
+      createdAt: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+      },
+      updatedAt: {
+        type: DataTypes.DATE,
+        defaultValue: DataTypes.NOW,
+      },
     },
     {
       freezeTableName: true,
