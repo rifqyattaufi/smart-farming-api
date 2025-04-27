@@ -98,9 +98,9 @@ const updateUser = async (req, res) => {
 const deleteUser = async (req, res) => {
   try {
     const data = await User.findOne({ where: { id: req.params.id, isDeleted: false } });
-    
+
     if (!data || data.isDeleted) {
-        return res.status(404).json({ message: "Data not found" });
+      return res.status(404).json({ message: "Data not found" });
     }
 
     data.isDeleted = true;
