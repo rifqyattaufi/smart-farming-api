@@ -15,6 +15,9 @@ module.exports = (sequelize, DataTypes) => {
       namaBank: {
         type: DataTypes.STRING,
       },
+      namaPenerima: {
+        type: DataTypes.STRING,
+      },
       isDeleted: {
         type: DataTypes.BOOLEAN,
         defaultValue: false,

@@ -59,9 +59,7 @@ const getTokoById = async (req, res) => {
 const createToko = async (req, res) => {
   try {
     const { nama, phone, alamat, logoToko, deskripsi } = req.body;
-    const UserId = req.user.id; // Assuming user ID is from JWT token
 
-    // Validate required fields
     if (!nama || !phone || !alamat) {
       return res.status(400).json({
         message: "Nama, phone, and alamat are required",
@@ -74,7 +72,7 @@ const createToko = async (req, res) => {
       alamat,
       logoToko,
       deskripsi,
-      UserId,
+      UserId: req.user.id,
     });
 
     return res.status(201).json({
