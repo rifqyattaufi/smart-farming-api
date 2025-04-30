@@ -219,23 +219,17 @@ const dashboardPeternakan = async (req, res) => {
       },
     });
 
-    const sumKolektif = await sequelize.UnitBudidaya.sum("jumlah", {
-      include: [
-        {
-          model: sequelize.JenisBudidaya,
-          required: true,
-          where: {
-            tipe: "hewan",
-          },
-        },
-      ],
-      where: {
-        tipe: "kolektif",
-        isDeleted: false,
-      },
-    });
+    const sumKolektif = await db.query(
+      `
+      SELECT SUM(ub.jumlah) AS totalJumlah
+      FROM UnitBudidaya ub
+      INNER JOIN JenisBudidaya jb ON ub.jenisBudidayaId = jb.id
+      WHERE ub.tipe = 'kolektif' AND ub.isDeleted = false AND jb.tipe = 'hewan'
+      `,
+      { type: QueryTypes.SELECT }
+    );
 
-    const jumlahTernak = countObjekBudidaya + (sumKolektif || 0);
+    const jumlahTernak = countObjekBudidaya + (sumKolektif[0]?.totalJumlah || 0);
 
     const jenisTernak = await jenisBudidaya.count({
       where: {
