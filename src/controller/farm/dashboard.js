@@ -229,7 +229,7 @@ const dashboardPeternakan = async (req, res) => {
       { type: QueryTypes.SELECT }
     );
 
-    const jumlahTernak = countObjekBudidaya + (sumKolektif[0]?.totalJumlah || 0);
+    const jumlahTernak = parseInt(countObjekBudidaya, 10) + parseInt(sumKolektif[0]?.totalJumlah || 0, 10);
 
     const jenisTernak = await jenisBudidaya.count({
       where: {
