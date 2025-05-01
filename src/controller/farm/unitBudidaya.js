@@ -114,7 +114,7 @@ const createUnitBudidaya = async (req, res) => {
     let objekList = [];
     let createdObjekList = [];
 
-    if (tipe == "individu") {
+    if (tipe.toLowerCase() == "individu") {
       objekList = Array.from({ length: jumlah }, (_, i) => {
         const prefix = jenisBudidaya.tipe === "hewan" ? "Ternak" : "Tanaman";
         const deskripsi = `${prefix} ${jenisBudidaya.nama} pada ${
