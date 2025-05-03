@@ -1,17 +1,14 @@
 const { where, QueryTypes } = require("sequelize");
 const sequelize = require("../../model/index");
-const model = require("../../model/index");
 const { default: axios } = require("axios");
 const db = sequelize.sequelize;
 const ObjekBudidaya = sequelize.ObjekBudidaya;
 const jenisBudidaya = sequelize.JenisBudidaya;
 const Kematian = sequelize.Kematian;
 const Panen = sequelize.Panen;
-const Laporan = sequelize.Laporan;
 const UnitBudidaya = sequelize.UnitBudidaya;
 const JenisBudidaya = sequelize.JenisBudidaya;
-const PenggunaanInventaris = sequelize.PenggunaanInventaris;
-const Inventaris = sequelize.Inventaris;
+const Komoditas = sequelize.Komoditas;
 
 const dashboardPerkebunan = async (req, res) => {
   const openWeatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=-7.249&lon=112.751&units=metric&appid=${process.env.OPEN_WEATHER_API_KEY}`;
@@ -177,6 +174,24 @@ const dashboardPerkebunan = async (req, res) => {
       limit: 2,
     });
 
+    const daftarKomoditas = await Komoditas.findAll({
+      include: [
+        {
+          model: sequelize.JenisBudidaya,
+          required: true,
+          where: {
+            tipe: "tumbuhan",
+            isDeleted: false,
+          },
+        },
+      ],
+      where: {
+        isDeleted: false,
+      },
+      order: [["createdAt", "DESC"]],
+      limit: 2,
+    });
+
     res.status(200).json({
       status: "success",
       message: "Dashboard data retrieved successfully",
@@ -188,6 +203,7 @@ const dashboardPerkebunan = async (req, res) => {
         aktivitasTerbaru: aktivitasTerbaruFormatted,
         daftarKebun: daftarKebun,
         daftarTanaman: daftarTanaman,
+        daftarKomoditas: daftarKomoditas,
       },
     });
   } catch (error) {
@@ -229,7 +245,9 @@ const dashboardPeternakan = async (req, res) => {
       { type: QueryTypes.SELECT }
     );
 
-    const jumlahTernak = parseInt(countObjekBudidaya, 10) + parseInt(sumKolektif[0]?.totalJumlah || 0, 10);
+    const jumlahTernak =
+      parseInt(countObjekBudidaya, 10) +
+      parseInt(sumKolektif[0]?.totalJumlah || 0, 10);
 
     const jenisTernak = await jenisBudidaya.count({
       where: {
@@ -392,6 +410,24 @@ const dashboardPeternakan = async (req, res) => {
       limit: 2,
     });
 
+    const daftarKomoditas = await Komoditas.findAll({
+      include: [
+        {
+          model: sequelize.JenisBudidaya,
+          required: true,
+          where: {
+            tipe: "hewan",
+            isDeleted: false,
+          },
+        },
+      ],
+      where: {
+        isDeleted: false,
+      },
+      order: [["createdAt", "DESC"]],
+      limit: 2,
+    });
+
     res.status(200).json({
       status: "success",
       message: "Dashboard data retrieved successfully",
@@ -403,6 +439,7 @@ const dashboardPeternakan = async (req, res) => {
         aktivitasTerbaru: aktivitasTerbaruFormatted,
         daftarKandang: daftarKandang,
         daftarTernak: daftarTernak,
+        daftarKomoditas: daftarKomoditas,
       },
     });
   } catch (error) {

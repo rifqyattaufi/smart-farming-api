@@ -81,6 +81,7 @@ const login = async (req, res, next) => {
       email: userExist.email,
       phone: userExist.phone,
       role: userExist.role,
+      avatar: userExist.avatarUrl,
     };
 
     const token = generateAccessToken(usr);
@@ -435,7 +436,7 @@ const refreshToken = async (req, res, next) => {
         message: "Unauthorized",
       });
     }
-    
+
     const user = await User.findOne({
       where: {
         id: data.id,
@@ -465,6 +466,7 @@ const refreshToken = async (req, res, next) => {
       name: user.name,
       email: user.email,
       role: user.role,
+      avatar: user.avatarUrl,
     };
 
     const newToken = generateAccessToken(usr);
