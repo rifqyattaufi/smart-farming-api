@@ -58,9 +58,17 @@ const getUnitBudidayaById = async (req, res) => {
 
 const getUnitBudidayaByName = async (req, res) => {
   try {
-    const { nama } = req.params;
+    const { nama, tipe } = req.params;
 
     const data = await UnitBudidaya.findAll({
+      include: [
+        {
+          model: JenisBudidaya,
+          where: {
+            tipe: tipe,
+          },
+        },
+      ],
       where: {
         nama: {
           [Op.like]: `%${nama}%`,
@@ -233,6 +241,40 @@ const deleteUnitBudidaya = async (req, res) => {
   }
 };
 
+const getUnitBudidayaByTipe = async (req, res) => {
+  try {
+    const { tipe } = req.params;
+
+    const data = await UnitBudidaya.findAll({
+      include: [
+        {
+          model: JenisBudidaya,
+          where: {
+            tipe: tipe,
+          },
+        },
+      ],
+      where: {
+        isDeleted: false,
+      },
+    });
+
+    if (data.length === 0) {
+      return res.status(404).json({ message: "Data not found" });
+    }
+
+    return res.status(200).json({
+      message: "Successfully retrieved unit budidaya data",
+      data: data,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
+  }
+};
+
 module.exports = {
   getAllUnitBudidaya,
   getUnitBudidayaById,
@@ -240,4 +282,5 @@ module.exports = {
   createUnitBudidaya,
   updateUnitBudidaya,
   deleteUnitBudidaya,
+  getUnitBudidayaByTipe,
 };
