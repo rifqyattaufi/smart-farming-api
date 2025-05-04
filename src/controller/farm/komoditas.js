@@ -59,13 +59,57 @@ const getKomoditasById = async (req, res) => {
 
 const getKomoditasByName = async (req, res) => {
   try {
-    const { nama } = req.params;
+    const { nama, tipe } = req.params;
 
     const data = await Komoditas.findAll({
+      include: [
+        {
+          model: sequelize.JenisBudidaya,
+          required: true,
+          where: {
+            tipe: tipe,
+          },
+        },
+      ],
       where: {
         nama: {
           [Op.like]: `%${nama}%`,
         },
+        isDeleted: false,
+      },
+    });
+
+    if (data.length === 0) {
+      return res.status(404).json({ message: "Data not found" });
+    }
+
+    return res.status(200).json({
+      message: "Successfully retrieved komoditas data",
+      data: data,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
+  }
+};
+
+const getKomoditasByTipe = async (req, res) => {
+  try {
+    const { tipe } = req.params;
+
+    const data = await Komoditas.findAll({
+      include: [
+        {
+          model: sequelize.JenisBudidaya,
+          required: true,
+          where: {
+            tipe: tipe,
+          },
+        },
+      ],
+      where: {
         isDeleted: false,
       },
     });
@@ -180,4 +224,5 @@ module.exports = {
   createKomoditas,
   updateKomoditas,
   deleteKomoditas,
+  getKomoditasByTipe,
 };
