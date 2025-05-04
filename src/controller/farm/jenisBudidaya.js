@@ -56,13 +56,14 @@ const getJenisBudidayaById = async (req, res) => {
 
 const getJenisBudidayaByName = async (req, res) => {
   try {
-    const { nama } = req.params;
+    const { nama, tipe } = req.params;
 
     const data = await JenisBudidaya.findAll({
       where: {
         nama: {
           [Op.like]: `%${nama}%`,
         },
+        tipe: tipe,
         isDeleted: false,
       },
     });
