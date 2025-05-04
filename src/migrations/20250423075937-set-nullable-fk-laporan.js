@@ -15,7 +15,7 @@ module.exports = {
       type: Sequelize.UUID,
       allowNull: true,
       references: {
-        model: "UnitBudidaya",
+        model: "unitBudidaya",
         key: "id",
       },
       after: "id",
@@ -24,7 +24,7 @@ module.exports = {
       type: Sequelize.UUID,
       allowNull: true,
       references: {
-        model: "ObjekBudidaya",
+        model: "objekBudidaya",
         key: "id",
       },
       after: "unitBudidayaId",
