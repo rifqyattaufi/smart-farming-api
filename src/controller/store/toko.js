@@ -46,7 +46,7 @@ const getTokoById = async (req, res) => {
 
     return res.status(200).json({
       message: "Successfully retrieved toko data",
-      data: data,
+      data: [data],
     });
   } catch (error) {
     res.status(500).json({
@@ -56,13 +56,41 @@ const getTokoById = async (req, res) => {
   }
 };
 
+const getTokoByUserId = async (req, res) => {
+  try {
+
+    const toko = await Toko.findOne({
+      where: {
+        UserId: req.user.id,
+        isDeleted: false,
+      },
+    });
+
+    if (!toko) {
+      return res.status(404).json({
+        message: "Toko not found for this user",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Successfully retrieved toko data for user",
+      data: [toko],
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
+  }
+}
+
 const createToko = async (req, res) => {
   try {
     const { nama, phone, alamat, logoToko, deskripsi } = req.body;
 
     if (!nama || !phone || !alamat) {
       return res.status(400).json({
-        message: "Nama, phone, and alamat are required",
+        message: "nama, phone, and alamat are required",
       });
     }
 
@@ -87,11 +115,13 @@ const createToko = async (req, res) => {
   }
 };
 
+
+
 const updateToko = async (req, res) => {
   try {
     const data = await Toko.findOne({
       where: {
-        id: req.params.id,
+        UserId: req.user.id,
         isDeleted: false,
       },
     });
@@ -105,11 +135,11 @@ const updateToko = async (req, res) => {
     // Update toko details
     await Toko.update(req.body, {
       where: {
-        id: req.params.id,
+        UserId: req.user.id,
       },
     });
 
-    const updated = await Toko.findOne({ where: { id: req.params.id } });
+    const updated = await Toko.findOne({ where: { UserId: req.user.id, } });
 
     return res.status(200).json({
       message: "Successfully updated toko",
@@ -243,6 +273,7 @@ const banToko = async (req, res) => {
 module.exports = {
   getAllToko,
   getTokoById,
+  getTokoByUserId,
   createToko,
   updateToko,
   deleteToko,

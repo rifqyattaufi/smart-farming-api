@@ -12,6 +12,9 @@ module.exports = (sequelize, DataTypes) => {
       nama: {
         type: DataTypes.STRING,
       },
+      deskripsi: {
+        type: DataTypes.TEXT,
+      },
       gambar: {
         type: DataTypes.STRING,
       },
@@ -36,7 +39,7 @@ module.exports = (sequelize, DataTypes) => {
 
   Produk.associate = (models) => {
     Produk.belongsTo(models.Toko);
-    
+
     Produk.hasMany(models.Keranjang);
     Produk.hasMany(models.PesananDetail);
   };

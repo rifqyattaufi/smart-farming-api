@@ -58,7 +58,10 @@ const createRekening = async (req, res) => {
 const updateRekening = async (req, res) => {
   try {
     const data = await Rekening.findOne({
-      where: { id: req.params.id, isDeleted: false },
+      where: {
+        Userid: req.user.id,
+        isDeleted: false
+      },
     });
 
     if (!data) {
@@ -69,11 +72,11 @@ const updateRekening = async (req, res) => {
 
     await Rekening.update(req.body, {
       where: {
-        id: req.params.id,
+        Userid: req.user.id,
       },
     });
 
-    const updated = await Rekening.findOne({ where: { id: req.params.id } });
+    const updated = await Rekening.findOne({ where: { Userid: req.user.id } });
 
     return res.status(200).json({
       message: "Successfully updated rekening data",
@@ -91,9 +94,9 @@ const getRekeningByUserId = async (req, res) => {
   try {
     const { userId } = req.params;
 
-    const rekening = await Rekening.findAll({
+    const rekening = await Rekening.findOne({
       where: {
-        userId: req.user.id,
+        UserId: req.user.id,
         isDeleted: false,
       },
     });

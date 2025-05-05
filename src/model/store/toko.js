@@ -41,6 +41,11 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW,
       },
+      TypeToko: {
+        type: DataTypes.ENUM,
+        values: ['rfc', 'umkm'],
+        defaultValue: 'umkm',
+      },
     },
     {
       freezeTableName: true,

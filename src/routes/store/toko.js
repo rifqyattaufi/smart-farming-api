@@ -11,7 +11,9 @@ const Toko = sequelize.Artikel;
 
 router.get('/', tokoController.getAllToko);
 
-router.get('/:id', tokoController.getTokoById);
+router.get('/id/:id', tokoController.getTokoById);
+
+router.get('/user', tokoController.getTokoByUserId);
 
 router.post('/', auditMiddleware({ model: Toko, tableName: "Toko" }), tokoController.createToko);
 
