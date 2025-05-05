@@ -18,6 +18,7 @@ module.exports = (sequelize, DataTypes) => {
       },
     },
     {
+      tableName: "kategoriInventaris",
       freezeTableName: true,
     }
   );

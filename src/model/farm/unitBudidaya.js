@@ -41,6 +41,7 @@ module.exports = (sequelize, DataTypes) => {
       },
     },
     {
+      tableName: "unitBudidaya",
       freezeTableName: true,
     }
   );

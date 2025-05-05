@@ -21,6 +21,7 @@ module.exports = (sequelize, DataTypes) => {
       },
     },
     {
+      tableName: "kematian",
       freezeTableName: true,
     }
   );
