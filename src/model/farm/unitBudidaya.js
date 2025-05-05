@@ -19,6 +19,9 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.ENUM,
         values: ["kolektif", "individu"],
       },
+      luas: {
+        type: DataTypes.FLOAT,
+      },
       jumlah: {
         type: DataTypes.INTEGER,
       },
@@ -38,6 +41,7 @@ module.exports = (sequelize, DataTypes) => {
       },
     },
     {
+      tableName: "unitBudidaya",
       freezeTableName: true,
     }
   );

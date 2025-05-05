@@ -22,6 +22,7 @@ module.exports = (sequelize, DataTypes) => {
       },
     },
     {
+      tableName: "vitamin",
       freezeTableName: true,
     }
   );

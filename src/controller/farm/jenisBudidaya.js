@@ -1,5 +1,6 @@
 const e = require("express");
 const sequelize = require("../../model/index");
+const { Op } = require("sequelize");
 const db = sequelize.sequelize;
 const JenisBudidaya = sequelize.JenisBudidaya;
 
@@ -16,7 +17,7 @@ const getAllJenisBudidaya = async (req, res) => {
         message: "Data not found",
       });
     }
-      
+
     return res.status(200).json({
       message: "Successfully retrieved all jenis budidaya data",
       data: data,
@@ -31,7 +32,9 @@ const getAllJenisBudidaya = async (req, res) => {
 
 const getJenisBudidayaById = async (req, res) => {
   try {
-    const data = await JenisBudidaya.findOne({ where: { id: req.params.id, isDeleted: false } });
+    const data = await JenisBudidaya.findOne({
+      where: { id: req.params.id, isDeleted: false },
+    });
 
     if (!data || data.isDeleted) {
       return res.status(404).json({
@@ -53,13 +56,14 @@ const getJenisBudidayaById = async (req, res) => {
 
 const getJenisBudidayaByName = async (req, res) => {
   try {
-    const { nama } = req.params;
+    const { nama, tipe } = req.params;
 
     const data = await JenisBudidaya.findAll({
       where: {
         nama: {
           [Op.like]: `%${nama}%`,
         },
+        tipe: tipe,
         isDeleted: false,
       },
     });
@@ -100,7 +104,9 @@ const createJenisBudidaya = async (req, res) => {
 
 const updateJenisBudidaya = async (req, res) => {
   try {
-    const data = await JenisBudidaya.findOne({ where: { id: req.params.id, isDeleted: false } });
+    const data = await JenisBudidaya.findOne({
+      where: { id: req.params.id, isDeleted: false },
+    });
 
     if (!data || data.isDeleted) {
       return res.status(404).json({
@@ -114,7 +120,9 @@ const updateJenisBudidaya = async (req, res) => {
       },
     });
 
-    const updated = await JenisBudidaya.findOne({ where: { id: req.params.id } });
+    const updated = await JenisBudidaya.findOne({
+      where: { id: req.params.id },
+    });
 
     res.locals.updatedData = updated.toJSON();
 
@@ -135,11 +143,13 @@ const updateJenisBudidaya = async (req, res) => {
 
 const deleteJenisBudidaya = async (req, res) => {
   try {
-    const data = await JenisBudidaya.findOne({ where: { id: req.params.id, isDeleted: false } });
-    
+    const data = await JenisBudidaya.findOne({
+      where: { id: req.params.id, isDeleted: false },
+    });
+
     if (!data || data.isDeleted) {
-      return res.status(404).json({ 
-        message: "Data not found" 
+      return res.status(404).json({
+        message: "Data not found",
       });
     }
 
@@ -148,8 +158,37 @@ const deleteJenisBudidaya = async (req, res) => {
 
     res.locals.updatedData = data;
 
-    return res.status(200).json({ 
-      message: "Jenis Budidaya deleted successfully" 
+    return res.status(200).json({
+      message: "Jenis Budidaya deleted successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
+  }
+};
+
+const getJenisBudidayaByTipe = async (req, res) => {
+  try {
+    const { tipe } = req.params;
+
+    const data = await JenisBudidaya.findAll({
+      where: {
+        tipe: {
+          [Op.like]: `%${tipe}%`,
+        },
+        isDeleted: false,
+      },
+    });
+
+    if (data.length === 0) {
+      return res.status(404).json({ message: "Data not found" });
+    }
+
+    return res.status(200).json({
+      message: "Successfully retrieved jenis budidaya data",
+      data: data,
     });
   } catch (error) {
     res.status(500).json({
@@ -166,4 +205,5 @@ module.exports = {
   createJenisBudidaya,
   updateJenisBudidaya,
   deleteJenisBudidaya,
+  getJenisBudidayaByTipe,
 };

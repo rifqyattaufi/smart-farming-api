@@ -11,7 +11,9 @@ router.get('/', komoditasController.getAllKomoditas);
 
 router.get('/:id', komoditasController.getKomoditasById);
 
-router.get('/search/:nama', komoditasController.getKomoditasByName);
+router.get('/search/:nama/:tipe', komoditasController.getKomoditasByName);
+
+router.get('/tipe/:tipe', komoditasController.getKomoditasByTipe);
 
 router.post('/', auditMiddleware({ model: Komoditas, tableName: "Komoditas" }), komoditasController.createKomoditas);
 

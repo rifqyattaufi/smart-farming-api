@@ -25,7 +25,10 @@ module.exports = (sequelize, DataTypes) => {
     isDeleted: {
       type: DataTypes.BOOLEAN,
       defaultValue: false,
-    }}
+    }},
+    {
+      tableName: "logs",
+    }
   );
 
   Logs.associate = (models) => {

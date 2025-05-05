@@ -1,5 +1,6 @@
 require("dotenv").config();
 const PORT = process.env.PORT || 5000;
+const BASE_URL = process.env.BASE_URL || "http://localhost:5000";
 const express = require("express");
 const cors = require("cors");
 const passport = require("passport");
@@ -45,6 +46,4 @@ app.use((err, req, res, next) => {
     message: "Internal Server Error",
   });
 });
-app.listen(PORT, () =>
-  console.log(`Server is running on http://localhost:${PORT}`)
-);
+app.listen(PORT, () => console.log(`Server is running on ${BASE_URL}:${PORT}`));

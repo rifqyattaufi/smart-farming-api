@@ -33,6 +33,7 @@ module.exports = (sequelize, DataTypes) => {
       },
     },
     {
+      tableName: "produk",
       freezeTableName: true,
     }
   );

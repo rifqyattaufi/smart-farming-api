@@ -81,6 +81,7 @@ const login = async (req, res, next) => {
       email: userExist.email,
       phone: userExist.phone,
       role: userExist.role,
+      avatar: userExist.avatarUrl,
     };
 
     const token = generateAccessToken(usr);
@@ -132,8 +133,6 @@ const register = async (req, res, next) => {
       },
     });
 
-
-
     if (userExisted && userExisted.isDeleted) {
       return res.status(400).json({
         message: "This email has been banned",
@@ -158,7 +157,8 @@ const register = async (req, res, next) => {
     }
     if (phoneExisted) {
       return res.status(400).json({
-        message: "Nomor telepon sudah terdaftar, coba gunakan nomor telepon yang lain",
+        message:
+          "Nomor telepon sudah terdaftar, coba gunakan nomor telepon yang lain",
       });
     }
 
@@ -430,6 +430,13 @@ const refreshToken = async (req, res, next) => {
     }
 
     const data = verifyRefreshToken(token);
+
+    if (!data) {
+      return res.status(401).json({
+        message: "Unauthorized",
+      });
+    }
+
     const user = await User.findOne({
       where: {
         id: data.id,
@@ -459,6 +466,7 @@ const refreshToken = async (req, res, next) => {
       name: user.name,
       email: user.email,
       role: user.role,
+      avatar: user.avatarUrl,
     };
 
     const newToken = generateAccessToken(usr);
@@ -535,7 +543,7 @@ const forgotPassword = async (req, res, next) => {
         message: "OTP Berhasil dikirim",
         data: {
           phone: userExist.phone,
-        }
+        },
       });
     }
   } catch (error) {

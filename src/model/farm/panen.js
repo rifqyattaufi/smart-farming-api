@@ -18,6 +18,7 @@ module.exports = (sequelize, DataTypes) => {
             },
         },
         {
+            tableName: "panen",
             freezeTableName: true,
         }
     );

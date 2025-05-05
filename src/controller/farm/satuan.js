@@ -61,9 +61,10 @@ const getSatuanByName = async (req, res) => {
 
     const data = await Satuan.findAll({
       where: {
-        nama: {
-          [Op.like]: `%${nama}%`,
-        },
+        [Op.or]: [
+          { nama: { [Op.like]: `%${nama}%` } },
+          { lambang: { [Op.like]: `%${nama}%` } },
+        ],
         isDeleted: false,
       },
     });

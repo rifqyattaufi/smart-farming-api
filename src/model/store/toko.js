@@ -30,8 +30,8 @@ module.exports = (sequelize, DataTypes) => {
       },
       tokoStatus: {
         type: DataTypes.ENUM,
-        values: ['request', 'active', 'delete', 'reject'],
-        defaultValue: 'request',
+        values: ["request", "active", "delete", "reject"],
+        defaultValue: "request",
       },
       createdAt: {
         type: DataTypes.DATE,
@@ -48,6 +48,7 @@ module.exports = (sequelize, DataTypes) => {
       },
     },
     {
+      tableName: "toko",
       freezeTableName: true,
     }
   );

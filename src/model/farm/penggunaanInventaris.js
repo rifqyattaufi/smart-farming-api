@@ -20,6 +20,7 @@ module.exports = (sequelize, DataTypes) => {
       },
     },
     {
+      tableName: "penggunaanInventaris",
       freezeTableName: true,
     }
   );
