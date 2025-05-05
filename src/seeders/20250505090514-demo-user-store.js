@@ -97,7 +97,7 @@ module.exports = {
         updatedAt: new Date(),
       },
       {
-        id: "31308d40-7158-45ed-91cf-ba82d75e0292a",
+        id: "31308d40-7158-45ed-91cf-ba82d75e0292",
         name: "Apps Premium by Akay",
         email: "umkm6@gmail.com",
         phone: "082266095743",
