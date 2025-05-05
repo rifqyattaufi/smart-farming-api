@@ -8,6 +8,7 @@ const getAllObjekBudidaya = async (req, res) => {
       where: {
         isDeleted: false,
       },
+      order: [["createdAt", "DESC"]],
     });
 
     if (data.length === 0) {
@@ -32,6 +33,7 @@ const getObjekBudidayaById = async (req, res) => {
   try {
     const data = await ObjekBudidaya.findOne({
       where: { id: req.params.id, isDeleted: false },
+      order: [["createdAt", "DESC"]],
     });
 
     if (!data) {

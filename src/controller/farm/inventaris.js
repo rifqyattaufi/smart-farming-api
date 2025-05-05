@@ -12,6 +12,7 @@ const getAllInventaris = async (req, res) => {
       where: {
         isDeleted: false,
       },
+      order: [["createdAt", "DESC"]],
     });
 
     if (data.length === 0) {
@@ -70,6 +71,7 @@ const getInventarisByName = async (req, res) => {
         },
         isDeleted: false,
       },
+      order: [["createdAt", "DESC"]],
     });
 
     if (data.length === 0) {
@@ -89,21 +91,6 @@ const getInventarisByName = async (req, res) => {
 };
 
 const createInventaris = async (req, res) => {
-  // const valid = {
-  //   satuanId: "required",
-  //   kategoriInventarisId: "required",
-  //   nama: "required",
-  //   gambar: "required",
-  //   jumlah: "required",
-  // };
-  // const validation = await dataValid(valid, req.body);
-  // if (validation.message.length > 0) {
-  //   return res.status(400).json({
-  //     error: validation.message,
-  //     message: "Validation error",
-  //   });
-  // }
-
   try {
     const data = await Inventaris.create({
       SatuanId: req.body.satuanId,

@@ -10,6 +10,13 @@ const getAllKomoditas = async (req, res) => {
       where: {
         isDeleted: false,
       },
+      include: [
+        {
+          model: sequelize.JenisBudidaya,
+          required: true,
+        },
+      ],
+      order: [["createdAt", "DESC"]],
     });
 
     if (data.length === 0) {
@@ -37,6 +44,16 @@ const getKomoditasById = async (req, res) => {
         id: req.params.id,
         isDeleted: false,
       },
+      include: [
+        {
+          model: sequelize.Satuan,
+          required: true,
+        },
+        {
+          model: sequelize.JenisBudidaya,
+          required: true,
+        },
+      ],
     });
 
     if (!data || data.isDeleted) {
@@ -77,6 +94,7 @@ const getKomoditasByName = async (req, res) => {
         },
         isDeleted: false,
       },
+      order: [["createdAt", "DESC"]],
     });
 
     if (data.length === 0) {
@@ -112,6 +130,7 @@ const getKomoditasByTipe = async (req, res) => {
       where: {
         isDeleted: false,
       },
+      order: [["createdAt", "DESC"]],
     });
 
     if (data.length === 0) {

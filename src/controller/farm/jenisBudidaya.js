@@ -10,6 +10,7 @@ const getAllJenisBudidaya = async (req, res) => {
       where: {
         isDeleted: false,
       },
+      order: [["createdAt", "DESC"]],
     });
 
     if (data.length === 0) {

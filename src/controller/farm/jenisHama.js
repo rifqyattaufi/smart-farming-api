@@ -10,6 +10,7 @@ const getAlljenisHama = async (req, res) => {
       where: {
         isDeleted: false,
       },
+      order: [["createdAt", "DESC"]],
     });
 
     if (data.length === 0) {
@@ -68,6 +69,7 @@ const getjenisHamaByName = async (req, res) => {
         },
         isDeleted: false,
       },
+      order: [["createdAt", "DESC"]],
     });
 
     if (data.length === 0) {
