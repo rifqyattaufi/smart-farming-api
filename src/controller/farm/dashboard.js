@@ -111,14 +111,14 @@ const dashboardPerkebunan = async (req, res) => {
       jb.tipe AS jenisBudidayaTipe, 
       i.nama AS inventarisNama, 
       iv.nama AS vitaminNama
-      FROM Laporan l
-      LEFT JOIN User u ON l.userId = u.id
-      LEFT JOIN UnitBudidaya ub ON l.unitBudidayaId = ub.id
-      LEFT JOIN JenisBudidaya jb ON ub.jenisBudidayaId = jb.id
-      LEFT JOIN PenggunaanInventaris pi ON l.id = pi.laporanId
-      LEFT JOIN Inventaris i ON pi.inventarisId = i.id
-      LEFT JOIN Vitamin v ON l.id = v.laporanId
-      LEFT JOIN Inventaris iv ON v.inventarisId = iv.id
+      FROM laporan l
+      LEFT JOIN user u ON l.userId = u.id
+      LEFT JOIN unitBudidaya ub ON l.unitBudidayaId = ub.id
+      LEFT JOIN jenisBudidaya jb ON ub.jenisBudidayaId = jb.id
+      LEFT JOIN penggunaanInventaris pi ON l.id = pi.laporanId
+      LEFT JOIN inventaris i ON pi.inventarisId = i.id
+      LEFT JOIN vitamin v ON l.id = v.laporanId
+      LEFT JOIN inventaris iv ON v.inventarisId = iv.id
       WHERE l.isDeleted = false
       ORDER BY l.createdAt DESC
       LIMIT 2
@@ -238,8 +238,8 @@ const dashboardPeternakan = async (req, res) => {
     const sumKolektif = await db.query(
       `
       SELECT SUM(ub.jumlah) AS totalJumlah
-      FROM UnitBudidaya ub
-      INNER JOIN JenisBudidaya jb ON ub.jenisBudidayaId = jb.id
+      FROM unitBudidaya ub
+      INNER JOIN jenisBudidaya jb ON ub.jenisBudidayaId = jb.id
       WHERE ub.tipe = 'kolektif' AND ub.isDeleted = false AND jb.tipe = 'hewan'
       `,
       { type: QueryTypes.SELECT }
@@ -344,14 +344,14 @@ const dashboardPeternakan = async (req, res) => {
       jb.tipe AS jenisBudidayaTipe, 
       i.nama AS inventarisNama, 
       iv.nama AS vitaminNama
-      FROM Laporan l
-      LEFT JOIN User u ON l.userId = u.id
-      LEFT JOIN UnitBudidaya ub ON l.unitBudidayaId = ub.id
-      LEFT JOIN JenisBudidaya jb ON ub.jenisBudidayaId = jb.id
-      LEFT JOIN PenggunaanInventaris pi ON l.id = pi.laporanId
-      LEFT JOIN Inventaris i ON pi.inventarisId = i.id
-      LEFT JOIN Vitamin v ON l.id = v.laporanId
-      LEFT JOIN Inventaris iv ON v.inventarisId = iv.id
+      FROM laporan l
+      LEFT JOIN user u ON l.userId = u.id
+      LEFT JOIN unitBudidaya ub ON l.unitBudidayaId = ub.id
+      LEFT JOIN jenisBudidaya jb ON ub.jenisBudidayaId = jb.id
+      LEFT JOIN penggunaanInventaris pi ON l.id = pi.laporanId
+      LEFT JOIN inventaris i ON pi.inventarisId = i.id
+      LEFT JOIN vitamin v ON l.id = v.laporanId
+      LEFT JOIN inventaris iv ON v.inventarisId = iv.id
       WHERE l.isDeleted = false
       ORDER BY l.createdAt DESC
       LIMIT 2
