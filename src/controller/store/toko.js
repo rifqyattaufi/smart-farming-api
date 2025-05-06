@@ -268,6 +268,43 @@ const banToko = async (req, res) => {
     });
   }
 };
+const changeTokoType = async (req, res) => {
+  try {
+    const toko = await Toko.findOne({
+      where: {
+        id: req.params.id,
+        isDeleted: false,
+      },
+    });
+
+    if (!toko) {
+      return res.status(404).json({
+        message: "Toko not found",
+      });
+    }
+
+    // Check if toko is already RFC
+    if (toko.TypeToko === 'rfc') {
+      return res.status(400).json({
+        message: "Toko is already classified as RFC",
+      });
+    }
+
+    toko.TypeToko = 'rfc';
+    await toko.save();
+
+    return res.status(200).json({
+      message: "Successfully changed toko type to RFC",
+      data: toko,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
+  }
+};
+
 
 
 module.exports = {
@@ -280,4 +317,5 @@ module.exports = {
   activateToko,
   rejectToko,
   banToko,
+  changeTokoType,
 };
