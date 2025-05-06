@@ -12,6 +12,7 @@ const getAllKategoriInventaris = async (req, res) => {
       where: {
         isDeleted: false,
       },
+      order: [["createdAt", "DESC"]],
     });
 
     if (data.length === 0) {
@@ -70,6 +71,7 @@ const getKategoriInventarisByName = async (req, res) => {
         },
         isDeleted: false,
       },
+      order: [["createdAt", "DESC"]],
     });
 
     if (data.length === 0) {

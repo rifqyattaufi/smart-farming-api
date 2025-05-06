@@ -12,6 +12,7 @@ const getAllUnitBudidaya = async (req, res) => {
       where: {
         isDeleted: false,
       },
+      order: [["createdAt", "DESC"]],
     });
 
     if (data.length === 0) {
@@ -35,7 +36,41 @@ const getAllUnitBudidaya = async (req, res) => {
 const getUnitBudidayaById = async (req, res) => {
   try {
     const data = await UnitBudidaya.findOne({
-      where: { id: req.params.id, isDeleted: false },
+      include: [
+        {
+          model: JenisBudidaya,
+          required: true,
+        },
+      ],
+      where: {
+        id: req.params.id,
+        isDeleted: false,
+      },
+    });
+
+    const dataObjekBudidaya = await ObjekBudidaya.findAll({
+      include: [
+        {
+          model: UnitBudidaya,
+          attributes: ["id"],
+          required: true,
+          include: [
+            {
+              model: JenisBudidaya,
+              attributes: ["nama", "gambar"],
+              required: true,
+            },
+          ],
+        },
+      ],
+      where: {
+        UnitBudidayaId: req.params.id,
+        isDeleted: false,
+      },
+      order: [
+        [db.fn("length", db.col("namaId")), "ASC"],
+        ["namaId", "ASC"],
+      ],
     });
 
     if (!data || data.isDeleted) {
@@ -46,7 +81,10 @@ const getUnitBudidayaById = async (req, res) => {
 
     return res.status(200).json({
       message: "Successfully retrieved unit budidaya data",
-      data: unit,
+      data: {
+        unitBudidaya: data,
+        objekBudidaya: dataObjekBudidaya,
+      },
     });
   } catch (error) {
     res.status(500).json({
@@ -75,6 +113,7 @@ const getUnitBudidayaByName = async (req, res) => {
         },
         isDeleted: false,
       },
+      order: [["createdAt", "DESC"]],
     });
 
     if (data.length === 0) {
@@ -257,6 +296,7 @@ const getUnitBudidayaByTipe = async (req, res) => {
       where: {
         isDeleted: false,
       },
+      order: [["createdAt", "DESC"]],
     });
 
     if (data.length === 0) {
