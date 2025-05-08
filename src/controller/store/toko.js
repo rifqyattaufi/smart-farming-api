@@ -118,8 +118,8 @@ const createToko = async (req, res) => {
 
 
 const updateToko = async (req, res) => {
-  try {
-    const data = await Toko.findOne({
+  try { 
+    const data = await Toko.findOne({  
       where: {
         UserId: req.user.id,
         isDeleted: false,
