@@ -13,16 +13,37 @@ const createKeranjang = async (req, res) => {
             });
         }
 
-        const data = await Keranjang.create({
-            produkId,
-            jumlah,
-            UserId: req.user.id,
+        // Check if this product is already in user's cart
+        const existingCartItem = await Keranjang.findOne({
+            where: {
+                produkId,
+                UserId: req.user.id,
+                isDeleted: false
+            }
         });
 
-        return res.status(201).json({
-            message: "Successfully added to cart",
-            data: data,
-        });
+        let data;
+        
+        if (existingCartItem) {
+            existingCartItem.jumlah += parseInt(jumlah);
+            data = await existingCartItem.save();
+            
+            return res.status(200).json({
+                message: "Cart quantity updated successfully",
+                data: data,
+            });
+        } else {
+            data = await Keranjang.create({
+                produkId,
+                jumlah,
+                UserId: req.user.id,
+            });
+            
+            return res.status(201).json({
+                message: "Successfully added to cart",
+                data: data,
+            });
+        }
     } catch (error) {
         res.status(500).json({
             message: error.message,
