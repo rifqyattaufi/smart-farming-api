@@ -4,6 +4,7 @@ const { Op, where } = require("sequelize");
 const db = sequelize.sequelize;
 const JenisBudidaya = sequelize.JenisBudidaya;
 const UnitBudidaya = sequelize.UnitBudidaya;
+const ObjekBudidaya = sequelize.ObjekBudidaya;
 
 const getAllJenisBudidaya = async (req, res) => {
   try {
@@ -163,6 +164,8 @@ const updateJenisBudidaya = async (req, res) => {
 };
 
 const deleteJenisBudidaya = async (req, res) => {
+  const t = await db.transaction();
+
   try {
     const data = await JenisBudidaya.findOne({
       where: { id: req.params.id, isDeleted: false },
@@ -174,8 +177,54 @@ const deleteJenisBudidaya = async (req, res) => {
       });
     }
 
-    data.isDeleted = true;
-    await data.save();
+    const dataUnitBudidaya = await UnitBudidaya.findAll(
+      {
+        where: {
+          jenisBudidayaId: req.params.id,
+          isDeleted: false,
+        },
+      },
+      { transaction: t }
+    );
+
+    for (const obj of dataUnitBudidaya) {
+      await ObjekBudidaya.update(
+        {
+          isDeleted: true,
+        },
+        {
+          where: {
+            unitBudidayaId: obj.id,
+            isDeleted: false,
+          },
+          transaction: t,
+        }
+      );
+    }
+
+    await UnitBudidaya.update(
+      {
+        isDeleted: true,
+      },
+      {
+        where: {
+          jenisBudidayaId: req.params.id,
+          isDeleted: false,
+        },
+        transaction: t,
+      }
+    );
+
+    await data.update(
+      {
+        isDeleted: true,
+      },
+      {
+        transaction: t,
+      }
+    );
+
+    await t.commit();
 
     res.locals.updatedData = data;
 
@@ -183,6 +232,7 @@ const deleteJenisBudidaya = async (req, res) => {
       message: "Jenis Budidaya deleted successfully",
     });
   } catch (error) {
+    await t.rollback();
     res.status(500).json({
       message: error.message,
       detail: error,
