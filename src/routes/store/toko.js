@@ -27,4 +27,6 @@ router.put('/reject/:id', auditMiddleware({ model: Toko, tableName: "Toko" }), t
 
 router.delete('/:id', auditMiddleware({ model: Toko, tableName: "Toko" }), tokoController.deleteToko);
 
+router.put('/changeType/:id', auditMiddleware({ model: Toko, tableName: "Toko" }), tokoController.changeTokoType);
+
 module.exports = router;
