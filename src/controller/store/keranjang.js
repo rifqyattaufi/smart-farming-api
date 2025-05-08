@@ -5,7 +5,7 @@ const Op = sequelize.Sequelize.Op;
 
 const createKeranjang = async (req, res) => {
     try {
-        const { id_produk, jumlah } = req.body;
+        const { produkId, jumlah } = req.body;
         const { error } = dataValid(req.body, "createKeranjang");
         if (error) {
             return res.status(400).json({
