@@ -33,7 +33,7 @@ const createKeranjang = async (req, res) => {
             });
         } else {
             data = await Keranjang.create({
-                produkId,
+                ProdukId: produkId,
                 jumlah,
                 UserId: req.user.id,
             });
