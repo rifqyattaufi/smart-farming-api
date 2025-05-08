@@ -253,7 +253,6 @@ const updateUnitBudidaya = async (req, res) => {
   }
 };
 
-// *PR kalau mau delete unit budidaya, harus perhatikan relasi yg dimiliki unit budidaya tsb !!!
 const deleteUnitBudidaya = async (req, res) => {
   try {
     const data = await UnitBudidaya.findOne({
@@ -262,6 +261,27 @@ const deleteUnitBudidaya = async (req, res) => {
 
     if (!data || data.isDeleted) {
       return res.status(404).json({ message: "Data not found" });
+    }
+
+    if (data["tipe"] == "individu") {
+      const dataObjekBudidaya = await ObjekBudidaya.findAll({
+        where: {
+          UnitBudidayaId: req.params.id,
+          isDeleted: false,
+        },
+      });
+      dataObjekBudidaya.forEach(async (obj) => {
+        await ObjekBudidaya.update(
+          { isDeleted: true },
+          {
+            where: {
+              id: obj.id,
+            },
+          }
+        );
+      });
+
+      res.locals.updatedData = dataObjekBudidaya;
     }
 
     data.isDeleted = true;

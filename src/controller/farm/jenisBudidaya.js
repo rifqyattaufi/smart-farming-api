@@ -1,8 +1,9 @@
 const e = require("express");
 const sequelize = require("../../model/index");
-const { Op } = require("sequelize");
+const { Op, where } = require("sequelize");
 const db = sequelize.sequelize;
 const JenisBudidaya = sequelize.JenisBudidaya;
+const UnitBudidaya = sequelize.UnitBudidaya;
 
 const getAllJenisBudidaya = async (req, res) => {
   try {
@@ -37,6 +38,21 @@ const getJenisBudidayaById = async (req, res) => {
       where: { id: req.params.id, isDeleted: false },
     });
 
+    const dataUnitBudidaya = await UnitBudidaya.findAll({
+      where: {
+        jenisBudidayaId: req.params.id,
+        isDeleted: false,
+      },
+      order: [["createdAt", "DESC"]],
+    });
+
+    let jumlahTernak = 0;
+
+    for (let i = 0; i < dataUnitBudidaya.length; i++) {
+      const unitBudidaya = dataUnitBudidaya[i];
+      jumlahTernak += unitBudidaya["jumlah"];
+    }
+
     if (!data || data.isDeleted) {
       return res.status(404).json({
         message: "Data not found",
@@ -45,7 +61,11 @@ const getJenisBudidayaById = async (req, res) => {
 
     return res.status(200).json({
       message: "Successfully retrieved jenis budidaya data",
-      data: data,
+      data: {
+        jenisBudidaya: data,
+        unitBudidaya: dataUnitBudidaya,
+        jumlahTernak: jumlahTernak,
+      },
     });
   } catch (error) {
     res.status(500).json({
