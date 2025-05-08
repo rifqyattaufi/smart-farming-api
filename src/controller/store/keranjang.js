@@ -13,21 +13,20 @@ const createKeranjang = async (req, res) => {
             });
         }
 
-        // Check if this product is already in user's cart
         const existingCartItem = await Keranjang.findOne({
             where: {
-                produkId,
+                ProdukId: produkId,
                 UserId: req.user.id,
                 isDeleted: false
             }
         });
 
         let data;
-        
+
         if (existingCartItem) {
             existingCartItem.jumlah += parseInt(jumlah);
             data = await existingCartItem.save();
-            
+
             return res.status(200).json({
                 message: "Cart quantity updated successfully",
                 data: data,
@@ -38,7 +37,7 @@ const createKeranjang = async (req, res) => {
                 jumlah,
                 UserId: req.user.id,
             });
-            
+
             return res.status(201).json({
                 message: "Successfully added to cart",
                 data: data,
