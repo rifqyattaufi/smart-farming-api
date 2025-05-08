@@ -9,5 +9,7 @@ const Keranjang = sequelize.Keranjang;
 
 
 router.post('/', auditMiddleware({ model: Keranjang, tableName: "Keranjang" }), keranjangController.createKeranjang);
-
+router.get('/id/', keranjangController.getKeranjangByUserId);
+router.put('/id/:id', keranjangController.updateKeranjang);
+router.delete('/id/:id', keranjangController.deleteKeranjang);
 module.exports = router;
