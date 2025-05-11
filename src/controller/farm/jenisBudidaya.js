@@ -1,8 +1,10 @@
 const e = require("express");
 const sequelize = require("../../model/index");
-const { Op } = require("sequelize");
+const { Op, where } = require("sequelize");
 const db = sequelize.sequelize;
 const JenisBudidaya = sequelize.JenisBudidaya;
+const UnitBudidaya = sequelize.UnitBudidaya;
+const ObjekBudidaya = sequelize.ObjekBudidaya;
 
 const getAllJenisBudidaya = async (req, res) => {
   try {
@@ -37,6 +39,21 @@ const getJenisBudidayaById = async (req, res) => {
       where: { id: req.params.id, isDeleted: false },
     });
 
+    const dataUnitBudidaya = await UnitBudidaya.findAll({
+      where: {
+        jenisBudidayaId: req.params.id,
+        isDeleted: false,
+      },
+      order: [["createdAt", "DESC"]],
+    });
+
+    let jumlahTernak = 0;
+
+    for (let i = 0; i < dataUnitBudidaya.length; i++) {
+      const unitBudidaya = dataUnitBudidaya[i];
+      jumlahTernak += unitBudidaya["jumlah"];
+    }
+
     if (!data || data.isDeleted) {
       return res.status(404).json({
         message: "Data not found",
@@ -45,7 +62,11 @@ const getJenisBudidayaById = async (req, res) => {
 
     return res.status(200).json({
       message: "Successfully retrieved jenis budidaya data",
-      data: data,
+      data: {
+        jenisBudidaya: data,
+        unitBudidaya: dataUnitBudidaya,
+        jumlahTernak: jumlahTernak,
+      },
     });
   } catch (error) {
     res.status(500).json({
@@ -143,6 +164,8 @@ const updateJenisBudidaya = async (req, res) => {
 };
 
 const deleteJenisBudidaya = async (req, res) => {
+  const t = await db.transaction();
+
   try {
     const data = await JenisBudidaya.findOne({
       where: { id: req.params.id, isDeleted: false },
@@ -154,8 +177,54 @@ const deleteJenisBudidaya = async (req, res) => {
       });
     }
 
-    data.isDeleted = true;
-    await data.save();
+    const dataUnitBudidaya = await UnitBudidaya.findAll(
+      {
+        where: {
+          jenisBudidayaId: req.params.id,
+          isDeleted: false,
+        },
+      },
+      { transaction: t }
+    );
+
+    for (const obj of dataUnitBudidaya) {
+      await ObjekBudidaya.update(
+        {
+          isDeleted: true,
+        },
+        {
+          where: {
+            unitBudidayaId: obj.id,
+            isDeleted: false,
+          },
+          transaction: t,
+        }
+      );
+    }
+
+    await UnitBudidaya.update(
+      {
+        isDeleted: true,
+      },
+      {
+        where: {
+          jenisBudidayaId: req.params.id,
+          isDeleted: false,
+        },
+        transaction: t,
+      }
+    );
+
+    await data.update(
+      {
+        isDeleted: true,
+      },
+      {
+        transaction: t,
+      }
+    );
+
+    await t.commit();
 
     res.locals.updatedData = data;
 
@@ -163,6 +232,7 @@ const deleteJenisBudidaya = async (req, res) => {
       message: "Jenis Budidaya deleted successfully",
     });
   } catch (error) {
+    await t.rollback();
     res.status(500).json({
       message: error.message,
       detail: error,

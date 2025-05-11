@@ -215,7 +215,14 @@ const createUnitBudidaya = async (req, res) => {
 };
 
 const updateUnitBudidaya = async (req, res) => {
+  const t = await db.transaction();
+
   try {
+    const jenisBudidaya = await JenisBudidaya.findOne({
+      where: { id: req.body.jenisBudidayaId },
+      isDeleted: false,
+    });
+
     const data = await UnitBudidaya.findOne({
       where: { id: req.params.id, isDeleted: false },
     });
@@ -227,16 +234,145 @@ const updateUnitBudidaya = async (req, res) => {
     }
 
     await UnitBudidaya.update(req.body, {
+      transaction: t,
       where: {
         id: req.params.id,
       },
     });
 
-    const updated = await UnitBudidaya.findOne({
-      where: { id: req.params.id },
+    const updated = req.body;
+
+    if (data.tipe.toLowerCase() != updated.tipe.toLowerCase()) {
+      console.log(updated);
+      if (updated.tipe.toLowerCase() == "individu") {
+        const objekList = Array.from({ length: updated.jumlah }, (_, i) => {
+          const prefix = jenisBudidaya.tipe === "hewan" ? "Ternak" : "Tanaman";
+          const deskripsi = `${prefix} ${jenisBudidaya.nama} pada ${
+            data.nama
+          } nomor ${i + 1}`;
+
+          return {
+            UnitBudidayaId: updated.id,
+            namaId: `${jenisBudidaya.nama} #${i + 1}`,
+            status: true,
+            deskripsi,
+            isDeleted: false,
+          };
+        });
+
+        const createdObjekList = await ObjekBudidaya.bulkCreate(objekList, {
+          transaction: t,
+          returning: true,
+        });
+
+        console.log("createdObjekList", createdObjekList);
+
+        for (const obj of createdObjekList) {
+          await Logs.create({
+            tableName: "ObjekBudidaya",
+            action: "create",
+            recordId: obj.id,
+            before: null,
+            after: obj.toJSON(),
+            changedBy: req.user?.id,
+          });
+        }
+      } else {
+        const dataObjekBudidaya = await ObjekBudidaya.findAll({
+          where: {
+            UnitBudidayaId: req.params.id,
+            isDeleted: false,
+          },
+        });
+
+        for (const obj of dataObjekBudidaya) {
+          await ObjekBudidaya.update(
+            { isDeleted: true },
+            {
+              transaction: t,
+              where: {
+                id: obj.id,
+              },
+            }
+          );
+        }
+
+        res.locals.updatedData = dataObjekBudidaya;
+      }
+    }
+
+    if (data.tipe == "individu" && data.jumlah != updated.jumlah) {
+      if (updated.jumlah < data.jumlah) {
+        const dataObjekBudidaya = await ObjekBudidaya.findAll({
+          where: {
+            UnitBudidayaId: req.params.id,
+            isDeleted: false,
+          },
+          order: [
+            [db.fn("length", db.col("namaId")), "ASC"],
+            ["namaId", "ASC"],
+          ],
+        });
+        for (const [index, obj] of dataObjekBudidaya.entries()) {
+          if (index >= updated.jumlah) {
+            await ObjekBudidaya.update(
+              { isDeleted: true },
+              {
+                transaction: t,
+                where: {
+                  id: obj.id,
+                },
+              }
+            );
+          }
+        }
+      }
+
+      if (updated.jumlah > data.jumlah) {
+        const objekList = Array.from(
+          { length: updated.jumlah - data.jumlah },
+          (_, i) => {
+            const prefix =
+              jenisBudidaya.tipe === "hewan" ? "Ternak" : "Tanaman";
+            const deskripsi = `${prefix} ${jenisBudidaya.nama} pada ${
+              data.nama
+            } nomor ${data.jumlah + i + 1}`;
+
+            return {
+              UnitBudidayaId: updated.id,
+              namaId: `${jenisBudidaya.nama} #${data.jumlah + i + 1}`,
+              status: true,
+              deskripsi,
+              isDeleted: false,
+            };
+          }
+        );
+
+        createdObjekList = await ObjekBudidaya.bulkCreate(objekList, {
+          transaction: t,
+          returning: true,
+        });
+
+        for (const obj of createdObjekList) {
+          await Logs.create({
+            tableName: "ObjekBudidaya",
+            action: "create",
+            recordId: obj.id,
+            before: null,
+            after: obj.toJSON(),
+            changedBy: req.user?.id,
+          });
+        }
+      }
+    }
+
+    await t.commit();
+
+    const updatedData = await UnitBudidaya.findOne({
+      where: { id: req.params.id, isDeleted: false },
     });
 
-    res.locals.updatedData = updated.toJSON();
+    res.locals.updatedData = updatedData.toJSON();
 
     return res.status(200).json({
       message: "Successfully updated unit budidaya data",
@@ -246,6 +382,7 @@ const updateUnitBudidaya = async (req, res) => {
       },
     });
   } catch (error) {
+    await t.rollback();
     res.status(500).json({
       message: error.message,
       detail: error,
@@ -253,7 +390,6 @@ const updateUnitBudidaya = async (req, res) => {
   }
 };
 
-// *PR kalau mau delete unit budidaya, harus perhatikan relasi yg dimiliki unit budidaya tsb !!!
 const deleteUnitBudidaya = async (req, res) => {
   try {
     const data = await UnitBudidaya.findOne({
@@ -262,6 +398,27 @@ const deleteUnitBudidaya = async (req, res) => {
 
     if (!data || data.isDeleted) {
       return res.status(404).json({ message: "Data not found" });
+    }
+
+    if (data["tipe"] == "individu") {
+      const dataObjekBudidaya = await ObjekBudidaya.findAll({
+        where: {
+          UnitBudidayaId: req.params.id,
+          isDeleted: false,
+        },
+      });
+      dataObjekBudidaya.forEach(async (obj) => {
+        await ObjekBudidaya.update(
+          { isDeleted: true },
+          {
+            where: {
+              id: obj.id,
+            },
+          }
+        );
+      });
+
+      res.locals.updatedData = dataObjekBudidaya;
     }
 
     data.isDeleted = true;
