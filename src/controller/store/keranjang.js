@@ -7,10 +7,9 @@ const Toko = sequelize.Toko;
 const createKeranjang = async (req, res) => {
     try {
         const { produkId, jumlah } = req.body;
-        const { error } = dataValid(req.body, "createKeranjang");
-        if (error) {
+        if (!produkId || !jumlah || jumlah < 1) {
             return res.status(400).json({
-                message: error.details[0].message,
+                message: "Product ID and quantity greater than 0 are required",
             });
         }
 
@@ -70,7 +69,7 @@ const getKeranjangByUserId = async (req, res) => {
                     include: [
                         {
                             model: sequelize.Toko,
-                            attributes: ['id', 'nama', 'logoToko']
+                            attributes: ['id', 'nama', 'logoToko', "alamat"],
                         }
                     ]
                 }

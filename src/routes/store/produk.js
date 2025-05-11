@@ -14,6 +14,7 @@ router.get('/token', produkController.getProdukByToken);
 router.get('/idToko/:id', produkController.getProdukbyTokoId);
 router.get('/rfc', produkController.getProdukByRFC);
 router.get('/umkm', produkController.getProdukUMKM);
+router.get('/stok/:id', produkController.getStokByProdukId); 
 router.get('/all/', produkController.getAll);
 router.delete('/:id', produkController.deleteProdukById);
 router.post('/', auditMiddleware({ model: Produk, tableName: "Produk" }), produkController.createProduk);
