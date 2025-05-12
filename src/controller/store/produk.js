@@ -262,6 +262,38 @@ const deleteProdukById = async (req, res) => {
         });
     }
 }
+const getStokByProdukId = async (req, res) => {
+    try {
+        const data = await Produk.findOne({
+            attributes: ['id', 'stok', 'nama'],
+            where: {
+                id: req.params.id,
+                isDeleted: false,
+            },
+        });
+
+        if (!data) {
+            return res.status(404).json({
+                message: "Produk not found",
+            });
+        }
+
+        return res.status(200).json({
+            message: "Successfully retrieved produk stock",
+            data: {
+                id: data.id,
+                nama_produk: data.nama_produk,
+                stok: data.stok
+            },
+        });
+    } catch (error) {
+        return res.status(500).json({
+            message: error.message,
+            detail: error,
+        });
+    }
+}
+
 
 module.exports = {
     createProduk,
@@ -273,4 +305,5 @@ module.exports = {
     deleteProdukById,
     getProdukByToken,
     getProdukbyTokoId,
+    getStokByProdukId,
 };
