@@ -47,11 +47,11 @@ const getJenisBudidayaById = async (req, res) => {
       order: [["createdAt", "DESC"]],
     });
 
-    let jumlahTernak = 0;
+    let jumlahBudidaya = 0;
 
     for (let i = 0; i < dataUnitBudidaya.length; i++) {
       const unitBudidaya = dataUnitBudidaya[i];
-      jumlahTernak += unitBudidaya["jumlah"];
+      jumlahBudidaya += unitBudidaya["jumlah"];
     }
 
     if (!data || data.isDeleted) {
@@ -65,7 +65,7 @@ const getJenisBudidayaById = async (req, res) => {
       data: {
         jenisBudidaya: data,
         unitBudidaya: dataUnitBudidaya,
-        jumlahTernak: jumlahTernak,
+        jumlahBudidaya: jumlahBudidaya,
       },
     });
   } catch (error) {
