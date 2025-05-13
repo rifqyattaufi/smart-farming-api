@@ -18,6 +18,22 @@ module.exports = (sequelize, DataTypes) => {
       gambar: {
         type: DataTypes.STRING,
       },
+      detail: {
+        type: DataTypes.TEXT,
+      },
+      tanggalKadaluwarsa: {
+        type: DataTypes.DATE,
+      },
+      ketersediaan: {
+        type: DataTypes.ENUM("tersedia", "tidak tersedia", "kadaluwarsa"),
+        allowNull: false,
+        defaultValue: "tersedia",
+      },
+      kondisi: {
+        type: DataTypes.ENUM("baik", "rusak"),
+        allowNull: false,
+        defaultValue: "baik",
+      },
       isDeleted: {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
