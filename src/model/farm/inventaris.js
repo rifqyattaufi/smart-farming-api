@@ -21,6 +21,9 @@ module.exports = (sequelize, DataTypes) => {
       detail: {
         type: DataTypes.TEXT,
       },
+      stokMinim: {
+        type: DataTypes.DOUBLE,
+      },
       tanggalKadaluwarsa: {
         type: DataTypes.DATE,
       },
