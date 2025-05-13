@@ -8,6 +8,7 @@ const KategoriInventaris = sequelize.KategoriInventaris;
 const PenggunaanInventaris = sequelize.PenggunaanInventaris;
 const Satuan = sequelize.Satuan;
 const Laporan = sequelize.Laporan;
+const User = sequelize.User;
 
 const dashboardInventaris = async (req, res) => {
     try {
@@ -49,48 +50,28 @@ const dashboardInventaris = async (req, res) => {
             },
         });
 
-        // const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-        // const penggunaan = await Inventaris.findAll({
-        //     attributes: [
-        //         "id",
-        //         [fn("SUM", col("penggunaan.jumlah")), "totalJumlah"],
-        //     ],
-        //     include: [
-        //         {
-        //             model: PenggunaanInventaris,
-        //             attributes: [],
-        //             where: {
-        //                 isDeleted: false,
-        //                 createdAt: {
-        //                     [Op.gte]: thirtyDaysAgo,
-        //                 },
-        //             },
-        //             required: true,
-        //         },
-        //     ],
-        //     where: { isDeleted: false },
-        //     group: ["Inventaris.id"],
-        //     order: [[literal("totalJumlah"), "DESC"]],
-        // });
-        const penggunaan = await db.query(`
-            SELECT 
-                i.id,
-                SUM(pi.jumlah) AS totalJumlah
-            FROM 
-                inventaris i
-            JOIN 
-                penggunaanInventaris pi 
-                ON pi.inventarisId = i.id
-            WHERE 
-                i.isDeleted = FALSE
-                AND pi.isDeleted = FALSE
-                AND pi.createdAt >= NOW() - INTERVAL 30 DAY
-            GROUP BY 
-                i.id
-            ORDER BY 
-                totalJumlah DESC
-            `, {
-            type: QueryTypes.SELECT,
+        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        const penggunaan = await Inventaris.findAll({
+            attributes: [
+                "id",
+                [fn("SUM", col("penggunaanInventaris.jumlah")), "totalJumlah"],
+            ],
+            include: [
+                {
+                    model: PenggunaanInventaris,
+                    attributes: [],
+                    where: {
+                        isDeleted: false,
+                        createdAt: {
+                            [Op.gte]: thirtyDaysAgo,
+                        },
+                    },
+                    required: true,
+                },
+            ],
+            where: { isDeleted: false },
+            group: ["Inventaris.id"],
+            order: [[literal("totalJumlah"), "DESC"]],
         });
 
         // // Hitung 20% teratas
@@ -108,14 +89,34 @@ const dashboardInventaris = async (req, res) => {
         //         "id",
         //         "jumlah",
         //         "createdAt",
+        //         [col("Inventaris.id"), "inventarisId"],
+        //         [col("Inventaris.nama"), "inventarisNama"],
+        //         [col("Laporan.userId"), "userId"],
+        //         [col("Laporan.gambar"), "laporanGambar"],
+        //         [col("User.name"), "petugasNama"],
+        //         [fn("DATE_FORMAT", col("Laporan.createdAt"), "%W, %d %M %Y"), "laporanTanggal"],
+        //         [fn("DATE_FORMAT", col("Laporan.createdAt"), "%H:%i"), "laporanWaktu"],
         //     ],
         //     include: [
         //         {
         //             model: Inventaris,
-        //             attributes: ["id", "nama"],
+        //             attributes: [],
         //             where: {
         //                 isDeleted: false,
         //             },
+        //         },
+        //         {
+        //             model: Laporan,
+        //             attributes: [],
+        //             where: {
+        //                 isDeleted: false,
+        //             },
+        //             include: [
+        //                 {
+        //                     model: User,
+        //                     attributes: [],
+        //                 },
+        //             ],
         //         },
         //     ],
         //     where: {

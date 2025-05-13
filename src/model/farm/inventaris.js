@@ -49,7 +49,9 @@ module.exports = (sequelize, DataTypes) => {
   );
 
   Inventaris.associate = (models) => {
-    Inventaris.hasMany(models.PenggunaanInventaris);
+    Inventaris.hasMany(models.PenggunaanInventaris, {
+      foreignKey: "inventarisId",
+    });
     Inventaris.hasMany(models.Vitamin);
 
     Inventaris.belongsTo(models.KategoriInventaris, {
