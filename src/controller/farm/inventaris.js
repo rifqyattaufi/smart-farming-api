@@ -88,6 +88,28 @@ const getInventarisById = async (req, res) => {
         replacements: { inventarisId: id },
     });
 
+    const pemakaianPerMinggu = await db.query(`
+      SELECT 
+      YEARWEEK(pi.createdAt, 1) AS mingguKe,
+      MIN(pi.createdAt) AS mingguAwal,
+      SUM(pi.jumlah) AS stokPemakaian
+      FROM 
+          penggunaanInventaris pi
+      JOIN 
+          inventaris i ON pi.inventarisId = i.id
+      WHERE 
+          pi.isDeleted = FALSE
+          AND i.isDeleted = FALSE
+          AND i.id = :inventarisId
+      GROUP BY 
+          YEARWEEK(pi.createdAt, 1)
+      ORDER BY 
+          mingguAwal ASC
+    `, {
+      type: QueryTypes.SELECT,
+      replacements: { inventarisId: id },
+    });
+
     if (!data || data.isDeleted) {
       return res.status(404).json({
         message: "Data not found",
@@ -96,7 +118,7 @@ const getInventarisById = async (req, res) => {
 
     return res.status(200).json({
       message: "Successfully retrieved inventaris data",
-      data: {data, daftarPemakaian},
+      data: {data, daftarPemakaian, pemakaianPerMinggu},
     });
   } catch (error) {
     res.status(500).json({
