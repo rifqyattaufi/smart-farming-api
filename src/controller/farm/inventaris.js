@@ -5,6 +5,8 @@ const kategoriInventaris = require("../../model/farm/kategoriInventaris");
 const { dataValid } = require("../../validation/dataValidation");
 const db = sequelize.sequelize;
 const Inventaris = sequelize.Inventaris;
+const Satuan = sequelize.Satuan;
+const Kategori = sequelize.KategoriInventaris;
 
 const getAllInventaris = async (req, res) => {
   try {
@@ -35,11 +37,55 @@ const getAllInventaris = async (req, res) => {
 
 const getInventarisById = async (req, res) => {
   try {
+    const { id } = req.params;
+
     const data = await Inventaris.findOne({
       where: {
-        id: req.params.id,
+        id: id,
         isDeleted: false,
       },
+      include: [
+        {
+          model: Kategori,
+          as: "kategoriInventaris",
+          attributes: ["id", "nama"],
+        },
+        {
+          model: Satuan,
+          attributes: ["id", "nama", "lambang"],
+        },
+      ],
+    });
+    
+    const daftarPemakaian = await db.query(`
+      SELECT 
+          pi.id,
+          pi.jumlah,
+          pi.createdAt,
+          i.id AS inventarisId,
+          i.nama AS inventarisNama,
+          l.userId AS userId,
+          l.gambar AS laporanGambar,
+          u.name AS petugasNama,
+          DATE_FORMAT(l.createdAt, '%W, %d %M %Y') AS laporanTanggal,
+          DATE_FORMAT(l.createdAt, '%H:%i') AS laporanWaktu
+      FROM 
+          penggunaanInventaris pi
+      JOIN 
+          inventaris i ON pi.inventarisId = i.id
+      JOIN 
+          laporan l ON pi.laporanId = l.id
+      JOIN
+          user u ON l.userId = u.id
+      WHERE 
+          pi.isDeleted = FALSE
+          AND i.isDeleted = FALSE
+          AND i.id = :inventarisId
+      ORDER BY 
+          pi.createdAt DESC;
+    `, {
+        type: QueryTypes.SELECT,
+        replacements: { inventarisId: id },
     });
 
     if (!data || data.isDeleted) {
@@ -50,7 +96,7 @@ const getInventarisById = async (req, res) => {
 
     return res.status(200).json({
       message: "Successfully retrieved inventaris data",
-      data: data,
+      data: {data, daftarPemakaian},
     });
   } catch (error) {
     res.status(500).json({
