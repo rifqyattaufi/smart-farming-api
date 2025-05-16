@@ -9,6 +9,8 @@ const Inventaris = sequelize.Inventaris;
 
 router.get('/', inventarisController.getAllInventaris);
 
+router.get('/riwayat-penggunaan-inventaris', inventarisController.getRiwayatPenggunaanInventaris);
+
 router.get('/:id', inventarisController.getInventarisById);
 
 router.get('/search/:nama', inventarisController.getInventarisByName);
