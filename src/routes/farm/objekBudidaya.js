@@ -8,6 +8,11 @@ const ObjekBudidaya = sequelize.ObjekBudidaya;
 
 router.get("/", ObjekBudidayaController.getAllObjekBudidaya);
 router.get("/:id", ObjekBudidayaController.getObjekBudidayaById);
+router.get(
+  "/unit-budidaya/:id",
+  ObjekBudidayaController.getObjekBudidayaByUnitBudidaya
+);
+
 router.post(
   "/",
   auditMiddleware({ model: ObjekBudidaya, tableName: "ObjekBudidaya" }),

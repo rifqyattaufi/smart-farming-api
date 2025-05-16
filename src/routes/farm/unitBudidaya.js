@@ -14,6 +14,11 @@ router.get("/search/:nama/:tipe", UnitBudidayaController.getUnitBudidayaByName);
 
 router.get("/tipe/:tipe", UnitBudidayaController.getUnitBudidayaByTipe);
 
+router.get(
+  "/jenis-budidaya/:jenisBudidayaId",
+  UnitBudidayaController.getUnitBudidayaByJenisBudidaya
+);
+
 router.post(
   "/",
   auditMiddleware({ model: UnitBudidaya, tableName: "UnitBudidaya" }),
