@@ -10,8 +10,10 @@ const { authenticate } = require("../middleware/validation");
 
 router.use("/user", userRouter);
 router.use("/auth", authRouter);
+ router.use("/midtrans/webhook", storeRouter);
 
 router.use("/farm", authenticate(["pjawab", "inventor", "petugas"]), farmRouter);
 router.use("/store", authenticate(["pjawab", "penjual", "user"]), storeRouter);
+
 
 module.exports = router;
