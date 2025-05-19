@@ -132,6 +132,38 @@ const getUnitBudidayaByName = async (req, res) => {
   }
 };
 
+const getUnitBudidayaByJenisBudidaya = async (req, res) => {
+  try {
+    const { jenisBudidayaId } = req.params;
+    const data = await UnitBudidaya.findAll({
+      include: [
+        {
+          model: JenisBudidaya,
+          where: {
+            id: jenisBudidayaId,
+          },
+        },
+      ],
+      where: {
+        isDeleted: false,
+      },
+      order: [["createdAt", "DESC"]],
+    });
+    if (data.length === 0) {
+      return res.status(404).json({ message: "Data not found" });
+    }
+    return res.status(200).json({
+      message: "Successfully retrieved unit budidaya data",
+      data: data,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
+  }
+};
+
 const createUnitBudidaya = async (req, res) => {
   const t = await db.transaction();
 
@@ -476,6 +508,7 @@ module.exports = {
   getAllUnitBudidaya,
   getUnitBudidayaById,
   getUnitBudidayaByName,
+  getUnitBudidayaByJenisBudidaya,
   createUnitBudidaya,
   updateUnitBudidaya,
   deleteUnitBudidaya,

@@ -54,6 +54,51 @@ const getObjekBudidayaById = async (req, res) => {
   }
 };
 
+const getObjekBudidayaByUnitBudidaya = async (req, res) => {
+  try {
+    const data = await ObjekBudidaya.findAll({
+      include: [
+        {
+          model: sequelize.UnitBudidaya,
+          attributes: ["id"],
+          required: true,
+          include: [
+            {
+              model: sequelize.JenisBudidaya,
+              attributes: ["nama", "gambar"],
+              required: true,
+            },
+          ],
+        },
+      ],
+      where: {
+        UnitBudidayaId: req.params.id,
+        isDeleted: false,
+      },
+      order: [
+        [db.fn("length", db.col("namaId")), "ASC"],
+        ["namaId", "ASC"],
+      ],
+    });
+
+    if (data.length === 0) {
+      return res.status(404).json({
+        message: "Data not found",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Successfully retrieved objek budidaya data",
+      data: data,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
+  }
+};
+
 const createObjekBudidaya = async (req, res) => {
   try {
     const data = await ObjekBudidaya.create({
@@ -151,6 +196,7 @@ const deleteObjekBudidaya = async (req, res) => {
 module.exports = {
   getAllObjekBudidaya,
   getObjekBudidayaById,
+  getObjekBudidayaByUnitBudidaya,
   createObjekBudidaya,
   updateObjekBudidaya,
   deleteObjekBudidaya,

@@ -26,9 +26,7 @@ module.exports = (sequelize, DataTypes) => {
   );
 
   PenggunaanInventaris.associate = (models) => {
-    PenggunaanInventaris.belongsTo(models.Inventaris, {
-      foreignKey: "inventarisId",
-    });
+    PenggunaanInventaris.belongsTo(models.Inventaris);
     PenggunaanInventaris.belongsTo(models.Laporan);
   };
 

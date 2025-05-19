@@ -285,7 +285,7 @@ const createLaporanPanen = async (req, res) => {
     const laporanPanen = await Panen.create(
       {
         LaporanId: data.id,
-        KomoditasId: panen.komoditasId,
+        komoditasId: panen.komoditasId,
         jumlah: panen.jumlah,
       },
       { transaction: t }
