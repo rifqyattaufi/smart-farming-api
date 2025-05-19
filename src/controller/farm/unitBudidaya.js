@@ -251,8 +251,10 @@ const updateUnitBudidaya = async (req, res) => {
 
   try {
     const jenisBudidaya = await JenisBudidaya.findOne({
-      where: { id: req.body.jenisBudidayaId },
-      isDeleted: false,
+      where: {
+        id: req.body.jenisBudidayaId,
+        isDeleted: false,
+      },
     });
 
     const data = await UnitBudidaya.findOne({

@@ -1,8 +1,12 @@
 const e = require("express");
 const sequelize = require("../../model/index");
+const { where } = require("sequelize");
 const db = sequelize.sequelize;
 const Op = sequelize.Sequelize.Op;
 const Laporan = sequelize.Laporan;
+
+const UnitBudidaya = sequelize.UnitBudidaya;
+const ObjekBudidaya = sequelize.ObjekBudidaya;
 
 const HarianKebun = sequelize.HarianKebun;
 const HarianTernak = sequelize.HarianTernak;
@@ -171,30 +175,93 @@ const createLaporanKematian = async (req, res) => {
   const t = await db.transaction();
 
   try {
-    const { kematian } = req.body;
+    const { kematian, jumlah } = req.body;
 
-    const data = await Laporan.create(
-      {
-        ...req.body,
-        UnitBudidayaId: req.body.unitBudidayaId,
-        ObjekBudidayaId: req.body.objekBudidayaId,
-        UserId: req.user.id,
+    const unitBudidaya = await UnitBudidaya.findOne({
+      where: {
+        id: req.body.unitBudidayaId,
+        isDeleted: false,
       },
-      { transaction: t }
-    );
+    });
 
-    const laporanKematian = await Kematian.create(
-      {
-        LaporanId: data.id,
-        tanggal: kematian.tanggal,
-        penyebab: kematian.penyebab,
-      },
-      { transaction: t }
-    );
+    if (unitBudidaya.tipe == "individu") {
+      ObjekBudidaya.update(
+        {
+          isDeleted: true,
+        },
+        {
+          transaction: t,
+          where: {
+            id: req.body.objekBudidayaId,
+          },
+        }
+      );
+    }
+
+    if (jumlah != null) {
+      unitBudidaya.update(
+        {
+          jumlah: unitBudidaya.jumlah - jumlah,
+        },
+        {
+          transaction: t,
+        }
+      );
+    } else {
+      unitBudidaya.update(
+        {
+          jumlah: unitBudidaya.jumlah - 1,
+        },
+        {
+          transaction: t,
+        }
+      );
+      jumlah = 1;
+    }
+
+    let data;
+    let laporanKematian;
+
+    for (let i = 0; i < jumlah; i++) {
+      data = await Laporan.create(
+        {
+          ...req.body,
+          UnitBudidayaId: req.body.unitBudidayaId,
+          ObjekBudidayaId: req.body.objekBudidayaId,
+          UserId: req.user.id,
+        },
+        { transaction: t }
+      );
+
+      laporanKematian = await Kematian.create(
+        {
+          LaporanId: data.id,
+          tanggal: kematian.tanggal,
+          penyebab: kematian.penyebab,
+        },
+        { transaction: t }
+      );
+    }
 
     await t.commit();
 
+    const updatedUnit = await UnitBudidaya.findOne({
+      where: {
+        id: req.body.unitBudidayaId,
+      },
+    });
+
+    if (unitBudidaya.tipe == "individu") {
+      const updatedObjek = await ObjekBudidaya.findOne({
+        where: {
+          id: req.body.objekBudidayaId,
+        },
+      });
+      res.locals.updatedData = updatedObjek.toJSON();
+    }
+
     res.locals.createdData = { data, laporanKematian };
+    res.locals.updatedData = updatedUnit.toJSON();
 
     return res.status(201).json({
       message: "Successfully created new laporan data",
@@ -204,6 +271,7 @@ const createLaporanKematian = async (req, res) => {
       },
     });
   } catch (error) {
+    console.log(error);
     await t.rollback();
     res.status(500).json({
       message: error.message,
