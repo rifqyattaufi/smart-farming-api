@@ -4,7 +4,7 @@ const sequelize = require('../../model/index');
 const { or } = require('sequelize');
 const { param } = require('../../routes/store/keranjang');
 const Produk = sequelize.Produk;
-const { Pesanan, PesananDetail, } = require("../../model");
+const { Pesanan, PesananDetail, MidtransOrder } = require("../../model");
 
 const snap = new midtransClient.Snap({
     isProduction: false,
@@ -150,7 +150,7 @@ const handleWebhook = async (req, res) => {
         const transactionStatus = body.transaction_status;
         const transactionId = body.transaction_id;
 
-        await MidtransOrder.create({
+        await MidtransOrder.upsert({
             id: orderId,
             transaction_id: transactionId,
             transaction_status: transactionStatus,
