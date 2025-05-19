@@ -24,12 +24,15 @@ module.exports = (sequelize, DataTypes) => {
     {
       tableName: "pesanan",
       freezeTableName: true,
+      timestamps: true,
     }
   );
 
   Pesanan.associate = (models) => {
     Pesanan.belongsTo(models.User);
+    Pesanan.belongsTo(models.Toko);
     Pesanan.hasMany(models.PesananDetail);
+    Pesanan.belongsTo(models.MidtransOrder);
   };
 
   return Pesanan;
