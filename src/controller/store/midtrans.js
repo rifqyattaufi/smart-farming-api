@@ -4,7 +4,8 @@ const sequelize = require('../../model/index');
 const { or } = require('sequelize');
 const { param } = require('../../routes/store/keranjang');
 const Produk = sequelize.Produk;
-const { Pesanan, PesananDetail, } = require("../../model");
+const Pesanan = sequelize.Pesanan;
+const PesananDetail = sequelize.PesananDetail;
 
 const snap = new midtransClient.Snap({
     isProduction: false,
