@@ -4,8 +4,7 @@ const sequelize = require('../../model/index');
 const { or } = require('sequelize');
 const { param } = require('../../routes/store/keranjang');
 const Produk = sequelize.Produk;
-const Pesanan = sequelize.Pesanan;
-const PesananDetail = sequelize.PesananDetail;
+const { Pesanan, PesananDetail, } = require("../../model");
 
 const snap = new midtransClient.Snap({
     isProduction: false,
@@ -142,7 +141,6 @@ const recreateTransaction = async (req, res) => {
     }
 };
 
-const { Pesanan, MidtransOrder } = require("../../model");
 
 const handleWebhook = async (req, res) => {
     try {
