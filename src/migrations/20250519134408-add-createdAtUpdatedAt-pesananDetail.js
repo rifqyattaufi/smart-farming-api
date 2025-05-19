@@ -3,13 +3,13 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.addColumn('pesanandetail', 'createdAt', {
+    await queryInterface.addColumn('pesananDetail', 'createdAt', {
       type: Sequelize.DATE,
       allowNull: false,
       defaultValue: Sequelize.literal('CURRENT_TIMESTAMP'),
     });
 
-    await queryInterface.addColumn('pesanandetail', 'updatedAt', {
+    await queryInterface.addColumn('pesananDetail', 'updatedAt', {
       type: Sequelize.DATE,
       allowNull: false,
       defaultValue: Sequelize.literal('CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP'),
@@ -17,8 +17,8 @@ module.exports = {
   },
 
   async down(queryInterface, Sequelize) {
-    await queryInterface.removeColumn('pesanandetail', 'createdAt');
+    await queryInterface.removeColumn('pesananDetail', 'createdAt');
 
-    await queryInterface.removeColumn('pesanandetail', 'updatedAt');
+    await queryInterface.removeColumn('pesananDetail', 'updatedAt');
   }
 };
