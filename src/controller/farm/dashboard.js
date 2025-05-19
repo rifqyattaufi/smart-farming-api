@@ -181,7 +181,6 @@ const dashboardPerkebunan = async (req, res) => {
           required: true,
           where: {
             tipe: "tumbuhan",
-            isDeleted: false,
           },
         },
       ],
