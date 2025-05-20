@@ -1,7 +1,7 @@
 
 const midtransClient = require('midtrans-client');
 const sequelize = require('../../model/index');
-const { or } = require('sequelize');
+const { or, where } = require('sequelize');
 const { param } = require('../../routes/store/keranjang');
 const Produk = sequelize.Produk;
 const { Pesanan, PesananDetail, MidtransOrder } = require("../../model");
@@ -19,7 +19,7 @@ const midtransCoreApi = new midtransClient.CoreApi({
 
 const createTransaction = async (req, res) => {
     try {
-        const { items } = req.body;
+        const { orderId, items } = req.body;
 
         if (!Array.isArray(items) || items.length === 0) {
             return res.status(400).json({ message: 'Daftar produk tidak boleh kosong' });
@@ -49,7 +49,7 @@ const createTransaction = async (req, res) => {
 
         const parameter = {
             transaction_details: {
-                order_id: `RFC_Order-${Date.now()}`,
+                order_id: orderId,
                 gross_amount: grossAmount,
             },
             item_details: itemDetails,
@@ -101,7 +101,7 @@ const getTransactionStatus = async (req, res) => {
 };
 const recreateTransaction = async (req, res) => {
     try {
-        const { pesananId } = req.body;
+        const { orderId, pesananId } = req.body;
 
         const pesanan = await Pesanan.findOne({
             where: { id: pesananId },
@@ -120,17 +120,31 @@ const recreateTransaction = async (req, res) => {
             price: item.Produk.harga
         }));
 
-        const orderId = `RFC_Order-${Date.now()}`;
+        const newOrderId = orderId + '-New' + '-' + Math.floor(Math.random() * 100);
         const transaction = await snap.createTransaction({
             transaction_details: {
-                order_id: orderId,
-                gross_amount: pesanan.totalHarga
+                order_id: newOrderId,
+                gross_amount: pesanan.totalHarga,
             },
             item_details: items,
             customer_details: {
                 first_name: req.user.name || 'User',
                 email: req.user.email || 'user@example.com',
             },
+        });
+        await MidtransOrder.upsert({
+            id: newOrderId,
+            transaction_status: "pending",
+            transaction_time: new Date(),
+        });
+
+        await MidtransOrder.destroy({
+            where: { id: pesanan.MidtransOrderId }
+        });
+        await Pesanan.update({
+            MidtransOrderId: newOrderId,
+        }, {
+            where: { id: pesananId }
         });
         return res.status(201).json({
             order_id: pesanan.id,
@@ -149,7 +163,10 @@ const handleWebhook = async (req, res) => {
         const orderId = body.order_id;
         const transactionStatus = body.transaction_status;
         const transactionId = body.transaction_id;
-
+        await MidtransOrder.destroy({
+            where: { id: orderId },
+        })
+        
         await MidtransOrder.upsert({
             id: orderId,
             transaction_id: transactionId,

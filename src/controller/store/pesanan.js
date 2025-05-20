@@ -2,12 +2,13 @@ const sequelize = require("../../model");
 const Pesanan = sequelize.Pesanan;
 const PesananDetail = sequelize.PesananDetail;
 const Produk = sequelize.Produk;
+const midtransOrder = sequelize.MidtransOrder;
 
 const createPesanan = async (req, res) => {
     const t = await sequelize.sequelize.transaction();
 
     try {
-        const { items } = req.body; // items = [{ produkId: 'xxx', jumlah: 2 }, ...]
+        const { orderId, items } = req.body;
         const userId = req.user.id;
 
         if (!Array.isArray(items) || items.length === 0) {
@@ -16,7 +17,6 @@ const createPesanan = async (req, res) => {
             });
         }
 
-        // Validasi semua produk
         let tokoId = null;
         let totalHarga = 0;
         for (const item of items) {
@@ -38,17 +38,25 @@ const createPesanan = async (req, res) => {
             if (!tokoId) tokoId = produk.TokoId;
             totalHarga += produk.harga * item.jumlah;
         }
+        await midtransOrder.findOrCreate({
+            where: { id: orderId },
+            defaults: {
+                id: orderId,
+                transaction_status: "pending",
+                transaction_time: new Date(),
+            },
+            transaction: t,
+        });
 
-        // Buat pesanan utama
         const pesanan = await Pesanan.create({
             UserId: userId,
             status: "menunggu",
             totalHarga,
-            MidtransOrderId: null,
+            MidtransOrderId: orderId,
             TokoId: tokoId,
         }, { transaction: t, logging: console.log, });
 
-        // Masukkan semua ke dalam PesananDetail satu per satu
+
         for (const item of items) {
             await PesananDetail.create({
                 ProdukId: item.produkId,
@@ -96,6 +104,10 @@ const getPesananByUser = async (req, res) => {
                 {
                     model: sequelize.Toko,
                     attributes: ['id', 'nama', 'alamat', 'logoToko']
+                },
+                {
+                    model: midtransOrder,
+                    attributes: ['id', 'transaction_status', 'transaction_time']
                 }
             ],
             order: [['createdAt', 'DESC']]
