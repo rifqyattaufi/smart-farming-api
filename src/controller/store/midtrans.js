@@ -180,13 +180,6 @@ const handleWebhook = async (req, res) => {
             fraud_status: body.fraud_status
         });
 
-        if (['settlement', 'capture'].includes(transactionStatus)) {
-            const pesanan = await Pesanan.findOne({ where: { id: orderId.split("-")[0] } }); // ambil id asli jika formatnya custom
-            if (pesanan) {
-                await pesanan.update({ MidtransOrderId: orderId });
-            }
-        }
-
         return res.status(200).json({ message: "Webhook diterima" });
     } catch (e) {
         console.error("Webhook Error:", e);
