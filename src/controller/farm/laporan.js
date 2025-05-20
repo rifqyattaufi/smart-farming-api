@@ -286,6 +286,18 @@ const createLaporanVitamin = async (req, res) => {
   try {
     const { vitamin } = req.body;
 
+    await Inventaris.update(
+      {
+        jumlah: sequelize.sequelize.literal(`jumlah - ${vitamin.jumlah}`),
+      },
+      {
+        where: {
+          id: vitamin.inventarisId,
+        },
+        transaction: t,
+      }
+    );
+
     const data = await Laporan.create(
       {
         ...req.body,
