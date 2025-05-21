@@ -175,7 +175,9 @@ const createLaporanKematian = async (req, res) => {
   const t = await db.transaction();
 
   try {
-    const { kematian, jumlah } = req.body;
+    const { kematian } = req.body;
+
+    let { jumlah } = req.body;
 
     const unitBudidaya = await UnitBudidaya.findOne({
       where: {
