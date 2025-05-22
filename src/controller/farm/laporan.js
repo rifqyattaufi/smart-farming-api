@@ -33,7 +33,7 @@ const createLaporanHarianKebun = async (req, res) => {
       {
         ...req.body,
         UserId: req.user.id,
-        objekBudidayaId: req.body.objekBudidayaId,
+        ObjekBudidayaId: req.body.objekBudidayaId,
         UnitBudidayaId: req.body.unitBudidayaId,
       },
       { transaction: t }
