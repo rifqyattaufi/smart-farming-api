@@ -84,7 +84,7 @@ describe('Jenis Hama Model', () => {
   });
 
   it('should have associations with Hama', () => {
-    expect(JenisHama.associations.Hama).toBeDefined();
+    expect(JenisHama.associations.Hamas).toBeDefined();
   });
 
   it('should throw error when bulkCreate has invalid record', async () => {
