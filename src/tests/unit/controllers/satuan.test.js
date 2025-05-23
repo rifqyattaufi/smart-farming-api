@@ -57,6 +57,16 @@ describe('Satuan Controller', () => {
       expect(res.statusCode).toBe(404);
       expect(res.body.message).toBe('Data not found');
     });
+
+    it('should return 500 when findAll throws an error', async () => {
+      sequelize.Satuan.findAll.mockRejectedValue(new Error('Unexpected Error'));
+
+      const res = await request(app).get('/satuan');
+
+      expect(res.statusCode).toBe(500);
+      expect(res.body.message).toBe('Unexpected Error');
+    });
+
   });
 
   describe('GET /satuan/:id', () => {
@@ -79,6 +89,15 @@ describe('Satuan Controller', () => {
       expect(res.statusCode).toBe(404);
       expect(res.body.message).toBe('Data not found');
     });
+
+    it('should return 500 when findOne throws an error', async () => {
+      sequelize.Satuan.findOne.mockRejectedValue(new Error('Unexpected Error'));
+
+      const res = await request(app).get('/satuan/1');
+
+      expect(res.statusCode).toBe(500);
+      expect(res.body.message).toBe('Unexpected Error');
+    });
   });
 
   describe('GET /satuan/search/:nama', () => {
@@ -100,6 +119,15 @@ describe('Satuan Controller', () => {
 
       expect(res.statusCode).toBe(404);
       expect(res.body.message).toBe('Data not found');
+    });
+
+    it('should return 500 when findAll throws an error', async () => {
+      sequelize.Satuan.findAll.mockRejectedValue(new Error('Unexpected Error'));
+
+      const res = await request(app).get('/satuan/search/kg');
+
+      expect(res.statusCode).toBe(500);
+      expect(res.body.message).toBe('Unexpected Error');
     });
   });
 
@@ -129,6 +157,19 @@ describe('Satuan Controller', () => {
       expect(res.body.message).toBe('Validation error');
       expect(res.body.error).toContain('nama is required');
     });
+
+    it('should return 500 when create throws an error', async () => {
+      sequelize.Satuan.create.mockRejectedValue(new Error('Unexpected Error'));
+
+      const res = await request(app).post('/satuan').send({
+        nama: 'Kilogram',
+        lambang: 'Kg',
+      });
+
+      expect(res.statusCode).toBe(500);
+      expect(res.body.message).toBe('Unexpected Error');
+    });
+
   });
 
   describe('PUT /satuan/:id', () => {
@@ -164,6 +205,21 @@ describe('Satuan Controller', () => {
       expect(res.statusCode).toBe(404);
       expect(res.body.message).toBe('Data not found');
     });
+
+    it('should return 500 when update throws an error', async () => {
+      const id = '1';
+      sequelize.Satuan.findOne.mockResolvedValueOnce({ id, isDeleted: false });
+      sequelize.Satuan.update.mockRejectedValue(new Error('Update Failed'));
+
+      const res = await request(app).put(`/satuan/${id}`).send({
+        nama: 'Gram',
+        lambang: 'g',
+      });
+
+      expect(res.statusCode).toBe(500);
+      expect(res.body.message).toBe('Update Failed');
+    });
+
   });
 
   describe('DELETE /satuan/:id', () => {
@@ -193,5 +249,31 @@ describe('Satuan Controller', () => {
       expect(res.statusCode).toBe(404);
       expect(res.body.message).toBe('Data not found');
     });
+
+    it('should return 404 if data is marked as deleted', async () => {
+      sequelize.Satuan.findOne.mockResolvedValue({ id: 1, isDeleted: true });
+
+      const res = await request(app).get('/satuan/1');
+
+      expect(res.statusCode).toBe(404);
+      expect(res.body.message).toBe('Data not found');
+    });
+
+    it('should return 500 when delete throws an error', async () => {
+      const id = '1';
+      const existingData = {
+        id,
+        isDeleted: false,
+        save: jest.fn().mockRejectedValue(new Error('Delete Failed')),
+      };
+
+      sequelize.Satuan.findOne.mockResolvedValue(existingData);
+
+      const res = await request(app).delete(`/satuan/${id}`);
+
+      expect(res.statusCode).toBe(500);
+      expect(res.body.message).toBe('Delete Failed');
+    });
+
   });
 });

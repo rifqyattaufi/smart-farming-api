@@ -13,6 +13,8 @@ describe('Kategori Inventaris Model', () => {
     });
 
     KategoriInventaris = defineKategoriInventaris(sequelize, DataTypes);
+    const Inventaris = sequelize.define('Inventaris', {});
+    KategoriInventaris.associate({ Inventaris });
     await sequelize.sync();
   });
 
@@ -96,6 +98,10 @@ describe('Kategori Inventaris Model', () => {
   it('should have associations with Inventaris', async () => {
     const Inventaris = sequelize.define('Inventaris', {});
     KategoriInventaris.hasMany(Inventaris);
+    expect(KategoriInventaris.associations.Inventaris).toBeDefined();
+  });
+
+  it('should have associations with Inventaris', () => {
     expect(KategoriInventaris.associations.Inventaris).toBeDefined();
   });
 

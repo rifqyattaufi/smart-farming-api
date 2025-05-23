@@ -13,6 +13,9 @@ describe('Satuan Model', () => {
     });
 
     Satuan = defineSatuan(sequelize, DataTypes);
+    const Komoditas = sequelize.define('Komoditas', {});
+    const Inventaris = sequelize.define('Inventaris', {});
+    Satuan.associate({ Komoditas, Inventaris });
     await sequelize.sync();
   });
 
@@ -122,6 +125,11 @@ describe('Satuan Model', () => {
     Satuan.hasMany(Komoditas);
     Satuan.hasMany(Inventaris);
 
+    expect(Satuan.associations.Komoditas).toBeDefined();
+    expect(Satuan.associations.Inventaris).toBeDefined();
+  });
+
+  it('should have associations with Komoditas and Inventaris', () => {
     expect(Satuan.associations.Komoditas).toBeDefined();
     expect(Satuan.associations.Inventaris).toBeDefined();
   });

@@ -57,6 +57,16 @@ describe('Kategori Inventaris Controller', () => {
       expect(res.statusCode).toBe(404);
       expect(res.body.message).toBe('Data not found');
     });
+
+    it('should return 500 when there is a server error on findAll', async () => {
+      sequelize.KategoriInventaris.findAll.mockRejectedValue(new Error('DB error'));
+
+      const res = await request(app).get('/kategori-inventaris');
+
+      expect(res.statusCode).toBe(500);
+      expect(res.body.message).toBe('DB error');
+    });
+
   });
 
   describe('GET /kategori-inventaris/:id', () => {
@@ -79,6 +89,16 @@ describe('Kategori Inventaris Controller', () => {
       expect(res.statusCode).toBe(404);
       expect(res.body.message).toBe('Data not found');
     });
+
+  it('should return 500 when there is a server error on get by id', async () => {
+    sequelize.KategoriInventaris.findOne.mockRejectedValue(new Error('DB error'));
+
+    const res = await request(app).get('/kategori-inventaris/1');
+
+    expect(res.statusCode).toBe(500);
+    expect(res.body.message).toBe('DB error');
+  });
+
   });
 
   describe('GET /kategori-inventaris/search/:nama', () => {
@@ -101,6 +121,16 @@ describe('Kategori Inventaris Controller', () => {
       expect(res.statusCode).toBe(404);
       expect(res.body.message).toBe('Data not found');
     });
+
+    it('should return 500 when there is a server error on get by name', async () => {
+      sequelize.KategoriInventaris.findAll.mockRejectedValue(new Error('Search failed'));
+
+      const res = await request(app).get('/kategori-inventaris/search/pupuk');
+
+      expect(res.statusCode).toBe(500);
+      expect(res.body.message).toBe('Search failed');
+    });
+
   });
 
   describe('POST /kategori-inventaris', () => {
@@ -129,6 +159,16 @@ describe('Kategori Inventaris Controller', () => {
       expect(res.body.message).toBe('Validation error');
       expect(res.body.error).toContain('nama is required');
     });
+
+    it('should return 500 when there is a server error on create', async () => {
+      sequelize.KategoriInventaris.create.mockRejectedValue(new Error('Insert failed'));
+
+      const res = await request(app).post('/kategori-inventaris').send({ nama: 'Pupuk' });
+
+      expect(res.statusCode).toBe(500);
+      expect(res.body.message).toBe('Insert failed');
+    });
+
   });
 
   describe('PUT /kategori-inventaris/:id', () => {
@@ -163,6 +203,20 @@ describe('Kategori Inventaris Controller', () => {
       expect(res.statusCode).toBe(404);
       expect(res.body.message).toBe('Data not found');
     });
+
+    it('should return 500 when there is a server error on update', async () => {
+      const id = '1';
+      const updateData = { nama: 'Updated' };
+      const existingData = { id, isDeleted: false };
+
+      sequelize.KategoriInventaris.findOne.mockResolvedValue(existingData);
+      sequelize.KategoriInventaris.update.mockRejectedValue(new Error('Update failed'));
+
+      const res = await request(app).put(`/kategori-inventaris/${id}`).send(updateData);
+
+      expect(res.statusCode).toBe(500);
+      expect(res.body.message).toBe('Update failed');
+    });
   });
 
   describe('DELETE /kategori-inventaris/:id', () => {
@@ -191,6 +245,22 @@ describe('Kategori Inventaris Controller', () => {
 
       expect(res.statusCode).toBe(404);
       expect(res.body.message).toBe('Data not found');
+    });
+
+    it('should return 500 when there is a server error on delete (save fails)', async () => {
+      const id = '1';
+      const existingData = {
+        id,
+        isDeleted: false,
+        save: jest.fn().mockRejectedValue(new Error('Delete failed')),
+      };
+
+      sequelize.KategoriInventaris.findOne.mockResolvedValue(existingData);
+
+      const res = await request(app).delete(`/kategori-inventaris/${id}`);
+
+      expect(res.statusCode).toBe(500);
+      expect(res.body.message).toBe('Delete failed');
     });
   });
 });
