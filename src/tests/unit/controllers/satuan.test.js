@@ -133,6 +133,10 @@ describe('Satuan Controller', () => {
 
   describe('POST /satuan', () => {
     it('should return 201 when created successfully', async () => {
+      sequelize.Satuan.findOne
+            .mockResolvedValueOnce(null)
+            .mockResolvedValueOnce(null);
+
       const newSatuan = { nama: 'Kilogram', lambang: 'Kg' };
 
       sequelize.Satuan.create.mockResolvedValue({
@@ -147,6 +151,41 @@ describe('Satuan Controller', () => {
       expect(res.body.data.nama).toBe('Kilogram');
     });
 
+    it('should restore soft-deleted data and return 200', async () => {
+      const mockSave = jest.fn().mockResolvedValue(true);
+
+      sequelize.Satuan.findOne
+        .mockResolvedValueOnce({ // softDeleted
+          id: 1,
+          nama: 'Kilogram',
+          lambang: 'Kg',
+          isDeleted: true,
+          save: mockSave,
+        });
+
+      const res = await request(app).post('/satuan').send({ nama: 'Kilogram' });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.message).toBe('Data already exists before, successfully restored satuan data');
+      expect(mockSave).toHaveBeenCalled();
+    });
+
+    it('should return 400 when data already exists', async () => {
+      sequelize.Satuan.findOne
+        .mockResolvedValueOnce(null) // softDeleted
+        .mockResolvedValueOnce({ // existing
+          id: 1,
+          nama: 'Kilogram',
+          lambang: 'Kg',
+          isDeleted: false,
+        });
+
+      const res = await request(app).post('/satuan').send({ nama: 'Kilogram' });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.message).toBe('Data already exists.');
+    });
+
     it('should return 400 when validation fails', async () => {
       const { dataValid } = require('../../../validation/dataValidation');
       dataValid.mockResolvedValueOnce({ message: ['nama is required'] });
@@ -159,6 +198,10 @@ describe('Satuan Controller', () => {
     });
 
     it('should return 500 when create throws an error', async () => {
+      sequelize.Satuan.findOne
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null);
+      
       sequelize.Satuan.create.mockRejectedValue(new Error('Unexpected Error'));
 
       const res = await request(app).post('/satuan').send({

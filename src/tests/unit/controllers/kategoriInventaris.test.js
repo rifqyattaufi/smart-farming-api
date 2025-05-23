@@ -135,6 +135,10 @@ describe('Kategori Inventaris Controller', () => {
 
   describe('POST /kategori-inventaris', () => {
     it('should return 201 when created successfully', async () => {
+      sequelize.KategoriInventaris.findOne
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null);
+
       const newKategoriInventaris = { nama: 'Pupuk' };
 
       sequelize.KategoriInventaris.create.mockResolvedValue({
@@ -149,6 +153,39 @@ describe('Kategori Inventaris Controller', () => {
       expect(res.body.data.nama).toBe('Pupuk');
     });
 
+    it('should restore soft-deleted data and return 200', async () => {
+      const mockSave = jest.fn().mockResolvedValue(true);
+
+      sequelize.KategoriInventaris.findOne
+        .mockResolvedValueOnce({ // softDeleted
+          id: 1,
+          nama: 'Pupuk',
+          isDeleted: true,
+          save: mockSave,
+        });
+
+      const res = await request(app).post('/kategori-inventaris').send({ nama: 'Pupuk' });
+
+      expect(res.statusCode).toBe(200);
+      expect(res.body.message).toBe('Data already exists before, successfully restored kategori inventaris data');
+      expect(mockSave).toHaveBeenCalled();
+    });
+
+    it('should return 400 when data already exists', async () => {
+      sequelize.KategoriInventaris.findOne
+        .mockResolvedValueOnce(null) // softDeleted
+        .mockResolvedValueOnce({ // existing
+          id: 1,
+          nama: 'Pupuk',
+          isDeleted: false,
+        });
+
+      const res = await request(app).post('/kategori-inventaris').send({ nama: 'Pupuk' });
+
+      expect(res.statusCode).toBe(400);
+      expect(res.body.message).toBe('Data already exists.');
+    });
+
     it('should return 400 when validation fails', async () => {
       const { dataValid } = require('../../../validation/dataValidation');
       dataValid.mockResolvedValueOnce({ message: ['nama is required'] });
@@ -161,6 +198,10 @@ describe('Kategori Inventaris Controller', () => {
     });
 
     it('should return 500 when there is a server error on create', async () => {
+      sequelize.KategoriInventaris.findOne
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null);
+
       sequelize.KategoriInventaris.create.mockRejectedValue(new Error('Insert failed'));
 
       const res = await request(app).post('/kategori-inventaris').send({ nama: 'Pupuk' });

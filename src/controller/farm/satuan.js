@@ -101,6 +101,31 @@ const createSatuan = async (req, res) => {
   }
 
   try {
+    const softDeleted = await Satuan.findOne({
+      where: {
+        nama: req.body.nama,
+        isDeleted: 1,
+      },
+    });
+
+    if (softDeleted) {
+      softDeleted.isDeleted = 0;
+      softDeleted.lambang = req.body.lambang || softDeleted.lambang;
+      await softDeleted.save();
+      return res.status(200).json({ message: 'Data already exists before, successfully restored satuan data' });
+    } else {
+      const existing = await Satuan.findOne({
+        where: {
+          nama: req.body.nama,
+          isDeleted: 0,
+        },
+      });
+
+      if (existing) {
+        return res.status(400).json({ message: 'Data already exists.' });
+      }
+    }
+    
     const data = await Satuan.create(req.body);
 
     res.locals.createdData = data.toJSON();
