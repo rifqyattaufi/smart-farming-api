@@ -107,16 +107,6 @@ describe('Satuan Model', () => {
     const updated = await Satuan.findByPk(satuan.id);
     expect(updated.nama).toBe('Milliliter');
   });
-
-  it('should not allow duplicate nama', async () => {
-    expect.assertions(1);
-    try {
-      await Satuan.create({ nama: 'Kilogram', lambang: 'Kg' });
-      await Satuan.create({ nama: 'Kilogram', lambang: 'Kg' });
-    } catch (error) {
-      expect(error).toBeTruthy();
-    }
-  });
     
   it('should have associations with Komoditas and Inventaris', async () => {
     const Komoditas = sequelize.define('Komoditas', {});

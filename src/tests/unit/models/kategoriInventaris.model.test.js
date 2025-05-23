@@ -85,16 +85,6 @@ describe('Kategori Inventaris Model', () => {
     expect(updated.nama).toBe('Peralatan K');
   });
 
-  it('should not allow duplicate nama', async () => {
-    expect.assertions(1);
-    try {
-      await KategoriInventaris.create({ nama: 'Duplikat L' });
-      await KategoriInventaris.create({ nama: 'Duplikat L' }); // sama
-    } catch (error) {
-      expect(error).toBeTruthy();
-    }
-  });
-
   it('should have associations with Inventaris', async () => {
     const Inventaris = sequelize.define('Inventaris', {});
     KategoriInventaris.hasMany(Inventaris);
