@@ -11,9 +11,18 @@ module.exports = (sequelize, DataTypes) => {
       },
       nama: {
         type: DataTypes.STRING,
+        allowNull: false,
+        unique: true,
+        validate: {
+          notEmpty: true,
+        },
       },
       lambang: {
         type: DataTypes.STRING,
+        allowNull: false,
+        validate: {
+          notEmpty: true,
+        },
       },
       isDeleted: {
         type: DataTypes.BOOLEAN,
