@@ -85,12 +85,6 @@ describe('Kategori Inventaris Model', () => {
     expect(updated.nama).toBe('Peralatan K');
   });
 
-  it('should have associations with Inventaris', async () => {
-    const Inventaris = sequelize.define('Inventaris', {});
-    KategoriInventaris.hasMany(Inventaris);
-    expect(KategoriInventaris.associations.Inventaris).toBeDefined();
-  });
-
   it('should have associations with Inventaris', () => {
     expect(KategoriInventaris.associations.Inventaris).toBeDefined();
   });

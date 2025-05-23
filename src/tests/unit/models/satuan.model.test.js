@@ -107,17 +107,6 @@ describe('Satuan Model', () => {
     const updated = await Satuan.findByPk(satuan.id);
     expect(updated.nama).toBe('Milliliter');
   });
-    
-  it('should have associations with Komoditas and Inventaris', async () => {
-    const Komoditas = sequelize.define('Komoditas', {});
-    const Inventaris = sequelize.define('Inventaris', {});
-
-    Satuan.hasMany(Komoditas);
-    Satuan.hasMany(Inventaris);
-
-    expect(Satuan.associations.Komoditas).toBeDefined();
-    expect(Satuan.associations.Inventaris).toBeDefined();
-  });
 
   it('should have associations with Komoditas and Inventaris', () => {
     expect(Satuan.associations.Komoditas).toBeDefined();
