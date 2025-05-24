@@ -1,7 +1,7 @@
 const cron = require("node-cron");
 const moment = require("moment");
 const { Op, where } = require("sequelize");
-const sequelize = require("../model/index");
+const sequelize = require("../src/model/index");
 const GlobalNotificationSetting = sequelize.GlobalNotificationSetting;
 const ScheduledUnitNotification = sequelize.ScheduledUnitNotification;
 const UnitBudidaya = sequelize.UnitBudidaya;
@@ -31,9 +31,7 @@ async function checkAndSendScheduledNotifications() {
         : null;
 
       if (setting.notificationType == "repeat") {
-        const recurringTimeParts = setting.recurring_time
-          .split(":")
-          .map(Number);
+        const recurringTimeParts = setting.scheduledTime.split(":").map(Number);
 
         if (
           now.hours() === recurringTimeParts[0] &&
@@ -57,7 +55,7 @@ async function checkAndSendScheduledNotifications() {
         }
       }
 
-      if (shouldSend) {
+      if (send) {
         console.log(
           `[GLOBAL][${now.format(
             "HH:mm"
@@ -100,7 +98,6 @@ async function checkAndSendScheduledNotifications() {
         ? moment(schedule.lastTriggered)
         : null;
 
-      // Cek jam dan menit saat ini cocok dengan waktu terjadwal
       if (
         now.hours() === scheduledTimeParts[0] &&
         now.minutes() === scheduledTimeParts[1]

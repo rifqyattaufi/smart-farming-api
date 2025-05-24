@@ -7,7 +7,7 @@ module.exports = {
     database: process.env.DB_NAME,
     host: process.env.DB_HOST,
     dialect: "mysql",
-    timezone: '+07:00',
+    timezone: "+07:00",
     // dialectOptions: {
     //   useUTC: false,
     // },
@@ -17,15 +17,15 @@ module.exports = {
     dialect: "sqlite",
     storage: ":memory:",
     logging: false,
-    timezone: '+07:00',
+    timezone: "+07:00",
   },
   production: {
     username: process.env.DB_USERNAME,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
     host: process.env.DB_HOST,
-    dialect: "mysql", 
-    timezone: '+07:00',
+    dialect: "mysql",
+    timezone: "+07:00",
     logging: false,
     // dialectOptions: {
     //   useUTC: false,

@@ -1,8 +1,8 @@
 const { where } = require("sequelize");
-const { admin, firebaseApp } = require("../config/firebaseAdmin");
-const sequelize = require("../model/index");
+const { admin, firebaseApp } = require("../src/config/firebaseAdmin");
+const sequelize = require("../src/model/index");
 const User = sequelize.User;
-const { Op } = sequelize.Sequelize;
+const { Op } = require("sequelize");
 
 async function sendNotificationToUser(
   targetRole,
