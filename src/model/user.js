@@ -54,6 +54,11 @@ module.exports = (sequelize, DataTypes) => {
         defaultValue:
           "https://api.dicebear.com/9.x/thumbs/svg?eyes=variant6W12&mouth=variant2&backgroundColor=5fd15e",
       },
+      fcmToken: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        defaultValue: null,
+      },
       isActive: {
         type: DataTypes.BOOLEAN,
         defaultValue: false,

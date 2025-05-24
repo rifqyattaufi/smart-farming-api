@@ -5,6 +5,10 @@ const express = require("express");
 const cors = require("cors");
 const passport = require("passport");
 require("./src/config/passport");
+// const moment = require("moment");
+
+// const APP_TIMEZONE = "Asia/Jakarta";
+// moment.tz.setDefault(APP_TIMEZONE);
 
 const app = express();
 

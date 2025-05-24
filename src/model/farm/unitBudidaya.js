@@ -51,6 +51,7 @@ module.exports = (sequelize, DataTypes) => {
 
     UnitBudidaya.hasMany(models.Laporan);
     UnitBudidaya.hasMany(models.ObjekBudidaya);
+    UnitBudidaya.hasMany(models.ScheduledUnitNotification);
   };
 
   return UnitBudidaya;
