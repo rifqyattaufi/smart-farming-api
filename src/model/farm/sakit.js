@@ -11,6 +11,7 @@ module.exports = (sequelize, DataTypes) => {
             },
             penyakit: {
                 type: DataTypes.STRING,
+                allowNull: false,
             },
             isDeleted: {
                 type: DataTypes.BOOLEAN,

@@ -1,5 +1,3 @@
-const { BelongsTo } = require("sequelize");
-
 module.exports = (sequelize, DataTypes) => {
   const PenggunaanInventaris = sequelize.define(
     "PenggunaanInventaris",
@@ -13,6 +11,7 @@ module.exports = (sequelize, DataTypes) => {
       },
       jumlah: {
         type: DataTypes.DOUBLE,
+        allowNull: false,
       },
       isDeleted: {
         type: DataTypes.BOOLEAN,
