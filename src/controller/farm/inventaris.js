@@ -56,8 +56,9 @@ const getInventarisById = async (req, res) => {
         },
       ],
     });
-    
-    const daftarPemakaian = await db.query(`
+
+    const daftarPemakaian = await db.query(
+      `
       SELECT 
           pi.id,
           pi.jumlah,
@@ -83,12 +84,15 @@ const getInventarisById = async (req, res) => {
           AND i.id = :inventarisId
       ORDER BY 
           pi.createdAt DESC;
-    `, {
+    `,
+      {
         type: QueryTypes.SELECT,
         replacements: { inventarisId: id },
-    });
+      }
+    );
 
-    const pemakaianPerMinggu = await db.query(`
+    const pemakaianPerMinggu = await db.query(
+      `
       SELECT 
       YEARWEEK(pi.createdAt, 1) AS mingguKe,
       MIN(pi.createdAt) AS mingguAwal,
@@ -105,10 +109,12 @@ const getInventarisById = async (req, res) => {
           YEARWEEK(pi.createdAt, 1)
       ORDER BY 
           mingguAwal ASC
-    `, {
-      type: QueryTypes.SELECT,
-      replacements: { inventarisId: id },
-    });
+    `,
+      {
+        type: QueryTypes.SELECT,
+        replacements: { inventarisId: id },
+      }
+    );
 
     if (!data || data.isDeleted) {
       return res.status(404).json({
@@ -118,7 +124,7 @@ const getInventarisById = async (req, res) => {
 
     return res.status(200).json({
       message: "Successfully retrieved inventaris data",
-      data: {data, daftarPemakaian, pemakaianPerMinggu},
+      data: { data, daftarPemakaian, pemakaianPerMinggu },
     });
   } catch (error) {
     res.status(500).json({
@@ -137,6 +143,45 @@ const getInventarisByName = async (req, res) => {
         nama: {
           [Op.like]: `%${nama}%`,
         },
+        isDeleted: false,
+      },
+      order: [["createdAt", "DESC"]],
+    });
+
+    if (data.length === 0) {
+      return res.status(404).json({ message: "Data not found" });
+    }
+
+    return res.status(200).json({
+      message: "Successfully retrieved inventaris data",
+      data: data,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
+  }
+};
+
+const getInventarisByKategoriName = async (req, res) => {
+  try {
+    const { kategori } = req.params;
+
+    const data = await Inventaris.findAll({
+      include: [
+        {
+          model: Kategori,
+          as: "kategoriInventaris",
+          where: {
+            nama: {
+              [Op.like]: `%${kategori}%`,
+            },
+          },
+          attributes: ["id", "nama"],
+        },
+      ],
+      where: {
         isDeleted: false,
       },
       order: [["createdAt", "DESC"]],
@@ -247,7 +292,8 @@ const deleteInventaris = async (req, res) => {
 
 const getRiwayatPenggunaanInventaris = async (req, res) => {
   try {
-    const daftarPemakaian = await db.query(`
+    const daftarPemakaian = await db.query(
+      `
       SELECT 
           pi.id,
           pi.jumlah,
@@ -272,31 +318,33 @@ const getRiwayatPenggunaanInventaris = async (req, res) => {
           AND i.isDeleted = FALSE
       ORDER BY 
           pi.createdAt DESC;
-  `, {
-      type: QueryTypes.SELECT,
-  });
+  `,
+      {
+        type: QueryTypes.SELECT,
+      }
+    );
 
-  const daftarPemakaianTerbaru = daftarPemakaian.slice(0, 3);
+    const daftarPemakaianTerbaru = daftarPemakaian.slice(0, 3);
 
-  res.status(200).json({
-            status: "success",
-            message: "Data retrieved successfully",
-            data: {
-                daftarPemakaian,
-                daftarPemakaianTerbaru
-            },
-        })
-
-    } catch (error) {
-        console.error("Error fetching data:", error);
-        return res.status(500).json({ message: "Internal server error" });
-    }
-}
+    res.status(200).json({
+      status: "success",
+      message: "Data retrieved successfully",
+      data: {
+        daftarPemakaian,
+        daftarPemakaianTerbaru,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching data:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
 
 module.exports = {
   getAllInventaris,
   getInventarisById,
   getInventarisByName,
+  getInventarisByKategoriName,
   createInventaris,
   updateInventaris,
   deleteInventaris,

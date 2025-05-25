@@ -33,7 +33,7 @@ const createLaporanHarianKebun = async (req, res) => {
       {
         ...req.body,
         UserId: req.user.id,
-        objekBudidayaId: req.body.objekBudidayaId,
+        ObjekBudidayaId: req.body.objekBudidayaId,
         UnitBudidayaId: req.body.unitBudidayaId,
       },
       { transaction: t }
@@ -175,7 +175,9 @@ const createLaporanKematian = async (req, res) => {
   const t = await db.transaction();
 
   try {
-    const { kematian, jumlah } = req.body;
+    const { kematian } = req.body;
+
+    let { jumlah } = req.body;
 
     const unitBudidaya = await UnitBudidaya.findOne({
       where: {
@@ -285,6 +287,18 @@ const createLaporanVitamin = async (req, res) => {
 
   try {
     const { vitamin } = req.body;
+
+    await Inventaris.update(
+      {
+        jumlah: sequelize.sequelize.literal(`jumlah - ${vitamin.jumlah}`),
+      },
+      {
+        where: {
+          id: vitamin.inventarisId,
+        },
+        transaction: t,
+      }
+    );
 
     const data = await Laporan.create(
       {

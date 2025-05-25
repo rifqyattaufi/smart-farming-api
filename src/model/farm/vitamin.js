@@ -12,9 +12,11 @@ module.exports = (sequelize, DataTypes) => {
       tipe: {
         type: DataTypes.ENUM,
         values: ["vitamin", "vaksin", "pupuk", "disinfektan"],
+        allowNull: false,
       },
       jumlah: {
         type: DataTypes.DOUBLE,
+        allowNull: false,
       },
       isDeleted: {
         type: DataTypes.BOOLEAN,

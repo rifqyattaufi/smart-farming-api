@@ -1,5 +1,6 @@
 const e = require("express");
 const sequelize = require("../../model/index");
+const { dataValid } = require("../../validation/dataValidation");
 const db = sequelize.sequelize;
 const JenisHama = sequelize.JenisHama;
 const Op = sequelize.Sequelize.Op;
@@ -89,7 +90,41 @@ const getjenisHamaByName = async (req, res) => {
 };
 
 const createjenisHama = async (req, res) => {
+  const valid = {
+    nama: "required",
+  };
+  const validation = await dataValid(valid, req.body);
+  if (validation.message.length > 0) {
+    return res.status(400).json({
+      error: validation.message,
+      message: "Validation error",
+    });
+  }
   try {
+    const softDeleted = await JenisHama.findOne({
+      where: {
+        nama: req.body.nama,
+        isDeleted: 1,
+      },
+    });
+
+    if (softDeleted) {
+      softDeleted.isDeleted = 0;
+      await softDeleted.save();
+      return res.status(200).json({ message: 'Data already exists before, successfully restored jenis hama data' });
+    } else {
+      const existing = await JenisHama.findOne({
+        where: {
+          nama: req.body.nama,
+          isDeleted: 0,
+        },
+      });
+
+      if (existing) {
+        return res.status(400).json({ message: 'Data already exists.' });
+      }
+    }
+
     const data = await JenisHama.create(req.body);
 
     res.locals.createdData = data.toJSON();
