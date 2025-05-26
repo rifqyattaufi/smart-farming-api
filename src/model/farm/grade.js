@@ -34,7 +34,6 @@ module.exports = (sequelize, DataTypes) => {
     Grade.hasMany(models.PanenRincianGrade, {
       foreignKey: "gradeId",
     });
-    Grade.belongsTo(models.Satuan);
   };
 
   return Grade;

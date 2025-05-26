@@ -14,9 +14,8 @@ describe('Grade Model', () => {
     });
 
     Grade = defineGrade(sequelize, DataTypes);
-    const Satuan = sequelize.define('Satuan', {});
     const PanenRincianGrade = sequelize.define('PanenRincianGrade', {});
-    Grade.associate({ Satuan, PanenRincianGrade });
+    Grade.associate({ PanenRincianGrade });
     await sequelize.sync();
   });
 
@@ -107,9 +106,5 @@ describe('Grade Model', () => {
 
     it('should have associations with PanenRincianGrade', () => {
         expect(Grade.associations.PanenRincianGrades).toBeDefined();
-    });
-
-    it('should have associations with Satuan', () => {
-        expect(Grade.associations.Satuan).toBeDefined();
     });
 });

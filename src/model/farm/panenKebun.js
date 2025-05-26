@@ -60,6 +60,7 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: "komoditasId",
     });
     PanenKebun.belongsTo(models.Laporan);
+    PanenKebun.hasMany(models.PanenRincianGrade);
   };
 
   return PanenKebun;

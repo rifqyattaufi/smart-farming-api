@@ -15,9 +15,10 @@ describe('Panen Kebun Model', () => {
 
     const Komoditas = sequelize.define('Komoditas', {});
     const Laporan = sequelize.define('Laporan', {});
+    const PanenRincianGrade = sequelize.define('PanenRincianGrade', {});
 
     PanenKebun = definePanenKebun(sequelize, DataTypes);
-    PanenKebun.associate({ Komoditas, Laporan });
+    PanenKebun.associate({ Komoditas, Laporan, PanenRincianGrade });
 
     await sequelize.sync();
   });
@@ -44,6 +45,7 @@ describe('Panen Kebun Model', () => {
     expect(PanenKebun.associations).toBeDefined();
     expect(PanenKebun.associations.Komodita).toBeDefined();
     expect(PanenKebun.associations.Laporan).toBeDefined();
+    expect(PanenKebun.associations.PanenRincianGrades).toBeDefined();
   });
 
   it('should allow soft deletion', async () => {

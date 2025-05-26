@@ -123,10 +123,7 @@ const createGrade = async (req, res) => {
       }
     }
     
-    const data = await Grade.create({
-      ...req.body,
-      SatuanId: req.body.satuanId
-    });
+    const data = await Grade.create(req.body);
 
     res.locals.createdData = data.toJSON();
 
