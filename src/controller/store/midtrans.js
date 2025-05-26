@@ -120,7 +120,7 @@ const recreateTransaction = async (req, res) => {
             price: item.Produk.harga
         }));
 
-        const newOrderId = orderId + '-New' + '-' + Math.floor(Math.random() * 100);
+        const newOrderId = orderId + Math.floor(Math.random() * 100);
         const transaction = await snap.createTransaction({
             transaction_details: {
                 order_id: newOrderId,
@@ -166,7 +166,7 @@ const handleWebhook = async (req, res) => {
         await MidtransOrder.destroy({
             where: { id: orderId },
         })
-        
+
         await MidtransOrder.upsert({
             id: orderId,
             transaction_id: transactionId,
