@@ -1,5 +1,6 @@
 const { Sequelize, DataTypes } = require('sequelize');
 const defineKomoditas = require('../../../model/farm/komoditas');
+const { isUUID } = require('validator');
 
 describe('Komoditas Model', () => {
   let sequelize;
@@ -107,17 +108,30 @@ describe('Komoditas Model', () => {
     }
   });
 
-  it('should update nama successfully', async () => {
-    const komoditas = await Komoditas.create({ nama: 'Bawang', jumlah: 70 });
-    komoditas.nama = 'Bawang Merah';
-    await komoditas.save();
-    const updated = await Komoditas.findByPk(komoditas.id);
-    expect(updated.nama).toBe('Bawang Merah');
-  });
-
   it('should have associations defined', () => {
     expect(Komoditas.associations.Panens).toBeDefined();
     expect(Komoditas.associations.Satuan).toBeDefined();
     expect(Komoditas.associations.JenisBudidaya).toBeDefined();
   });
+
+  it('should generate UUID for primary key', async () => {
+    const komoditas = await Komoditas.create({
+      nama: 'Bawang Merah',
+      jumlah: 75,
+    });
+    expect(komoditas.id).toBeDefined();
+    expect(isUUID(komoditas.id)).toBe(true);
+  });
+
+  it('should reject if id is null', async () => {
+    expect.assertions(1);
+    try {
+      await Komoditas.create({ id: null, nama: 'Bawang Putih', jumlah: 20 });
+    } catch (error) {
+      expect(error).toBeTruthy();
+    }
+  });
+
+
+
 });

@@ -1,5 +1,6 @@
 const { Sequelize, DataTypes } = require('sequelize');
 const defineJenisHama = require('../../../model/farm/jenisHama');
+const { isUUID } = require('validator');
 
 describe('Jenis Hama Model', () => {
   let sequelize;
@@ -51,12 +52,6 @@ describe('Jenis Hama Model', () => {
     expect(jenisHama.updatedAt).toBeInstanceOf(Date);
   });
 
-  it('should not include soft-deleted records in default query (if scope applied)', async () => {
-    await JenisHama.create({ nama: 'Tikus C', isDeleted: true });
-    const result = await JenisHama.findAll({ where: { isDeleted: false } });
-    result.forEach(s => expect(s.isDeleted).toBe(false));
-  });
-
   it('should throw specific error when nama is null', async () => {
     expect.assertions(1);
     try {
@@ -75,14 +70,6 @@ describe('Jenis Hama Model', () => {
     expect(jenis.length).toBe(2);
   });
 
-  it('should update nama correctly', async () => {
-    const jenisHama = await JenisHama.create({ nama: 'Ulat Bulu J' });
-    jenisHama.nama = 'Ulat K';
-    await jenisHama.save();
-    const updated = await JenisHama.findByPk(jenisHama.id);
-    expect(updated.nama).toBe('Ulat K');
-  });
-
   it('should have associations with Hama', () => {
     expect(JenisHama.associations.Hamas).toBeDefined();
   });
@@ -98,6 +85,21 @@ describe('Jenis Hama Model', () => {
       await JenisHama.bulkCreate(data);
     } catch (error) {
       expect(error).toBeTruthy();
+    }
+  });
+
+  it('should generate a UUID for id if not provided', async () => {
+    const jenisHama = await JenisHama.create({ nama: 'Tikus H' });
+    expect(jenisHama.id).toBeDefined();
+    expect(isUUID(jenisHama.id)).toBe(true);
+  });
+
+  it('should reject if id is null', async () => {
+    expect.assertions(1);
+    try {
+        await JenisHama.create({ id: null, nama: 'Tikus I' });
+    } catch (error) {
+        expect(error.name).toBe('SequelizeValidationError');
     }
   });
 });

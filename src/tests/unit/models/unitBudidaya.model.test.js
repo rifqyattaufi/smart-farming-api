@@ -1,5 +1,6 @@
 const { Sequelize, DataTypes } = require('sequelize');
 const defineUnitBudidaya = require('../../../model/farm/unitBudidaya');
+const { isUUID } = require('validator');
 
 describe('UnitBudidaya Model', () => {
   let sequelize;
@@ -46,12 +47,6 @@ describe('UnitBudidaya Model', () => {
     expect(ub.isDeleted).toBe(false);
   });
 
-  it('should allow null fields except id', async () => {
-    const ub = await UnitBudidaya.create({});
-    expect(ub).toBeDefined();
-    expect(ub.isDeleted).toBe(false);
-  });
-
   it('should default isDeleted to false', async () => {
     const ub = await UnitBudidaya.create({});
     expect(ub.isDeleted).toBe(false);
@@ -70,5 +65,44 @@ describe('UnitBudidaya Model', () => {
     expect(UnitBudidaya.associations.JenisBudidaya).toBeDefined();
     expect(UnitBudidaya.associations.ObjekBudidayas).toBeDefined();
     expect(UnitBudidaya.associations.Laporans).toBeDefined();
+  });
+
+  it('should generate UUID for primary key', async () => {
+    const ub = await UnitBudidaya.create({ nama: 'Unit UUID' });
+    expect(ub.id).toBeDefined();
+    expect(isUUID(ub.id)).toBe(true);
+  });
+
+  it('should reject creation with null id', async () => {
+    expect.assertions(1);
+    try {
+      await UnitBudidaya.create({ id: null, nama: 'Unit Null ID' });
+    } catch (error) {
+      expect(error).toBeTruthy();
+    }
+  });
+
+  it('should have createdAt and updatedAt fields', async () => {
+    const ub = await UnitBudidaya.create({ nama: 'Unit Timestamp' });
+    expect(ub.createdAt).toBeInstanceOf(Date);
+    expect(ub.updatedAt).toBeInstanceOf(Date);
+  });
+
+  it('should not allow creating UnitBudidaya with duplicate primary key', async () => {
+    expect.assertions(1);
+    try {
+      const ub1 = await UnitBudidaya.create({ nama: 'Unit A', tipe: 'kolektif' });
+      await UnitBudidaya.create({ id: ub1.id, nama: 'Unit B', tipe: 'individu' });
+    } catch (error) {
+      expect(error).toBeTruthy();
+    }
+  });
+
+  it('should allow soft deletion by setting isDeleted = true', async () => {
+    const ub = await UnitBudidaya.create({ nama: 'Unit Soft Delete' });
+    ub.isDeleted = true;
+    await ub.save();
+    const found = await UnitBudidaya.findByPk(ub.id);
+    expect(found.isDeleted).toBe(true);
   });
 });

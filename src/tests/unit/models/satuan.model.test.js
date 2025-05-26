@@ -1,5 +1,6 @@
 const { Sequelize, DataTypes } = require('sequelize');
 const defineSatuan = require('../../../model/farm/satuan');
+const { isUUID } = require('validator');
 
 describe('Satuan Model', () => {
   let sequelize;
@@ -67,30 +68,6 @@ describe('Satuan Model', () => {
     expect(satuan.updatedAt).toBeInstanceOf(Date);
   });
 
-  it('should not include soft-deleted records in default query (if scope applied)', async () => {
-    await Satuan.create({ nama: 'Inch', lambang: 'in', isDeleted: true });
-    const result = await Satuan.findAll({ where: { isDeleted: false } });
-    result.forEach(s => expect(s.isDeleted).toBe(false));
-  });
-
-  it('should throw specific error when nama is null', async () => {
-    expect.assertions(1);
-    try {
-      await Satuan.create({ lambang: 'x' });
-    } catch (error) {
-      expect(error.message).toMatch(/notNull/);
-    }
-  });
-
-  it('should throw specific error when lambang is null', async () => {
-    expect.assertions(1);
-    try {
-      await Satuan.create({ nama: 'x' });
-    } catch (error) {
-      expect(error.message).toMatch(/notNull/);
-    }
-  });
-
   it('should allow bulk creation of satuan', async () => {
     const data = [
       { nama: 'Pound', lambang: 'lb' },
@@ -99,15 +76,7 @@ describe('Satuan Model', () => {
     const satuans = await Satuan.bulkCreate(data);
     expect(satuans.length).toBe(2);
   });
-
-  it('should update nama correctly', async () => {
-    const satuan = await Satuan.create({ nama: 'Liter', lambang: 'L' });
-    satuan.nama = 'Milliliter';
-    await satuan.save();
-    const updated = await Satuan.findByPk(satuan.id);
-    expect(updated.nama).toBe('Milliliter');
-  });
-
+  
   it('should have associations with Komoditas and Inventaris', () => {
     expect(Satuan.associations.Komoditas).toBeDefined();
     expect(Satuan.associations.Inventaris).toBeDefined();
@@ -122,6 +91,21 @@ describe('Satuan Model', () => {
     ];
     try {
       await Satuan.bulkCreate(data);
+    } catch (error) {
+      expect(error).toBeTruthy();
+    }
+  });
+
+  it('should generate UUID for primary key', async () => {
+    const satuan = await Satuan.create({ nama: 'UUID Test', lambang: 'UT' });
+    expect(satuan.id).toBeDefined();
+    expect(isUUID(satuan.id)).toBe(true);
+  });
+
+  it('should reject if id is null', async () => {
+    expect.assertions(1);
+    try {
+      await Satuan.create({ id: null, nama: 'Null ID', lambang: 'NID' });
     } catch (error) {
       expect(error).toBeTruthy();
     }

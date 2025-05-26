@@ -1,5 +1,6 @@
 const { Sequelize, DataTypes } = require('sequelize');
 const definePenggunaanInventaris = require('../../../model/farm/penggunaanInventaris');
+const { isUUID } = require('validator');
 
 describe('PenggunaanInventaris Model', () => {
   let sequelize;
@@ -66,5 +67,35 @@ describe('PenggunaanInventaris Model', () => {
   it('should have associations defined', () => {
     expect(PenggunaanInventaris.associations.Inventari).toBeDefined();
     expect(PenggunaanInventaris.associations.Laporan).toBeDefined();
+  });
+
+  it('should allow soft delete by setting isDeleted = true', async () => {
+    const penggunaan = await PenggunaanInventaris.create({ jumlah: 20 });
+    penggunaan.isDeleted = true;
+    await penggunaan.save();
+
+    const found = await PenggunaanInventaris.findOne({ where: { id: penggunaan.id } });
+    expect(found.isDeleted).toBe(true);
+  });
+
+  it('should generate UUID for primary key', async () => {
+    const penggunaan = await PenggunaanInventaris.create({ jumlah: 30 });
+    expect(penggunaan.id).toBeDefined();
+    expect(isUUID(penggunaan.id)).toBe(true);
+  });
+
+  it('should have createdAt and updatedAt fields', async () => {
+    const penggunaan = await PenggunaanInventaris.create({ jumlah: 25 });
+    expect(penggunaan.createdAt).toBeInstanceOf(Date);
+    expect(penggunaan.updatedAt).toBeInstanceOf(Date);
+  });
+
+  it('should reject if id is null', async () => {
+    expect.assertions(1);
+    try {
+      await PenggunaanInventaris.create({ id: null, jumlah: 5 });
+    } catch (error) {
+      expect(error.name).toBeTruthy();
+    }
   });
 });

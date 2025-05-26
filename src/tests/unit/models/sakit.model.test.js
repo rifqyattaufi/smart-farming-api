@@ -1,5 +1,6 @@
 const { Sequelize, DataTypes } = require('sequelize');
 const defineSakit = require('../../../model/farm/sakit');
+const { isUUID } = require('validator');
 
 describe('Sakit Model', () => {
   let sequelize;
@@ -80,6 +81,27 @@ describe('Sakit Model', () => {
         ]);
     } catch (err) {
         expect(err).toBeTruthy();
+    }
+  });
+
+  it('should have createdAt and updatedAt fields', async () => {
+    const sakit = await Sakit.create({ penyakit: 'Cacingan' });
+    expect(sakit.createdAt).toBeInstanceOf(Date);
+    expect(sakit.updatedAt).toBeInstanceOf(Date);
+  });
+
+  it('should generate UUID for primary key', async () => {
+    const sakit = await Sakit.create({ penyakit: 'Cacingan' });
+    expect(sakit.id).toBeDefined();
+    expect(isUUID(sakit.id)).toBe(true);
+  });
+
+  it('should reject creation with null id', async () => {
+    expect.assertions(1);
+    try {
+      await Sakit.create({ id: null, penyakit: 'Null ID Test' });
+    } catch (error) {
+      expect(error.name).toBeTruthy();
     }
   });
 });

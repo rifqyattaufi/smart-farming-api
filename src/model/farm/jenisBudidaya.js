@@ -25,6 +25,10 @@ module.exports = (sequelize, DataTypes) => {
       tipe: {
         type: DataTypes.ENUM,
         values: ["hewan", "tumbuhan"],
+        allowNull: false,
+        validate: {
+          isIn: [["hewan", "tumbuhan"]],
+        },
       },
       gambar: {
         type: DataTypes.STRING,
