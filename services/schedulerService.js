@@ -39,10 +39,10 @@ async function checkAndSendScheduledNotifications() {
         ) {
           if (lastTriggered) {
             if (!lastTriggered.isSame(now, "day")) {
-              shouldSend = true;
+              send = true;
             }
           } else {
-            shouldSend = true;
+            send = true;
           }
         }
       } else if (setting.notificationType === "once") {
@@ -50,7 +50,7 @@ async function checkAndSendScheduledNotifications() {
           const onceDatetime = moment(setting.scheduledDate);
 
           if (onceDatetime.isSameOrBefore(now)) {
-            shouldSend = true;
+            send = true;
           }
         }
       }
@@ -98,6 +98,7 @@ async function checkAndSendScheduledNotifications() {
         ? moment(schedule.lastTriggered)
         : null;
 
+      console.log("scheduledTimePart: ", scheduledTimeParts);
       if (
         now.hours() === scheduledTimeParts[0] &&
         now.minutes() === scheduledTimeParts[1]
@@ -105,11 +106,12 @@ async function checkAndSendScheduledNotifications() {
         let frequencyMatch = false;
         if (schedule.notificationType === "daily") {
           frequencyMatch = true;
-        } else if (schedule.schedule_frequency === "weekly") {
+        } else if (schedule.notificationType === "weekly") {
           if (now.day() === schedule.dayOfWeek) {
             frequencyMatch = true;
           }
-        } else if (schedule.schedule_frequency === "monthly") {
+          console.log("now: ", now.day(), "schedule: ", schedule.dayOfWeek);
+        } else if (schedule.notificationType === "monthly") {
           if (now.date() === schedule.dayOfMonth) {
             frequencyMatch = true;
           }

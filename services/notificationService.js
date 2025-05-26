@@ -78,7 +78,7 @@ async function sendNotificationToUser(
       },
     };
 
-    const response = await admin.messaging().sendMulticast(message);
+    const response = await admin.messaging().sendEachForMulticast(message);
     console.log(
       `${response.successCount} messages were sent successfully to role "${targetRole}" for title: "${title}".`
     );
