@@ -203,6 +203,46 @@ const getInventarisByKategoriName = async (req, res) => {
   }
 };
 
+const getInventarisByKategoriId = async (req, res) => {
+  try {
+    const { kategoriId } = req.params;
+    const data = await Inventaris.findAll({
+      where: {
+        KategoriInventarisId: kategoriId,
+        isDeleted: false,
+      },
+      include: [
+        {
+          model: Kategori,
+          as: "kategoriInventaris",
+          attributes: ["id", "nama"],
+        },
+        {
+          model: Satuan,
+          attributes: ["id", "nama", "lambang"],
+        },
+      ],
+      order: [["createdAt", "DESC"]],
+    });
+    
+    if (data.length === 0) {
+      return res.status(404).json({
+        message: "Data not found",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Successfully retrieved inventaris data by kategori",
+      data: data,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
+  }
+};
+
 const createInventaris = async (req, res) => {
   try {
     const data = await Inventaris.create({
@@ -345,6 +385,7 @@ module.exports = {
   getInventarisById,
   getInventarisByName,
   getInventarisByKategoriName,
+  getInventarisByKategoriId,
   createInventaris,
   updateInventaris,
   deleteInventaris,

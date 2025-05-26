@@ -293,17 +293,37 @@ const createLaporanVitamin = async (req, res) => {
   try {
     const { vitamin } = req.body;
 
-    await Inventaris.update(
-      {
-        jumlah: sequelize.sequelize.literal(`jumlah - ${vitamin.jumlah}`),
-      },
-      {
-        where: {
-          id: vitamin.inventarisId,
-        },
-        transaction: t,
-      }
-    );
+    if (!vitamin || typeof vitamin.jumlah !== 'number' || vitamin.jumlah <= 0) {
+      await t.rollback();
+      return res.status(400).json({
+        message: "Jumlah penggunaan vitamin tidak valid atau harus lebih besar dari 0.",
+      });
+    }
+    if (!vitamin.inventarisId) {
+        await t.rollback();
+        return res.status(400).json({
+            message: "ID Inventaris untuk vitamin tidak disertakan.",
+        });
+    }
+
+    const inventaris = await Inventaris.findOne({
+      where: { id: vitamin.inventarisId },
+      transaction: t,
+    });
+
+    if (!inventaris) {
+      await t.rollback();
+      return res.status(404).json({
+        message: `Inventaris (vitamin) dengan ID ${vitamin.inventarisId} tidak ditemukan.`,
+      });
+    }
+
+    if (inventaris.jumlah < vitamin.jumlah) {
+      await t.rollback();
+      return res.status(400).json({
+        message: `Stok inventaris (vitamin) "${inventaris.nama}" tidak mencukupi. Tersedia: ${inventaris.jumlah}, Dibutuhkan: ${vitamin.jumlah}.`,
+      });
+    }
 
     const data = await Laporan.create(
       {
@@ -325,14 +345,10 @@ const createLaporanVitamin = async (req, res) => {
       { transaction: t }
     );
 
-    const inventaris = await Inventaris.findOne({
-      where: { id: vitamin.inventarisId },
-    });
-
     inventaris.jumlah -= vitamin.jumlah;
-
+    
     await inventaris.save({ transaction: t });
-
+    
     await t.commit();
 
     res.locals.createdData = { data, laporanVitamin };
@@ -528,6 +544,32 @@ const createLaporanPenggunaanInventaris = async (req, res) => {
   try {
     const { penggunaanInv } = req.body;
 
+    if (!penggunaanInv || typeof penggunaanInv.jumlah !== 'number' || penggunaanInv.jumlah <= 0) {
+      await t.rollback();
+      return res.status(400).json({
+        message: "Jumlah penggunaan inventaris tidak valid atau harus lebih besar dari 0.",
+      });
+    }
+
+    const inventaris = await Inventaris.findOne({
+      where: { id: penggunaanInv.inventarisId },
+      transaction: t,
+    });
+
+    if (!inventaris) {
+      await t.rollback();
+      return res.status(404).json({
+        message: `Inventaris dengan ID ${penggunaanInv.inventarisId} tidak ditemukan.`,
+      });
+    }
+
+    if (inventaris.jumlah < penggunaanInv.jumlah) {
+      await t.rollback();
+      return res.status(400).json({
+        message: `Stok inventaris "${inventaris.nama}" tidak mencukupi (tersedia: ${inventaris.jumlah}, dibutuhkan: ${penggunaanInv.jumlah}). Inventaris tidak dapat digunakan.`,
+      });
+    }
+
     const data = await Laporan.create(
       {
         ...req.body,
@@ -546,10 +588,6 @@ const createLaporanPenggunaanInventaris = async (req, res) => {
       },
       { transaction: t }
     );
-
-    const inventaris = await Inventaris.findOne({
-      where: { id: penggunaanInv.inventarisId },
-    });
 
     inventaris.jumlah -= penggunaanInv.jumlah;
 

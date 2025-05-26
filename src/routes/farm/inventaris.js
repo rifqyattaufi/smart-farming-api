@@ -16,11 +16,17 @@ router.get(
 
 router.get("/:id", inventarisController.getInventarisById);
 
+
 router.get("/search/:nama", inventarisController.getInventarisByName);
 
 router.get(
   "/kategori/name/:kategori",
   inventarisController.getInventarisByKategoriName
+);
+
+router.get(
+  "/kategori/:kategoriId",
+  inventarisController.getInventarisByKategoriId
 );
 
 router.post(

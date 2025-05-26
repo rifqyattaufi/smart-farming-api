@@ -90,6 +90,36 @@ const getKategoriInventarisByName = async (req, res) => {
   }
 };
 
+const getKategoriInventarisOnly = async (req, res) => {
+  try {
+    const data = await KategoriInventaris.findAll({
+      where: {
+        isDeleted: false,
+        nama:
+          { [Op.notIn]: ["Vitamin", "Pupuk", "Disinfektan", "Vaksin"] },
+      },
+      attributes: ["id", "nama"],
+      order: [["createdAt", "DESC"]],
+    });
+
+    if (data.length === 0) {
+      return res.status(404).json({
+        message: "Data not found",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Successfully retrieved kategori inventaris data",
+      data: data,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
+  }
+};
+
 const createKategoriInventaris = async (req, res) => {
   const valid = {
     nama: "required",
@@ -213,6 +243,7 @@ module.exports = {
   getAllKategoriInventaris,
   getKategoriInventarisById,
   getKategoriInventarisByName,
+  getKategoriInventarisOnly,
   createKategoriInventaris,
   updateKategoriInventaris,
   deleteKategoriInventaris,
