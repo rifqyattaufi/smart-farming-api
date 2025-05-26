@@ -7,7 +7,7 @@ module.exports = {
     database: process.env.DB_NAME,
     host: process.env.DB_HOST,
     dialect: "mysql",
-    timezone: "+07:00",
+    // timezone: "+07:00",
     // logging: false,
     // dialectOptions: {
     //   useUTC: false,
@@ -27,7 +27,7 @@ module.exports = {
     host: process.env.DB_HOST,
     dialect: "mysql",
     timezone: "+07:00",
-    // logging: false,
+    logging: false,
     // dialectOptions: {
     //   useUTC: false,
     // },
