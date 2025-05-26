@@ -39,6 +39,7 @@ router.post(
   auditMiddleware({ model: Laporan, tableName: "Laporan" }),
   laporanController.createLaporanPanen
 );
+
 router.post(
   "/hama",
   auditMiddleware({ model: Laporan, tableName: "Laporan" }),
@@ -49,6 +50,12 @@ router.post(
   "/penggunaan-inventaris",
   auditMiddleware({ model: Laporan, tableName: "Laporan" }),
   laporanController.createLaporanPenggunaanInventaris
+);
+
+router.post(
+  "/panen-kebun",
+  auditMiddleware({ model: Laporan, tableName: "Laporan" }),
+  laporanController.createLaporanPanenKebun
 );
 
 module.exports = router;

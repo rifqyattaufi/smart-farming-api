@@ -11,9 +11,17 @@ module.exports = (sequelize, DataTypes) => {
       },
       pakan: {
         type: DataTypes.BOOLEAN,
+        allowNull: false,
+        validate: {
+          isIn: [[true, false]],
+        },
       },
       cekKandang: {
         type: DataTypes.BOOLEAN,
+        allowNull: false,
+        validate: {
+          isIn: [[true, false]],
+        },
       },
       isDeleted: {
         type: DataTypes.BOOLEAN,

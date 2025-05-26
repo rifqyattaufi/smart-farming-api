@@ -102,6 +102,30 @@ const createKategoriInventaris = async (req, res) => {
     });
   }
   try {
+    const softDeleted = await KategoriInventaris.findOne({
+      where: {
+        nama: req.body.nama,
+        isDeleted: 1,
+      },
+    });
+
+    if (softDeleted) {
+      softDeleted.isDeleted = 0;
+      await softDeleted.save();
+      return res.status(200).json({ message: 'Data already exists before, successfully restored kategori inventaris data' });
+    } else {
+      const existing = await KategoriInventaris.findOne({
+        where: {
+          nama: req.body.nama,
+          isDeleted: 0,
+        },
+      });
+
+      if (existing) {
+        return res.status(400).json({ message: 'Data already exists.' });
+      }
+    }
+
     const data = await KategoriInventaris.create(req.body);
 
     res.locals.createdData = data.toJSON();

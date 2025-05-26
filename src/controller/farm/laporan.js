@@ -15,6 +15,8 @@ const Sakit = sequelize.Sakit;
 const Kematian = sequelize.Kematian;
 const Vitamin = sequelize.Vitamin;
 
+const PanenKebun = sequelize.PanenKebun;
+const PanenRincianGrade = sequelize.PanenRincianGrade;
 const Panen = sequelize.Panen;
 const Hama = sequelize.Hama;
 
@@ -45,6 +47,9 @@ const createLaporanHarianKebun = async (req, res) => {
         penyiraman: harianKebun.penyiraman,
         pruning: harianKebun.pruning,
         repotting: harianKebun.repotting,
+        tinggiTanaman: harianKebun.tinggiTanaman,
+        kondisiDaun: harianKebun.kondisiDaun,
+        statusTumbuh: harianKebun.statusTumbuh,
       },
       { transaction: t }
     );
@@ -401,6 +406,76 @@ const createLaporanPanen = async (req, res) => {
   }
 };
 
+const createLaporanPanenKebun = async (req, res) => {
+  const t = await db.transaction();
+
+  try {
+    const { panen } = req.body;
+
+    const data = await Laporan.create(
+      {
+        ...req.body,
+        UnitBudidayaId: req.body.unitBudidayaId,
+        ObjekBudidayaId: req.body.objekBudidayaId,
+        UserId: req.user.id,
+      },
+      { transaction: t }
+    );
+
+    const laporanPanen = await PanenKebun.create(
+      {
+        LaporanId: data.id,
+        komoditasId: panen.komoditasId,
+        tanggalPanen: panen.tanggalPanen,
+        estimasiPanen: panen.estimasiPanen,
+        realisasiPanen: panen.realisasiPanen,
+        gagalPanen: panen.gagalPanen,
+        umurTanamanPanen: panen.umurTanamanPanen,
+      },
+      { transaction: t }
+    );
+
+    if (panen.rincianGrade && panen.rincianGrade.length > 0) { // Check if rincianGrade exists
+      for (const grade of panen.rincianGrade) { // Loop through each grade
+        await PanenRincianGrade.create(
+          {
+            panenKebunId: laporanPanen.id,
+            gradeId: grade.gradeId,
+            jumlah: grade.jumlah,
+          },
+          { transaction: t }
+        );
+      }
+    }
+
+    const komoditas = await Komoditas.findOne({
+      where: { id: panen.komoditasId },
+    });
+
+    komoditas.jumlah += panen.realisasiPanen;
+
+    await komoditas.save({ transaction: t });
+
+    await t.commit();
+
+    res.locals.createdData = { data, laporanPanen };
+
+    return res.status(201).json({
+      message: "Successfully created new laporan data",
+      data: {
+        data,
+        laporanPanen,
+      },
+    });
+  } catch (error) {
+    await t.rollback();
+    res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
+  }
+};
+
 const createLaporanHama = async (req, res) => {
   const t = await db.transaction();
 
@@ -507,6 +582,7 @@ module.exports = {
   createLaporanKematian,
   createLaporanVitamin,
   createLaporanPanen,
+  createLaporanPanenKebun,
   createLaporanHama,
   createLaporanPenggunaanInventaris,
 };

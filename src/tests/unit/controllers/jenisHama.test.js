@@ -1,9 +1,9 @@
-// kategoriInventaris.test.js
+// jenisHama.test
 const request = require('supertest');
 const express = require('express');
 
 jest.mock('../../../model/index', () => ({
-  KategoriInventaris: {
+  JenisHama: {
     findAll: jest.fn(),
     findOne: jest.fn(),
     create: jest.fn(),
@@ -19,49 +19,49 @@ jest.mock('../../../validation/dataValidation', () => ({
   dataValid: jest.fn().mockResolvedValue({ message: [] }),
 }));
 
-const kategoriInventarisController = require('../../../controller/farm/kategoriInventaris');
+const jenisHamaController = require('../../../controller/farm/jenisHama');
 const sequelize = require('../../../model/index');
 
 const app = express();
 app.use(express.json());
 
-app.get('/kategori-inventaris', kategoriInventarisController.getAllKategoriInventaris);
-app.get('/kategori-inventaris/:id', kategoriInventarisController.getKategoriInventarisById);
-app.get('/kategori-inventaris/search/:nama', kategoriInventarisController.getKategoriInventarisByName);
-app.post('/kategori-inventaris', kategoriInventarisController.createKategoriInventaris);
-app.put('/kategori-inventaris/:id', kategoriInventarisController.updateKategoriInventaris);
-app.delete('/kategori-inventaris/:id', kategoriInventarisController.deleteKategoriInventaris);
+app.get('/jenis-hama', jenisHamaController.getAlljenisHama);
+app.get('/jenis-hama/:id', jenisHamaController.getjenisHamaById);
+app.get('/jenis-hama/search/:nama', jenisHamaController.getjenisHamaByName);
+app.post('/jenis-hama', jenisHamaController.createjenisHama);
+app.put('/jenis-hama/:id', jenisHamaController.updatejenisHama);
+app.delete('/jenis-hama/:id', jenisHamaController.deletejenisHama);
 
-describe('Kategori Inventaris Controller', () => {
+describe('Jenis Hama Controller', () => {
   afterEach(() => {
     jest.clearAllMocks();
   });
 
-  describe('GET /kategori-inventaris', () => {
+  describe('GET /jenis-hama', () => {
     it('should return 200 and data when found', async () => {
-      const mockData = [{ id: 1, nama: 'Pupuk' }];
-      sequelize.KategoriInventaris.findAll.mockResolvedValue(mockData);
+      const mockData = [{ id: 1, nama: 'Tikus' }];
+      sequelize.JenisHama.findAll.mockResolvedValue(mockData);
 
-      const res = await request(app).get('/kategori-inventaris');
+      const res = await request(app).get('/jenis-hama');
 
       expect(res.statusCode).toBe(200);
-      expect(res.body.message).toBe('Successfully retrieved all kategori inventaris data');
+      expect(res.body.message).toBe('Successfully retrieved all jenis hama data');
       expect(res.body.data).toEqual(mockData);
     });
 
     it('should return 404 when no data found', async () => {
-      sequelize.KategoriInventaris.findAll.mockResolvedValue([]);
+      sequelize.JenisHama.findAll.mockResolvedValue([]);
 
-      const res = await request(app).get('/kategori-inventaris');
+      const res = await request(app).get('/jenis-hama');
 
       expect(res.statusCode).toBe(404);
       expect(res.body.message).toBe('Data not found');
     });
 
     it('should return 500 when there is a server error on findAll', async () => {
-      sequelize.KategoriInventaris.findAll.mockRejectedValue(new Error('DB error'));
+      sequelize.JenisHama.findAll.mockRejectedValue(new Error('DB error'));
 
-      const res = await request(app).get('/kategori-inventaris');
+      const res = await request(app).get('/jenis-hama');
 
       expect(res.statusCode).toBe(500);
       expect(res.body.message).toBe('DB error');
@@ -69,31 +69,31 @@ describe('Kategori Inventaris Controller', () => {
 
   });
 
-  describe('GET /kategori-inventaris/:id', () => {
+  describe('GET /jenis-hama/:id', () => {
     it('should return 200 and data when found', async () => {
-      const mockData = { id: 1, nama: 'Pupuk', isDeleted: false };
-      sequelize.KategoriInventaris.findOne.mockResolvedValue(mockData);
+      const mockData = { id: 1, nama: 'Tikus', isDeleted: false };
+      sequelize.JenisHama.findOne.mockResolvedValue(mockData);
 
-      const res = await request(app).get('/kategori-inventaris/1');
+      const res = await request(app).get('/jenis-hama/1');
 
       expect(res.statusCode).toBe(200);
-      expect(res.body.message).toBe('Successfully retrieved kategori inventaris data');
+      expect(res.body.message).toBe('Successfully retrieved jenis hama data');
       expect(res.body.data).toEqual(mockData);
     });
 
     it('should return 404 when data not found or deleted', async () => {
-      sequelize.KategoriInventaris.findOne.mockResolvedValue(null);
+      sequelize.JenisHama.findOne.mockResolvedValue(null);
 
-      const res = await request(app).get('/kategori-inventaris/99');
+      const res = await request(app).get('/jenis-hama/99');
 
       expect(res.statusCode).toBe(404);
       expect(res.body.message).toBe('Data not found');
     });
 
   it('should return 500 when there is a server error on get by id', async () => {
-    sequelize.KategoriInventaris.findOne.mockRejectedValue(new Error('DB error'));
+    sequelize.JenisHama.findOne.mockRejectedValue(new Error('DB error'));
 
-    const res = await request(app).get('/kategori-inventaris/1');
+    const res = await request(app).get('/jenis-hama/1');
 
     expect(res.statusCode).toBe(500);
     expect(res.body.message).toBe('DB error');
@@ -101,31 +101,31 @@ describe('Kategori Inventaris Controller', () => {
 
   });
 
-  describe('GET /kategori-inventaris/search/:nama', () => {
+  describe('GET /jenis-hama/search/:nama', () => {
     it('should return 200 and data when found', async () => {
-      const mockData = [{ id: 1, nama: 'Pupuk' }];
-      sequelize.KategoriInventaris.findAll.mockResolvedValue(mockData);
+      const mockData = [{ id: 1, nama: 'Tikus' }];
+      sequelize.JenisHama.findAll.mockResolvedValue(mockData);
 
-      const res = await request(app).get('/kategori-inventaris/search/pupuk');
+      const res = await request(app).get('/jenis-hama/search/tik');
 
       expect(res.statusCode).toBe(200);
-      expect(res.body.message).toBe('Successfully retrieved kategori inventaris data');
+      expect(res.body.message).toBe('Successfully retrieved jenis hama data');
       expect(res.body.data).toEqual(mockData);
     });
 
     it('should return 404 when no data found', async () => {
-      sequelize.KategoriInventaris.findAll.mockResolvedValue([]);
+      sequelize.JenisHama.findAll.mockResolvedValue([]);
 
-      const res = await request(app).get('/kategori-inventaris/search/unknown');
+      const res = await request(app).get('/jenis-hama/search/unknown');
 
       expect(res.statusCode).toBe(404);
       expect(res.body.message).toBe('Data not found');
     });
 
     it('should return 500 when there is a server error on get by name', async () => {
-      sequelize.KategoriInventaris.findAll.mockRejectedValue(new Error('Search failed'));
+      sequelize.JenisHama.findAll.mockRejectedValue(new Error('Search failed'));
 
-      const res = await request(app).get('/kategori-inventaris/search/pupuk');
+      const res = await request(app).get('/jenis-hama/search/tikus');
 
       expect(res.statusCode).toBe(500);
       expect(res.body.message).toBe('Search failed');
@@ -133,54 +133,54 @@ describe('Kategori Inventaris Controller', () => {
 
   });
 
-  describe('POST /kategori-inventaris', () => {
+  describe('POST /jenis-hama', () => {
     it('should return 201 when created successfully', async () => {
-      sequelize.KategoriInventaris.findOne
+      sequelize.JenisHama.findOne
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce(null);
 
-      const newKategoriInventaris = { nama: 'Pupuk' };
+      const newJenisHama = { nama: 'Ulat' };
 
-      sequelize.KategoriInventaris.create.mockResolvedValue({
-        ...newKategoriInventaris,
-        toJSON: () => newKategoriInventaris,
+      sequelize.JenisHama.create.mockResolvedValue({
+        ...newJenisHama,
+        toJSON: () => newJenisHama,
       });
 
-      const res = await request(app).post('/kategori-inventaris').send(newKategoriInventaris);
+      const res = await request(app).post('/jenis-hama').send(newJenisHama);
 
       expect(res.statusCode).toBe(201);
-      expect(res.body.message).toBe('Successfully created new kategori inventaris data');
-      expect(res.body.data.nama).toBe('Pupuk');
+      expect(res.body.message).toBe('Successfully created new jenis hama data');
+      expect(res.body.data.nama).toBe('Ulat');
     });
 
     it('should restore soft-deleted data and return 200', async () => {
       const mockSave = jest.fn().mockResolvedValue(true);
 
-      sequelize.KategoriInventaris.findOne
+      sequelize.JenisHama.findOne
         .mockResolvedValueOnce({ // softDeleted
           id: 1,
-          nama: 'Pupuk',
+          nama: 'Ulat',
           isDeleted: true,
           save: mockSave,
         });
 
-      const res = await request(app).post('/kategori-inventaris').send({ nama: 'Pupuk' });
+      const res = await request(app).post('/jenis-hama').send({ nama: 'Ulat' });
 
       expect(res.statusCode).toBe(200);
-      expect(res.body.message).toBe('Data already exists before, successfully restored kategori inventaris data');
+      expect(res.body.message).toBe('Data already exists before, successfully restored jenis hama data');
       expect(mockSave).toHaveBeenCalled();
     });
 
     it('should return 400 when data already exists', async () => {
-      sequelize.KategoriInventaris.findOne
+      sequelize.JenisHama.findOne
         .mockResolvedValueOnce(null) // softDeleted
         .mockResolvedValueOnce({ // existing
           id: 1,
-          nama: 'Pupuk',
+          nama: 'Tikus',
           isDeleted: false,
         });
 
-      const res = await request(app).post('/kategori-inventaris').send({ nama: 'Pupuk' });
+      const res = await request(app).post('/jenis-hama').send({ nama: 'Tikus' });
 
       expect(res.statusCode).toBe(400);
       expect(res.body.message).toBe('Data already exists.');
@@ -190,7 +190,7 @@ describe('Kategori Inventaris Controller', () => {
       const { dataValid } = require('../../../validation/dataValidation');
       dataValid.mockResolvedValueOnce({ message: ['nama is required'] });
 
-      const res = await request(app).post('/kategori-inventaris').send({});
+      const res = await request(app).post('/jenis-hama').send({});
 
       expect(res.statusCode).toBe(400);
       expect(res.body.message).toBe('Validation error');
@@ -198,13 +198,13 @@ describe('Kategori Inventaris Controller', () => {
     });
 
     it('should return 500 when there is a server error on create', async () => {
-      sequelize.KategoriInventaris.findOne
+      sequelize.JenisHama.findOne
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce(null);
 
-      sequelize.KategoriInventaris.create.mockRejectedValue(new Error('Insert failed'));
+      sequelize.JenisHama.create.mockRejectedValue(new Error('Insert failed'));
 
-      const res = await request(app).post('/kategori-inventaris').send({ nama: 'Pupuk' });
+      const res = await request(app).post('/jenis-hama').send({ nama: 'Tikus' });
 
       expect(res.statusCode).toBe(500);
       expect(res.body.message).toBe('Insert failed');
@@ -212,34 +212,34 @@ describe('Kategori Inventaris Controller', () => {
 
   });
 
-  describe('PUT /kategori-inventaris/:id', () => {
+  describe('PUT /jenis-hama/:id', () => {
     it('should update and return 200 if data exists', async () => {
       const id = '1';
-      const updateData = { nama: 'Pupuk Organik' };
+      const updateData = { nama: 'Ulat Bulu' };
       const existingData = {
         id,
-        nama: 'Pupuk',
+        nama: 'Ulat',
         isDeleted: false,
         toJSON: () => ({ id, ...updateData }),
       };
       const updatedData = { id, ...updateData, toJSON: () => ({ id, ...updateData }) };
 
-      sequelize.KategoriInventaris.findOne
+      sequelize.JenisHama.findOne
         .mockResolvedValueOnce(existingData) // find before update
         .mockResolvedValueOnce(updatedData); // find after update
-      sequelize.KategoriInventaris.update.mockResolvedValue([1]);
+      sequelize.JenisHama.update.mockResolvedValue([1]);
 
-      const res = await request(app).put(`/kategori-inventaris/${id}`).send(updateData);
+      const res = await request(app).put(`/jenis-hama/${id}`).send(updateData);
 
       expect(res.statusCode).toBe(200);
-      expect(res.body.message).toBe('Successfully updated kategori inventaris data');
+      expect(res.body.message).toBe('Successfully updated jenis hama data');
       expect(res.body.data).toEqual({ id, ...updateData });
     });
 
     it('should return 404 if data not found', async () => {
-      sequelize.KategoriInventaris.findOne.mockResolvedValue(null);
+      sequelize.JenisHama.findOne.mockResolvedValue(null);
 
-      const res = await request(app).put('/kategori-inventaris/99').send({ nama: 'Pupuk Organik' });
+      const res = await request(app).put('/jenis-hama/99').send({ nama: 'Ulat Bulu' });
 
       expect(res.statusCode).toBe(404);
       expect(res.body.message).toBe('Data not found');
@@ -250,17 +250,17 @@ describe('Kategori Inventaris Controller', () => {
       const updateData = { nama: 'Updated' };
       const existingData = { id, isDeleted: false };
 
-      sequelize.KategoriInventaris.findOne.mockResolvedValue(existingData);
-      sequelize.KategoriInventaris.update.mockRejectedValue(new Error('Update failed'));
+      sequelize.JenisHama.findOne.mockResolvedValue(existingData);
+      sequelize.JenisHama.update.mockRejectedValue(new Error('Update failed'));
 
-      const res = await request(app).put(`/kategori-inventaris/${id}`).send(updateData);
+      const res = await request(app).put(`/jenis-hama/${id}`).send(updateData);
 
       expect(res.statusCode).toBe(500);
       expect(res.body.message).toBe('Update failed');
     });
   });
 
-  describe('DELETE /kategori-inventaris/:id', () => {
+  describe('DELETE /jenis-hama/:id', () => {
     it('should delete (soft) and return 200 if data exists', async () => {
       const id = '1';
       const existingData = {
@@ -269,20 +269,20 @@ describe('Kategori Inventaris Controller', () => {
         save: jest.fn().mockResolvedValue(true),
       };
 
-      sequelize.KategoriInventaris.findOne.mockResolvedValue(existingData);
+      sequelize.JenisHama.findOne.mockResolvedValue(existingData);
 
-      const res = await request(app).delete(`/kategori-inventaris/${id}`);
+      const res = await request(app).delete(`/jenis-hama/${id}`);
 
       expect(res.statusCode).toBe(200);
-      expect(res.body.message).toBe('Successfully deleted kategori inventaris data');
+      expect(res.body.message).toBe('Successfully deleted jenis hama data');
       expect(existingData.isDeleted).toBe(true);
       expect(existingData.save).toHaveBeenCalled();
     });
 
     it('should return 404 if data not found or already deleted', async () => {
-      sequelize.KategoriInventaris.findOne.mockResolvedValue(null);
+      sequelize.JenisHama.findOne.mockResolvedValue(null);
 
-      const res = await request(app).delete('/kategori-inventaris/99');
+      const res = await request(app).delete('/jenis-hama/99');
 
       expect(res.statusCode).toBe(404);
       expect(res.body.message).toBe('Data not found');
@@ -296,9 +296,9 @@ describe('Kategori Inventaris Controller', () => {
         save: jest.fn().mockRejectedValue(new Error('Delete failed')),
       };
 
-      sequelize.KategoriInventaris.findOne.mockResolvedValue(existingData);
+      sequelize.JenisHama.findOne.mockResolvedValue(existingData);
 
-      const res = await request(app).delete(`/kategori-inventaris/${id}`);
+      const res = await request(app).delete(`/jenis-hama/${id}`);
 
       expect(res.statusCode).toBe(500);
       expect(res.body.message).toBe('Delete failed');

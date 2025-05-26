@@ -11,12 +11,14 @@ module.exports = (sequelize, DataTypes) => {
       },
       nama: {
         type: DataTypes.STRING,
+        allowNull: false,
       },
       gambar: {
         type: DataTypes.STRING,
       },
       jumlah: {
         type: DataTypes.DOUBLE,
+        allowNull: false,
       },
       isDeleted: {
         type: DataTypes.BOOLEAN,

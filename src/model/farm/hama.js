@@ -11,6 +11,7 @@ module.exports = (sequelize, DataTypes) => {
       },
       jumlah: {
         type: DataTypes.INTEGER,
+        allowNull: false,
       },
       status: {
         type: DataTypes.BOOLEAN,

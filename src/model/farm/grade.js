@@ -1,6 +1,6 @@
 module.exports = (sequelize, DataTypes) => {
-  const Satuan = sequelize.define(
-    "Satuan",
+  const Grade = sequelize.define(
+    "Grade",
     {
       id: {
         type: DataTypes.UUID,
@@ -12,16 +12,12 @@ module.exports = (sequelize, DataTypes) => {
       nama: {
         type: DataTypes.STRING,
         allowNull: false,
-        validate: {
-          notEmpty: true,
-        },
+        unique: true,
+        comment: "Contoh: Grade A, Super, Premium, Rusak, BS",
       },
-      lambang: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        validate: {
-          notEmpty: true,
-        },
+      deskripsi: {
+        type: DataTypes.TEXT,
+        allowNull: true,
       },
       isDeleted: {
         type: DataTypes.BOOLEAN,
@@ -29,15 +25,16 @@ module.exports = (sequelize, DataTypes) => {
       },
     },
     {
-      tableName: "satuan",
+      tableName: "grade",
       freezeTableName: true,
     }
   );
 
-  Satuan.associate = (models) => {
-    Satuan.hasMany(models.Komoditas);
-    Satuan.hasMany(models.Inventaris);
+  Grade.associate = (models) => {
+    Grade.hasMany(models.PanenRincianGrade, {
+      foreignKey: "gradeId",
+    });
   };
 
-  return Satuan;
+  return Grade;
 };

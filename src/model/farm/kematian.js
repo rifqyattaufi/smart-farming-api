@@ -11,9 +11,11 @@ module.exports = (sequelize, DataTypes) => {
       },
       tanggal: {
         type: DataTypes.DATE,
+        allowNull: false,
       },
       penyebab: {
         type: DataTypes.STRING,
+        allowNull: false,
       },
       isDeleted: {
         type: DataTypes.BOOLEAN,
