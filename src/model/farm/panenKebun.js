@@ -14,25 +14,25 @@ module.exports = (sequelize, DataTypes) => {
         allowNull: false,
       },
       estimasiPanen: {
-        type: DataTypes.DOUBLE,
+        type: DataTypes.INTEGER,
         validate: {
-          isFloat: true,
+          isInt: true,
           min: 0,
         },
         comment: "Estimasi total kuantitas sebelum panen",
       },
       realisasiPanen: {
-        type: DataTypes.DOUBLE,
+        type: DataTypes.INTEGER,
         validate: {
-          isFloat: true,
+          isInt: true,
           min: 0,
         },
         comment: "Total dari semua grade yang dipanen + yang tidak ter-grade jika ada",
       },
       gagalPanen: {
-        type: DataTypes.DOUBLE,
+        type: DataTypes.INTEGER,
         validate: {
-          isFloat: true,
+          isInt: true,
           min: 0,
         },
         comment: "Kuantitas yang gagal dipanen/hilang sebelum grading",
