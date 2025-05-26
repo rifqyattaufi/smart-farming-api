@@ -5,12 +5,17 @@ const express = require("express");
 const cors = require("cors");
 const passport = require("passport");
 require("./src/config/passport");
+const moment = require("moment-timezone");
+
+const APP_TIMEZONE = "Asia/Jakarta";
+moment.tz.setDefault(APP_TIMEZONE);
 
 const app = express();
 
 // Import routes
 const indexRouter = require("./src/routes/indexRoute");
 const storeRouter = require("./src/routes/store/storeIndex");
+const { startScheduler } = require("./services/schedulerService");
 
 const apiRouter = express.Router();
 
@@ -23,7 +28,7 @@ app.use(passport.initialize());
 app.use(
   cors({
     origin: true,
-    credential: true,
+    credentials: true,
     preflightContinue: false,
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
   })
@@ -47,3 +52,5 @@ app.use((err, req, res, next) => {
   });
 });
 app.listen(PORT, () => console.log(`Server is running on ${BASE_URL}:${PORT}`));
+
+startScheduler();

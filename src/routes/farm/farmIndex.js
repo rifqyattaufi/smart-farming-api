@@ -10,11 +10,11 @@ const komoditasRouter = require("./komoditas");
 const inventarisRouter = require("./inventaris");
 const laporanRouter = require("./laporan");
 const objekBudidayaRouter = require("./objekBudidaya");
+const globalNotificationSettingRouter = require("./globalNotificationSetting");
+const scheduledUnitNotificationRouter = require("./scheduledUnitNotification");
 const gradeRouter = require("./grade");
 
 const dashboardRouter = require("./dashboard");
-
-const { authenticate } = require("../../middleware/validation");
 
 router.use("/jenis-budidaya", jenisBudidayaRouter);
 router.use("/unit-budidaya", unitBudidayaRouter);
@@ -26,6 +26,8 @@ router.use("/kategori-inventaris", kategoriInventarisRouter);
 router.use("/inventaris", inventarisRouter);
 router.use("/laporan", laporanRouter);
 router.use("/dashboard", dashboardRouter);
+router.use("/globalNotification", globalNotificationSettingRouter);
+router.use("/scheduledUnitNotification", scheduledUnitNotificationRouter);
 router.use("/grade", gradeRouter);
 
 module.exports = router;
