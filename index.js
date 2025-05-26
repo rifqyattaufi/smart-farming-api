@@ -51,6 +51,6 @@ app.use((err, req, res, next) => {
     message: "Internal Server Error",
   });
 });
-app.listen(PORT, () => console.log(`Server is running on ${BASE_URL}:${PORT}`));
+app.listen(PORT, () => console.log(`Server is running on ${BASE_URL}`));
 
 startScheduler();

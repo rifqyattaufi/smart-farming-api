@@ -98,7 +98,6 @@ async function checkAndSendScheduledNotifications() {
         ? moment(schedule.lastTriggered)
         : null;
 
-      console.log("scheduledTimePart: ", scheduledTimeParts);
       if (
         now.hours() === scheduledTimeParts[0] &&
         now.minutes() === scheduledTimeParts[1]
@@ -110,7 +109,6 @@ async function checkAndSendScheduledNotifications() {
           if (now.day() === schedule.dayOfWeek) {
             frequencyMatch = true;
           }
-          console.log("now: ", now.day(), "schedule: ", schedule.dayOfWeek);
         } else if (schedule.notificationType === "monthly") {
           if (now.date() === schedule.dayOfMonth) {
             frequencyMatch = true;
