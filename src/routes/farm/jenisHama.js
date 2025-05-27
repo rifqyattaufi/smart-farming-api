@@ -11,7 +11,7 @@ router.get('/', jenisHamaController.getAlljenisHama);
 
 router.get('/:id', jenisHamaController.getjenisHamaById);
 
-router.get('/search/:nama', jenisHamaController.getjenisHamaByName);
+router.get('/search/:nama', jenisHamaController.getjenisHamaSearch);
 
 router.post('/', auditMiddleware({ model: JenisHama, tableName: "JenisHama" }), jenisHamaController.createjenisHama);
 

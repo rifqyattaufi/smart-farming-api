@@ -4,12 +4,7 @@ const JenisBudidaya = sequelize.JenisBudidaya;
 const Satuan = sequelize.Satuan;
 const Op = sequelize.Sequelize.Op;
 
-const getPaginationOptions = (page, limit) => {
-  const pageNum = parseInt(page, 10) || 1;
-  const limitNum = parseInt(limit, 10) || 20;
-  const offset = (pageNum - 1) * limitNum;
-  return { limit: limitNum, offset };
-};
+const { getPaginationOptions } = require('../../utils/paginationUtils');
 
 const getAllKomoditas = async (req, res) => {
   try {
