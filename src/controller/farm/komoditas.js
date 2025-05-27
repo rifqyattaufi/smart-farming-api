@@ -161,6 +161,10 @@ const getKomoditasByTipe = async (req, res) => {
             tipe: tipe,
           },
         },
+        {
+          model: Satuan,
+          required: true,
+        },
       ],
       where: {
         isDeleted: false,
@@ -170,7 +174,7 @@ const getKomoditasByTipe = async (req, res) => {
     });
 
     if (rows.length === 0 && parseInt(page,10) === 1) {
-      return res.status(200).json({ // Ubah ke 200
+      return res.status(200).json({
         message: "Data not found for this type",
         data: [],
         totalItems: 0,

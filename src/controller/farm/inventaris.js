@@ -1,37 +1,57 @@
-const e = require("express");
-const { where, QueryTypes, col, Op, fn, literal } = require("sequelize");
+const { QueryTypes, Op } = require("sequelize");
 const sequelize = require("../../model/index");
-const kategoriInventaris = require("../../model/farm/kategoriInventaris");
-const { dataValid } = require("../../validation/dataValidation");
 const db = sequelize.sequelize;
 const Inventaris = sequelize.Inventaris;
 const Satuan = sequelize.Satuan;
 const Kategori = sequelize.KategoriInventaris;
 
+const { getPaginationOptions } = require('../../utils/paginationUtils');
+
 const getAllInventaris = async (req, res) => {
   try {
-    const data = await Inventaris.findAll({
-      where: {
-        isDeleted: false,
-      },
+    const { page, limit, kategoriId, nama } = req.query;
+    const paginationOptions = getPaginationOptions(page, limit);
+
+    const whereClause = { isDeleted: false };
+    if (kategoriId && kategoriId !== 'all' && kategoriId.trim() !== '') { 
+      whereClause.KategoriInventarisId = kategoriId;
+    }
+    if (nama && nama.trim() !== '') {
+      whereClause.nama = { [Op.like]: `%${nama}%` };
+    }
+
+    const { count, rows } = await Inventaris.findAndCountAll({
+      where: whereClause,
+      include: [
+        { model: Kategori, as: "kategoriInventaris", attributes: ["id", "nama"] },
+        { model: Satuan, attributes: ["id", "nama", "lambang"] },
+      ],
       order: [["createdAt", "DESC"]],
+      distinct: true,
+      ...paginationOptions,
     });
 
-    if (data.length === 0) {
-      return res.status(404).json({
-        message: "Data not found",
+    if (rows.length === 0 && (parseInt(page, 10) || 1) === 1) {
+      return res.status(200).json({
+        message: "Data not found", data: [], totalItems: 0, totalPages: 0, currentPage: parseInt(page, 10) || 1,
       });
+    }
+    if (rows.length === 0 && (parseInt(page, 10) || 1) > 1) {
+        return res.status(200).json({
+            message: "No more data", data: [], totalItems: count, totalPages: Math.ceil(count / paginationOptions.limit), currentPage: parseInt(page, 10) || 1,
+        });
     }
 
     return res.status(200).json({
       message: "Successfully retrieved all inventaris data",
-      data: data,
+      data: rows,
+      totalItems: count,
+      totalPages: Math.ceil(count / paginationOptions.limit),
+      currentPage: parseInt(page, 10) || 1,
     });
   } catch (error) {
-    res.status(500).json({
-      message: error.message,
-      detail: error,
-    });
+    console.error("Error getAllInventaris:", error);
+    res.status(500).json({ message: error.message, detail: error });
   }
 };
 
@@ -137,30 +157,41 @@ const getInventarisById = async (req, res) => {
 const getInventarisByName = async (req, res) => {
   try {
     const { nama } = req.params;
+    const { page, limit } = req.query;
+    const paginationOptions = getPaginationOptions(page, limit);
 
-    const data = await Inventaris.findAll({
+    const { count, rows } = await Inventaris.findAndCountAll({
       where: {
-        nama: {
-          [Op.like]: `%${nama}%`,
-        },
+        nama: { [Op.like]: `%${nama}%` },
         isDeleted: false,
       },
+      include: [
+        { model: Kategori, as: "kategoriInventaris", attributes: ["id", "nama"] },
+        { model: Satuan, attributes: ["id", "nama", "lambang"] },
+      ],
       order: [["createdAt", "DESC"]],
+      distinct: true,
+      ...paginationOptions,
     });
 
-    if (data.length === 0) {
-      return res.status(404).json({ message: "Data not found" });
+    if (rows.length === 0 && (parseInt(page, 10) || 1) === 1) {
+      return res.status(200).json({
+        message: "Data not found", data: [], totalItems: 0, totalPages: 0, currentPage: parseInt(page, 10) || 1,
+      });
+    }
+    if (rows.length === 0 && (parseInt(page, 10) || 1) > 1) {
+        return res.status(200).json({
+            message: "No more data", data: [], totalItems: count, totalPages: Math.ceil(count / paginationOptions.limit), currentPage: parseInt(page, 10) || 1,
+        });
     }
 
     return res.status(200).json({
-      message: "Successfully retrieved inventaris data",
-      data: data,
+      message: "Successfully retrieved inventaris data", data: rows, totalItems: count,
+      totalPages: Math.ceil(count / paginationOptions.limit), currentPage: parseInt(page, 10) || 1,
     });
   } catch (error) {
-    res.status(500).json({
-      message: error.message,
-      detail: error,
-    });
+    console.error("Error getInventaris:", error);
+    res.status(500).json({ message: error.message, detail: error });
   }
 };
 
