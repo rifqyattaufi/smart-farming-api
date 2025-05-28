@@ -16,6 +16,9 @@ router.get(
 
 router.get("/:id", inventarisController.getInventarisById);
 
+router.get("/:id/riwayat-pemakaian", inventarisController.getRiwayatPemakaianInventarisPaginated);
+
+router.get("/:id/statistik-pemakaian", inventarisController.getStatistikPemakaianInventaris);
 
 router.get("/search/:nama", inventarisController.getInventarisByName);
 

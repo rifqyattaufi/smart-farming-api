@@ -178,14 +178,14 @@ describe('Dashboard Controller', () => {
 
 
     it('should return 500 if OpenWeather API call fails', async () => {
-  const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-  axios.get.mockRejectedValue(new Error('OpenWeather API Error'));
-  
-  const res = await request(app).get('/dashboard/perkebunan');
-  expect(res.statusCode).toBe(500);
-  expect(res.body.error).toBe('Internal server error');
-  consoleErrorSpy.mockRestore();
-});
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      axios.get.mockRejectedValue(new Error('OpenWeather API Error'));
+      
+      const res = await request(app).get('/dashboard/perkebunan');
+      expect(res.statusCode).toBe(500);
+      expect(res.body.error).toBe('Internal server error');
+      consoleErrorSpy.mockRestore();
+    });
 
     it('should return 500 if any database query fails', async () => {
       axios.get.mockResolvedValue({ data: { main: { temp: 25 } } });

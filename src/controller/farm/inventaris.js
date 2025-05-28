@@ -1,9 +1,12 @@
-const { QueryTypes, Op } = require("sequelize");
+const { QueryTypes, Op, fn, col } = require("sequelize");
 const sequelize = require("../../model/index");
 const db = sequelize.sequelize;
 const Inventaris = sequelize.Inventaris;
 const Satuan = sequelize.Satuan;
 const Kategori = sequelize.KategoriInventaris;
+const PenggunaanInventaris = sequelize.PenggunaanInventaris;
+const Laporan = sequelize.Laporan;
+const User = sequelize.User;
 
 const { getPaginationOptions } = require('../../utils/paginationUtils');
 
@@ -59,100 +62,204 @@ const getInventarisById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const data = await Inventaris.findOne({
+    const inventarisData = await Inventaris.findOne({
+      where: { id: id, isDeleted: false },
+      include: [
+        { model: Kategori, as: "kategoriInventaris", attributes: ["id", "nama"] },
+        { model: Satuan, attributes: ["id", "nama", "lambang"] },
+      ],
+    });
+
+    if (!inventarisData || inventarisData.isDeleted) {
+      return res.status(404).json({ message: "Data not found" });
+    }
+
+    // Initial chart data: Last 7 days of usage
+    const today = new Date();
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(today.getDate() - 7);
+
+    const pemakaianTerakhir7Hari = await PenggunaanInventaris.findAll({
+      attributes: [
+        [fn('DATE', col('PenggunaanInventaris.createdAt')), 'tanggal'], // Use PenggunaanInventaris.createdAt
+        [fn('SUM', col('jumlah')), 'stokPemakaian'],
+      ],
       where: {
-        id: id,
+        inventarisId: id,
+        isDeleted: false,
+        createdAt: {
+          [Op.gte]: sevenDaysAgo, // Greater than or equal to seven days ago
+          [Op.lte]: today,       // Less than or equal to today
+        },
+      },
+      group: [fn('DATE', col('PenggunaanInventaris.createdAt'))],
+      order: [[fn('DATE', col('PenggunaanInventaris.createdAt')), 'ASC']],
+      raw: true, // Get plain objects
+    });
+    
+    // Fill in missing dates with 0 usage for the last 7 days
+    const allDatesLast7Days = [];
+    for (let i = 0; i < 7; i++) {
+        const date = new Date();
+        date.setDate(today.getDate() - i);
+        allDatesLast7Days.push(date.toISOString().split('T')[0]);
+    }
+    allDatesLast7Days.reverse(); // from oldest to newest
+
+    const defaultChartData = allDatesLast7Days.map(dateStr => {
+    const found = pemakaianTerakhir7Hari.find(p => p.tanggal === dateStr); // p.tanggal di sini mungkin merujuk ke field 'tanggal' dari query pemakaianTerakhir7Hari
+                                                                        // yang mana SELECT fn('DATE', ...) AS 'tanggal'
+    return {
+        period: dateStr, // <--- UBAH 'tanggal' MENJADI 'period'
+        stokPemakaian: found ? parseInt(found.stokPemakaian, 10) : 0,
+    };
+});
+
+
+    return res.status(200).json({
+      message: "Successfully retrieved inventaris data",
+      data: {
+        inventaris: inventarisData,
+        defaultChartData: defaultChartData, // Renamed from pemakaianPerMinggu
+      },
+    });
+  } catch (error) {
+    console.error("Error getInventarisById:", error);
+    res.status(500).json({ message: error.message, detail: error });
+  }
+};
+
+const getStatistikPemakaianInventaris = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { startDate, endDate, groupBy } = req.query; // groupBy can be 'day', 'month', 'year'
+
+    if (!startDate || !endDate || !groupBy) {
+      return res.status(400).json({ message: "startDate, endDate, and groupBy query parameters are required." });
+    }
+
+    let dateFormat;
+    let dateColumn;
+
+    switch (groupBy) {
+      case 'day':
+        dateColumn = fn('DATE', col('PenggunaanInventaris.createdAt'));
+        break;
+      case 'month':
+        dateColumn = fn('DATE_FORMAT', col('PenggunaanInventaris.createdAt'), '%Y-%m-01');
+        break;
+      case 'year':
+        dateColumn = fn('DATE_FORMAT', col('PenggunaanInventaris.createdAt'), '%Y-01-01');
+        break;
+      default:
+        return res.status(400).json({ message: "Invalid groupBy value. Use 'day', 'month', or 'year'." });
+    }
+
+    const statistik = await PenggunaanInventaris.findAll({
+      attributes: [
+        [dateColumn, 'period'],
+        [fn('SUM', col('jumlah')), 'stokPemakaian'],
+      ],
+      where: {
+        inventarisId: id,
+        isDeleted: false,
+        createdAt: {
+          [Op.between]: [new Date(startDate), new Date(endDate + 'T23:59:59.999Z')], // Ensure end date includes the whole day
+        },
+      },
+      group: ['period'],
+      order: [['period', 'ASC']],
+      raw: true,
+    });
+    console.log("Backend Query Result (statistik):", statistik);
+
+    return res.status(200).json({
+      message: "Successfully retrieved usage statistics",
+      data: statistik.map(s => ({ ...s, stokPemakaian: parseInt(s.stokPemakaian, 10) })),
+    });
+  } catch (error) {
+    console.error("Error getStatistikPemakaianInventaris:", error);
+    res.status(500).json({ message: error.message, detail: error });
+  }
+};
+
+const getRiwayatPemakaianInventarisPaginated = async (req, res) => {
+  try {
+    const { id: inventarisId } = req.params;
+    const { page, limit } = req.query;
+    const paginationOptions = getPaginationOptions(page, limit);
+
+    const { count, rows } = await PenggunaanInventaris.findAndCountAll({
+      where: {
+        inventarisId: inventarisId,
         isDeleted: false,
       },
       include: [
         {
-          model: Kategori,
-          as: "kategoriInventaris",
-          attributes: ["id", "nama"],
+          model: Laporan,
+          as: 'laporan', // Make sure this alias matches your association
+          attributes: ['id', 'gambar', 'createdAt', 'userId'],
+          include: [
+            {
+              model: User,
+              as: 'user', // Make sure this alias matches your association
+              attributes: ['name'],
+            }
+          ]
         },
         {
-          model: Satuan,
-          attributes: ["id", "nama", "lambang"],
-        },
+          model: Inventaris,
+          as: 'inventaris', // Make sure this alias matches
+          attributes: ['nama']
+        }
       ],
+      order: [['createdAt', 'DESC']],
+      distinct: true,
+      ...paginationOptions,
     });
 
-    const daftarPemakaian = await db.query(
-      `
-      SELECT 
-          pi.id,
-          pi.jumlah,
-          pi.createdAt,
-          i.id AS inventarisId,
-          i.nama AS inventarisNama,
-          l.userId AS userId,
-          l.gambar AS laporanGambar,
-          u.name AS petugasNama,
-          DATE_FORMAT(l.createdAt, '%W, %d %M %Y') AS laporanTanggal,
-          DATE_FORMAT(l.createdAt, '%H:%i') AS laporanWaktu
-      FROM 
-          penggunaanInventaris pi
-      JOIN 
-          inventaris i ON pi.inventarisId = i.id
-      JOIN 
-          laporan l ON pi.laporanId = l.id
-      JOIN
-          user u ON l.userId = u.id
-      WHERE 
-          pi.isDeleted = FALSE
-          AND i.isDeleted = FALSE
-          AND i.id = :inventarisId
-      ORDER BY 
-          pi.createdAt DESC;
-    `,
-      {
-        type: QueryTypes.SELECT,
-        replacements: { inventarisId: id },
-      }
-    );
+    const formattedRows = rows.map(item => {
+        return {
+            id: item.id,
+            jumlah: item.jumlah,
+            createdAt: item.createdAt, // raw createdAt for potential client-side formatting
+            inventarisId: item.inventarisId,
+            inventarisNama: item.inventaris?.nama || 'Unknown',
+            laporanGambar: item.laporan?.gambar,
+            petugasNama: item.laporan?.user?.name || 'Unknown',
+            // Format dates here or send ISO strings and format on client
+            laporanTanggal: item.laporan?.createdAt ? new Date(item.laporan.createdAt).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'}) : 'Unknown date',
+            laporanWaktu: item.laporan?.createdAt ? new Date(item.laporan.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit'}) : 'Unknown time',
+            laporanId: item.laporan?.id // for navigation
+        };
+    });
 
-    const pemakaianPerMinggu = await db.query(
-      `
-      SELECT 
-      YEARWEEK(pi.createdAt, 1) AS mingguKe,
-      MIN(pi.createdAt) AS mingguAwal,
-      SUM(pi.jumlah) AS stokPemakaian
-      FROM 
-          penggunaanInventaris pi
-      JOIN 
-          inventaris i ON pi.inventarisId = i.id
-      WHERE 
-          pi.isDeleted = FALSE
-          AND i.isDeleted = FALSE
-          AND i.id = :inventarisId
-      GROUP BY 
-          YEARWEEK(pi.createdAt, 1)
-      ORDER BY 
-          mingguAwal ASC
-    `,
-      {
-        type: QueryTypes.SELECT,
-        replacements: { inventarisId: id },
-      }
-    );
 
-    if (!data || data.isDeleted) {
-      return res.status(404).json({
-        message: "Data not found",
+    if (rows.length === 0 && (parseInt(page, 10) || 1) === 1) {
+      return res.status(200).json({
+        message: "No usage history found", data: [], totalItems: 0, totalPages: 0, currentPage: parseInt(page, 10) || 1,
+      });
+    }
+    if (rows.length === 0 && (parseInt(page, 10) || 1) > 1) {
+      return res.status(200).json({
+        message: "No more usage history", data: [], totalItems: count, totalPages: Math.ceil(count / paginationOptions.limit), currentPage: parseInt(page, 10) || 1,
       });
     }
 
     return res.status(200).json({
-      message: "Successfully retrieved inventaris data",
-      data: { data, daftarPemakaian, pemakaianPerMinggu },
+      message: "Successfully retrieved usage history",
+      data: formattedRows,
+      totalItems: count,
+      totalPages: Math.ceil(count / (paginationOptions.limit || limit)), // ensure limit is used
+      currentPage: parseInt(page, 10) || 1,
     });
+
   } catch (error) {
-    res.status(500).json({
-      message: error.message,
-      detail: error,
-    });
+    console.error("Error getRiwayatPemakaianInventarisPaginated:", error);
+    res.status(500).json({ message: error.message, detail: error });
   }
 };
+
 
 const getInventarisByName = async (req, res) => {
   try {
@@ -421,4 +528,6 @@ module.exports = {
   updateInventaris,
   deleteInventaris,
   getRiwayatPenggunaanInventaris,
+  getStatistikPemakaianInventaris,
+  getRiwayatPemakaianInventarisPaginated,
 };
