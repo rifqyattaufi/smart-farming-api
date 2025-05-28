@@ -104,7 +104,7 @@ const register = async (req, res, next) => {
   const t = await db.transaction();
 
   const valid = {
-    name: "required|string",
+    name: "required",
     email: "required|email",
     phone: "required|phone",
     password: "required|strongPassword",
@@ -171,8 +171,8 @@ const register = async (req, res, next) => {
       expiredTime: user.data.role === "user" ? new Date() : null,
     };
 
-    if (user.data.role !== "user") {
-      userData.isActive = true;
+    if (user.data.role == "user" || user.data.role == "penjual") {
+      userData.isActive = false;
     }
 
     const newUser = await User.create(userData, {
@@ -181,7 +181,7 @@ const register = async (req, res, next) => {
 
     let result = false;
 
-    if (newUser.role === "user") {
+    if (newUser.role === "user" || newUser.role === "penjual") {
       const otp = await generateOTP(newUser.id);
       result = await sendOTP(user.data.phone, otp);
 

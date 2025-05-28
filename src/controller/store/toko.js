@@ -118,8 +118,8 @@ const createToko = async (req, res) => {
 
 
 const updateToko = async (req, res) => {
-  try { 
-    const data = await Toko.findOne({  
+  try {
+    const data = await Toko.findOne({
       where: {
         UserId: req.user.id,
         isDeleted: false,
@@ -214,7 +214,7 @@ const rejectToko = async (req, res) => {
       where: {
         id: req.params.id,
         isDeleted: false,
-        tokoStatus: 'request',  // Status toko hanya bisa diubah menjadi reject jika statusnya masih 'request'
+        tokoStatus: 'request',
       },
     });
 
@@ -254,11 +254,11 @@ const banToko = async (req, res) => {
       });
     }
 
-    toko.tokoStatus = 'delete';
+    toko.isDeleted = true;
     await toko.save();
 
     return res.status(200).json({
-      message: "Toko banned successfully",
+      message: "Toko Delete successfully",
       data: toko,
     });
   } catch (error) {
@@ -283,7 +283,6 @@ const changeTokoType = async (req, res) => {
       });
     }
 
-    // Check if toko is already RFC
     if (toko.TypeToko === 'rfc') {
       return res.status(400).json({
         message: "Toko is already classified as RFC",
@@ -304,6 +303,7 @@ const changeTokoType = async (req, res) => {
     });
   }
 };
+
 
 
 
