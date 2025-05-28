@@ -20,14 +20,12 @@ module.exports = {
      * await queryInterface.dropTable('users');
      */
     await queryInterface.addColumn('grade', 'satuanId', {
-      satuanId: {
         type: Sequelize.UUID,
         allowNull: true,
         references: {
           model: 'satuan',
           key: 'id'
         }
-      }
     });
   }
 };
