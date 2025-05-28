@@ -367,7 +367,7 @@ const dashboardPeternakan = async (req, res) => {
           judul = `${userName} telah melaporkan penggunaan ${aktivitas.inventarisNama}`;
           break;
         case "vitamin":
-          judul = `${userName} telah melaporkan penggunaan ${aktivitas.inventarisNama}}`;
+          judul = `${userName} telah melaporkan penggunaan ${aktivitas.vitaminNama}`;
           break;
         default:
           judul = `${userName} telah melaporkan ${aktivitas.tipe} ${aktivitas.jenisBudidayaTipe}`;

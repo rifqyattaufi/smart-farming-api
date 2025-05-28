@@ -15,9 +15,10 @@ describe('UnitBudidaya Model', () => {
     UnitBudidaya = defineUnitBudidaya(sequelize, DataTypes);
     const JenisBudidaya = sequelize.define('JenisBudidaya', {});
     const ObjekBudidaya = sequelize.define('ObjekBudidaya', {});
+    const ScheduledUnitNotification = sequelize.define('ScheduledUnitNotification', {});
     const Laporan = sequelize.define('Laporan', {});
 
-    UnitBudidaya.associate({ JenisBudidaya, ObjekBudidaya, Laporan });
+    UnitBudidaya.associate({ JenisBudidaya, ObjekBudidaya, Laporan, ScheduledUnitNotification });
 
     await sequelize.sync();
   });
@@ -65,6 +66,7 @@ describe('UnitBudidaya Model', () => {
     expect(UnitBudidaya.associations.JenisBudidaya).toBeDefined();
     expect(UnitBudidaya.associations.ObjekBudidayas).toBeDefined();
     expect(UnitBudidaya.associations.Laporans).toBeDefined();
+    expect(UnitBudidaya.associations.ScheduledUnitNotifications).toBeDefined();
   });
 
   it('should generate UUID for primary key', async () => {
