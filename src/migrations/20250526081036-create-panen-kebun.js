@@ -90,6 +90,6 @@ module.exports = {
      * Example:
      * await queryInterface.dropTable('users');
      */
-    await queryInterface.dropTable('panenKebun');
+    await queryInterface.dropTable('panenkebun');
   }
 };
