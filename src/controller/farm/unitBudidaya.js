@@ -1,8 +1,10 @@
+const { where } = require("sequelize");
 const sequelize = require("../../model/index");
 const db = sequelize.sequelize;
 const JenisBudidaya = sequelize.JenisBudidaya;
 const UnitBudidaya = sequelize.UnitBudidaya;
 const ObjekBudidaya = sequelize.ObjekBudidaya;
+const ScheduledUnitNotification = sequelize.ScheduledUnitNotification;
 const Logs = sequelize.Logs;
 const Op = sequelize.Sequelize.Op;
 
@@ -168,7 +170,7 @@ const createUnitBudidaya = async (req, res) => {
   const t = await db.transaction();
 
   try {
-    const { jumlah = 0, tipe, jenisBudidayaId } = req.body;
+    const { jumlah = 0, tipe, jenisBudidayaId, notifikasi } = req.body;
 
     const jenisBudidaya = await JenisBudidaya.findOne({
       where: { id: jenisBudidayaId },
@@ -224,6 +226,44 @@ const createUnitBudidaya = async (req, res) => {
           changedBy: req.user?.id,
         });
       }
+    }
+
+    if (notifikasi.panen != null) {
+      await ScheduledUnitNotification.create(
+        {
+          ...notifikasi.panen,
+          unitBudidayaId: data.id,
+          title: `Pengingat Laporan Panen ${data.nama}`,
+          messageTemplate: `Hai!
+          Sudah waktunya panen nih! 🌾
+          Jangan lupa lapor panen untuk kandang ${data.nama}, ya. Biar semua tetap tercatat dan nggak ada yang kelewat.
+          Klik di sini buat lapor sekarang! 🌾`,
+          tipeLaporan: "panen",
+          isDeleted: false,
+        },
+        { transaction: t }
+      );
+    }
+
+    if (notifikasi.vitamin != null) {
+      await ScheduledUnitNotification.create(
+        {
+          unitBudidayaId: data.id,
+          title: `Pengingat Pemberian Vitamin ${data.nama}`,
+          messageTemplate: `Hai!
+          Sudah waktunya memberikan nutrisi nih!💊
+          Jangan lupa lapor pemberian nutrisi untuk kandang ${data.nama}, ya. Biar semua tetap tercatat dan nggak ada yang kelewat.
+          Klik di sini buat lapor sekarang! 💊`,
+          notificationType: notifikasi.vitamin.notificationType,
+          tipeLaporan: "vitamin",
+          dayOfWeek: notifikasi.vitamin.dayOfWeek ?? null,
+          dayOfMonth: notifikasi.vitamin.dayOfMonth ?? null,
+          scheduledTime: notifikasi.vitamin.scheduledTime,
+          isActive: true,
+          isDeleted: false,
+        },
+        { transaction: t }
+      );
     }
 
     await t.commit();
@@ -400,6 +440,83 @@ const updateUnitBudidaya = async (req, res) => {
       }
     }
 
+    const { notifikasi } = updated;
+    if (notifikasi.panen != null) {
+      const panenNotifData = {
+        unitBudidayaId: updated.id,
+        title: `Pengingat Laporan Panen ${updated.nama ?? data.nama}`,
+        messageTemplate: `Hai!
+        Sudah waktunya panen nih! 🌾
+        Jangan lupa lapor panen untuk kandang ${updated.nama}, ya. Biar semua tetap tercatat dan nggak ada yang kelewat.
+        Klik di sini buat lapor sekarang! 🌾`,
+        notificationType: notifikasi.panen.notificationType,
+        tipeLaporan: "panen",
+        dayOfWeek: notifikasi.panen.dayOfWeek ?? null,
+        dayOfMonth: notifikasi.panen.dayOfMonth ?? null,
+        scheduledTime: notifikasi.panen.scheduledTime,
+        isActive: true,
+        isDeleted: false,
+      };
+      if (notifikasi.panen.id != null) {
+        panenNotifData.id = notifikasi.panen.id;
+      }
+      await ScheduledUnitNotification.upsert(panenNotifData, {
+        transaction: t,
+      });
+    } else {
+      await ScheduledUnitNotification.update(
+        {
+          isDeleted: true,
+          isActive: false,
+        },
+        {
+          where: {
+            unitBudidayaId: updated.id,
+            tipeLaporan: "panen",
+          },
+          transaction: t,
+        }
+      );
+    }
+
+    if (notifikasi.vitamin != null) {
+      const vitaminNotifData = {
+        unitBudidayaId: updated.id,
+        title: `Pengingat Pemberian Vitamin ${updated.nama ?? data.nama}`,
+        messageTemplate: `Hai!
+        Sudah waktunya memberikan nutrisi nih!💊
+        Jangan lupa lapor pemberian nutrisi untuk kandang ${updated.nama}, ya. Biar semua tetap tercatat dan nggak ada yang kelewat.
+        Klik di sini buat lapor sekarang! 💊`,
+        notificationType: notifikasi.vitamin.notificationType,
+        tipeLaporan: "vitamin",
+        dayOfWeek: notifikasi.vitamin.dayOfWeek ?? null,
+        dayOfMonth: notifikasi.vitamin.dayOfMonth ?? null,
+        scheduledTime: notifikasi.vitamin.scheduledTime,
+        isActive: true,
+        isDeleted: false,
+      };
+      if (notifikasi.vitamin.id != null) {
+        vitaminNotifData.id = notifikasi.vitamin.id;
+      }
+      await ScheduledUnitNotification.upsert(vitaminNotifData, {
+        transaction: t,
+      });
+    } else {
+      await ScheduledUnitNotification.update(
+        {
+          isDeleted: true,
+          isActive: false,
+        },
+        {
+          where: {
+            unitBudidayaId: updated.id,
+            tipeLaporan: "vitamin",
+          },
+          transaction: t,
+        }
+      );
+    }
+
     await t.commit();
 
     const updatedData = await UnitBudidaya.findOne({
@@ -454,6 +571,15 @@ const deleteUnitBudidaya = async (req, res) => {
 
       res.locals.updatedData = dataObjekBudidaya;
     }
+
+    await ScheduledUnitNotification.update(
+      { isDeleted: true, isActive: false },
+      {
+        where: {
+          unitBudidayaId: req.params.id,
+        },
+      }
+    );
 
     data.isDeleted = true;
     await data.save();

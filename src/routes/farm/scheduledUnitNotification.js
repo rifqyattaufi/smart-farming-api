@@ -16,6 +16,11 @@ router.get(
   scheduledUnitNotificationController.getScheduledUnitNotificationById
 );
 
+router.get(
+  "/unitBudidaya/:unitBudidayaId",
+  scheduledUnitNotificationController.getScheduledUnitNotificationsByUnitBudidayaId
+);
+
 router.post(
   "/",
   auditMiddleware({
