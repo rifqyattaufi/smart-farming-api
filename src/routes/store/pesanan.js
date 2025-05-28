@@ -10,5 +10,7 @@ const Pesanan = sequelize.Pesanan;
 
 router.post('/', auditMiddleware({ model: Pesanan, tableName: "Pesanan" }), pesananController.createPesanan);
 router.get('/user', pesananController.getPesananByUser);
+router.put('/status', pesananController.updatePesananStatus);
+router.get('/toko/:id', pesananController.getPesananByTokoId);
 
 module.exports = router;

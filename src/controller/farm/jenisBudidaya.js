@@ -1,29 +1,51 @@
-const e = require("express");
 const sequelize = require("../../model/index");
-const { Op, where } = require("sequelize");
+const { Op } = require("sequelize");
 const db = sequelize.sequelize;
 const JenisBudidaya = sequelize.JenisBudidaya;
 const UnitBudidaya = sequelize.UnitBudidaya;
 const ObjekBudidaya = sequelize.ObjekBudidaya;
 
+const { getPaginationOptions } = require('../../utils/paginationUtils');
+
 const getAllJenisBudidaya = async (req, res) => {
   try {
-    const data = await JenisBudidaya.findAll({
+    const { page, limit } = req.query;
+    const paginationOptions = getPaginationOptions(page, limit);
+
+    const { count, rows } = await JenisBudidaya.findAndCountAll({
       where: {
         isDeleted: false,
       },
       order: [["createdAt", "DESC"]],
+      ...paginationOptions,
     });
 
-    if (data.length === 0) {
-      return res.status(404).json({
+    if (rows.length === 0 && parseInt(page,10) === 1) {
+      return res.status(200).json({
         message: "Data not found",
+        data: [],
+        totalItems: 0,
+        totalPages: 0,
+        currentPage: parseInt(page, 10) || 1,
       });
     }
+     if (rows.length === 0 && parseInt(page,10) > 1) {
+        return res.status(200).json({
+            message: "No more data",
+            data: [],
+            totalItems: count,
+            totalPages: Math.ceil(count / paginationOptions.limit),
+            currentPage: parseInt(page, 10) || 1,
+        });
+    }
+
 
     return res.status(200).json({
       message: "Successfully retrieved all jenis budidaya data",
-      data: data,
+      data: rows,
+      totalItems: count,
+      totalPages: Math.ceil(count / paginationOptions.limit),
+      currentPage: parseInt(page, 10) || 1,
     });
   } catch (error) {
     res.status(500).json({
@@ -39,6 +61,12 @@ const getJenisBudidayaById = async (req, res) => {
       where: { id: req.params.id, isDeleted: false },
     });
 
+    if (!data || data.isDeleted) {
+      return res.status(404).json({
+        message: "Data not found",
+      });
+    }
+    
     const dataUnitBudidaya = await UnitBudidaya.findAll({
       where: {
         jenisBudidayaId: req.params.id,
@@ -48,17 +76,11 @@ const getJenisBudidayaById = async (req, res) => {
     });
 
     let jumlahBudidaya = 0;
-
     for (let i = 0; i < dataUnitBudidaya.length; i++) {
       const unitBudidaya = dataUnitBudidaya[i];
       jumlahBudidaya += unitBudidaya["jumlah"];
     }
 
-    if (!data || data.isDeleted) {
-      return res.status(404).json({
-        message: "Data not found",
-      });
-    }
 
     return res.status(200).json({
       message: "Successfully retrieved jenis budidaya data",
@@ -76,27 +98,57 @@ const getJenisBudidayaById = async (req, res) => {
   }
 };
 
-const getJenisBudidayaByName = async (req, res) => {
+const getJenisBudidayaSearch = async (req, res) => {
   try {
     const { nama, tipe } = req.params;
+    const { page, limit } = req.query;
+    const paginationOptions = getPaginationOptions(page, limit);
 
-    const data = await JenisBudidaya.findAll({
-      where: {
-        nama: {
-          [Op.like]: `%${nama}%`,
-        },
-        tipe: tipe,
+    const whereClause = {
         isDeleted: false,
-      },
+    };
+
+    if (nama && nama.toLowerCase() !== 'all' && nama.trim() !== '') {
+        whereClause.nama = {
+            [Op.like]: `%${nama}%`,
+        };
+    }
+    if (tipe && tipe.toLowerCase() !== 'all' && tipe.trim() !== '') {
+        whereClause.tipe = tipe;
+    }
+
+
+    const { count, rows } = await JenisBudidaya.findAndCountAll({
+      where: whereClause,
+      order: [["createdAt", "DESC"]],
+      ...paginationOptions,
     });
 
-    if (data.length === 0) {
-      return res.status(404).json({ message: "Data not found" });
+    if (rows.length === 0 && parseInt(page,10) === 1) {
+      return res.status(200).json({
+        message: "Data not found for the given search criteria",
+        data: [],
+        totalItems: 0,
+        totalPages: 0,
+        currentPage: parseInt(page, 10) || 1,
+      });
+    }
+    if (rows.length === 0 && parseInt(page,10) > 1) {
+        return res.status(200).json({
+            message: "No more data for this search",
+            data: [],
+            totalItems: count,
+            totalPages: Math.ceil(count / paginationOptions.limit),
+            currentPage: parseInt(page, 10) || 1,
+        });
     }
 
     return res.status(200).json({
       message: "Successfully retrieved jenis budidaya data",
-      data: data,
+      data: rows,
+      totalItems: count,
+      totalPages: Math.ceil(count / paginationOptions.limit),
+      currentPage: parseInt(page, 10) || 1,
     });
   } catch (error) {
     res.status(500).json({
@@ -106,12 +158,64 @@ const getJenisBudidayaByName = async (req, res) => {
   }
 };
 
+const getJenisBudidayaByTipe = async (req, res) => {
+  try {
+    const { tipe } = req.params;
+    const { page, limit } = req.query;
+    const paginationOptions = getPaginationOptions(page, limit);
+
+    const { count, rows } = await JenisBudidaya.findAndCountAll({
+      where: {
+        tipe: tipe,
+        // Jika ingin pencarian partial, gunakan Op.like
+        // tipe: {
+        //   [Op.like]: `%${tipe}%`,
+        // },
+        isDeleted: false,
+      },
+      order: [["createdAt", "DESC"]],
+      ...paginationOptions,
+    });
+
+    if (rows.length === 0 && parseInt(page,10) === 1) {
+      return res.status(200).json({
+        message: "Data not found for this type",
+        data: [],
+        totalItems: 0,
+        totalPages: 0,
+        currentPage: parseInt(page, 10) || 1,
+      });
+    }
+    if (rows.length === 0 && parseInt(page,10) > 1) {
+        return res.status(200).json({
+            message: "No more data for this type",
+            data: [],
+            totalItems: count,
+            totalPages: Math.ceil(count / paginationOptions.limit),
+            currentPage: parseInt(page, 10) || 1,
+        });
+    }
+
+    return res.status(200).json({
+      message: "Successfully retrieved jenis budidaya data by type",
+      data: rows,
+      totalItems: count,
+      totalPages: Math.ceil(count / paginationOptions.limit),
+      currentPage: parseInt(page, 10) || 1,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
+  }
+};
+
+
 const createJenisBudidaya = async (req, res) => {
   try {
     const data = await JenisBudidaya.create(req.body);
-
     res.locals.createdData = data.toJSON();
-
     return res.status(201).json({
       message: "Successfully created new jenis budidaya data",
       data: data,
@@ -130,7 +234,7 @@ const updateJenisBudidaya = async (req, res) => {
       where: { id: req.params.id, isDeleted: false },
     });
 
-    if (!data || data.isDeleted) {
+    if (!data) {
       return res.status(404).json({
         message: "Data not found",
       });
@@ -150,10 +254,7 @@ const updateJenisBudidaya = async (req, res) => {
 
     return res.status(200).json({
       message: "Successfully updated jenis budidaya data",
-      data: {
-        id: req.params.id,
-        ...req.body,
-      },
+      data: updated,
     });
   } catch (error) {
     res.status(500).json({
@@ -169,29 +270,27 @@ const deleteJenisBudidaya = async (req, res) => {
   try {
     const data = await JenisBudidaya.findOne({
       where: { id: req.params.id, isDeleted: false },
+      transaction: t,
     });
 
-    if (!data || data.isDeleted) {
+    if (!data) {
+      await t.rollback();
       return res.status(404).json({
         message: "Data not found",
       });
     }
 
-    const dataUnitBudidaya = await UnitBudidaya.findAll(
-      {
-        where: {
-          jenisBudidayaId: req.params.id,
-          isDeleted: false,
-        },
+    const dataUnitBudidaya = await UnitBudidaya.findAll({
+      where: {
+        jenisBudidayaId: req.params.id,
+        isDeleted: false,
       },
-      { transaction: t }
-    );
+      transaction: t,
+    });
 
     for (const obj of dataUnitBudidaya) {
       await ObjekBudidaya.update(
-        {
-          isDeleted: true,
-        },
+        { isDeleted: true },
         {
           where: {
             unitBudidayaId: obj.id,
@@ -203,9 +302,7 @@ const deleteJenisBudidaya = async (req, res) => {
     }
 
     await UnitBudidaya.update(
-      {
-        isDeleted: true,
-      },
+      { isDeleted: true },
       {
         where: {
           jenisBudidayaId: req.params.id,
@@ -215,21 +312,15 @@ const deleteJenisBudidaya = async (req, res) => {
       }
     );
 
-    await data.update(
-      {
-        isDeleted: true,
-      },
-      {
-        transaction: t,
-      }
-    );
+    await data.update({ isDeleted: true }, { transaction: t });
 
     await t.commit();
 
-    res.locals.updatedData = data;
+    res.locals.updatedData = data.toJSON();
 
     return res.status(200).json({
-      message: "Jenis Budidaya deleted successfully",
+      message: "Jenis Budidaya and related data deleted successfully",
+      data: { id: req.params.id }
     });
   } catch (error) {
     await t.rollback();
@@ -240,39 +331,11 @@ const deleteJenisBudidaya = async (req, res) => {
   }
 };
 
-const getJenisBudidayaByTipe = async (req, res) => {
-  try {
-    const { tipe } = req.params;
-
-    const data = await JenisBudidaya.findAll({
-      where: {
-        tipe: {
-          [Op.like]: `%${tipe}%`,
-        },
-        isDeleted: false,
-      },
-    });
-
-    if (data.length === 0) {
-      return res.status(404).json({ message: "Data not found" });
-    }
-
-    return res.status(200).json({
-      message: "Successfully retrieved jenis budidaya data",
-      data: data,
-    });
-  } catch (error) {
-    res.status(500).json({
-      message: error.message,
-      detail: error,
-    });
-  }
-};
 
 module.exports = {
   getAllJenisBudidaya,
   getJenisBudidayaById,
-  getJenisBudidayaByName,
+  getJenisBudidayaSearch,
   createJenisBudidaya,
   updateJenisBudidaya,
   deleteJenisBudidaya,
