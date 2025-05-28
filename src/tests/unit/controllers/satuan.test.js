@@ -1,4 +1,3 @@
-// satuan.test.js
 const request = require('supertest');
 const express = require('express');
 
@@ -155,7 +154,7 @@ describe('Satuan Controller', () => {
       const mockSave = jest.fn().mockResolvedValue(true);
 
       sequelize.Satuan.findOne
-        .mockResolvedValueOnce({ // softDeleted
+        .mockResolvedValueOnce({
           id: 1,
           nama: 'Kilogram',
           lambang: 'Kg',
@@ -172,8 +171,8 @@ describe('Satuan Controller', () => {
 
     it('should return 400 when data already exists', async () => {
       sequelize.Satuan.findOne
-        .mockResolvedValueOnce(null) // softDeleted
-        .mockResolvedValueOnce({ // existing
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({
           id: 1,
           nama: 'Kilogram',
           lambang: 'Kg',
@@ -229,8 +228,8 @@ describe('Satuan Controller', () => {
       const updatedData = { id, ...updateData, toJSON: () => ({ id, ...updateData }) };
 
       sequelize.Satuan.findOne
-        .mockResolvedValueOnce(existingData) // find before update
-        .mockResolvedValueOnce(updatedData); // find after update
+        .mockResolvedValueOnce(existingData)
+        .mockResolvedValueOnce(updatedData);
       sequelize.Satuan.update.mockResolvedValue([1]);
 
       const res = await request(app).put(`/satuan/${id}`).send(updateData);

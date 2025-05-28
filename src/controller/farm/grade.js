@@ -99,29 +99,29 @@ const createGrade = async (req, res) => {
   }
 
   try {
-    const softDeleted = await Grade.findOne({
-      where: {
-        nama: req.body.nama,
-        isDeleted: 1,
-      },
-    });
+    // const softDeleted = await Grade.findOne({
+    //   where: {
+    //     nama: req.body.nama,
+    //     isDeleted: 1,
+    //   },
+    // });
 
-    if (softDeleted) {
-      softDeleted.isDeleted = 0;
-      await softDeleted.save();
-      return res.status(200).json({ message: 'Data already exists before, successfully restored grade data' });
-    } else {
-      const existing = await Grade.findOne({
-        where: {
-          nama: req.body.nama,
-          isDeleted: 0,
-        },
-      });
+    // if (softDeleted) {
+    //   softDeleted.isDeleted = 0;
+    //   await softDeleted.save();
+    //   return res.status(200).json({ message: 'Data already exists before, successfully restored grade data' });
+    // } else {
+    //   const existing = await Grade.findOne({
+    //     where: {
+    //       nama: req.body.nama,
+    //       isDeleted: 0,
+    //     },
+    //   });
 
-      if (existing) {
-        return res.status(400).json({ message: 'Data already exists.' });
-      }
-    }
+    //   if (existing) {
+    //     return res.status(400).json({ message: 'Data already exists.' });
+    //   }
+    // }
     
     const data = await Grade.create(req.body);
 

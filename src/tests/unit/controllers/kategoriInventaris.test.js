@@ -1,4 +1,3 @@
-// kategoriInventaris.test.js
 const request = require('supertest');
 const express = require('express');
 
@@ -157,7 +156,7 @@ describe('Kategori Inventaris Controller', () => {
       const mockSave = jest.fn().mockResolvedValue(true);
 
       sequelize.KategoriInventaris.findOne
-        .mockResolvedValueOnce({ // softDeleted
+        .mockResolvedValueOnce({
           id: 1,
           nama: 'Pupuk',
           isDeleted: true,
@@ -173,8 +172,8 @@ describe('Kategori Inventaris Controller', () => {
 
     it('should return 400 when data already exists', async () => {
       sequelize.KategoriInventaris.findOne
-        .mockResolvedValueOnce(null) // softDeleted
-        .mockResolvedValueOnce({ // existing
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({
           id: 1,
           nama: 'Pupuk',
           isDeleted: false,
@@ -225,8 +224,8 @@ describe('Kategori Inventaris Controller', () => {
       const updatedData = { id, ...updateData, toJSON: () => ({ id, ...updateData }) };
 
       sequelize.KategoriInventaris.findOne
-        .mockResolvedValueOnce(existingData) // find before update
-        .mockResolvedValueOnce(updatedData); // find after update
+        .mockResolvedValueOnce(existingData)
+        .mockResolvedValueOnce(updatedData);
       sequelize.KategoriInventaris.update.mockResolvedValue([1]);
 
       const res = await request(app).put(`/kategori-inventaris/${id}`).send(updateData);
