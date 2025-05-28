@@ -52,6 +52,33 @@ const getScheduledUnitNotificationById = async (req, res) => {
   }
 };
 
+const getScheduledUnitNotificationsByUnitBudidayaId = async (req, res) => {
+  try {
+    const data = await ScheduledUnitNotification.findAll({
+      where: {
+        unitBudidayaId: req.params.unitBudidayaId,
+        isDeleted: false,
+      },
+      order: [["createdAt", "DESC"]],
+    });
+    if (data.length === 0) {
+      return res.status(404).json({
+        message: "Data not found",
+      });
+    }
+    return res.status(200).json({
+      message:
+        "Successfully retrieved scheduled unit notifications by unit budidaya ID",
+      data: data,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
+  }
+};
+
 const createScheduledUnitNotification = async (req, res) => {
   try {
     const data = await ScheduledUnitNotification.create(req.body);
@@ -140,4 +167,5 @@ module.exports = {
   createScheduledUnitNotification,
   updateScheduledUnitNotification,
   deleteScheduledUnitNotification,
+  getScheduledUnitNotificationsByUnitBudidayaId,
 };

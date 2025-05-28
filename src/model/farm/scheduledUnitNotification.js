@@ -29,6 +29,10 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.ENUM("daily", "weekly", "monthly"),
         allowNull: false,
       },
+      tipeLaporan: {
+        type: DataTypes.ENUM("panen", "vitamin"),
+        allowNull: false,
+      },
       dayOfWeek: {
         type: DataTypes.INTEGER,
         allowNull: true,

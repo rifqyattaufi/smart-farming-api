@@ -8,7 +8,7 @@ module.exports = {
     host: process.env.DB_HOST,
     dialect: "mysql",
     // timezone: "+07:00",
-    // logging: false,
+    // logging: (...args) => console.log(...args),
     // dialectOptions: {
     //   useUTC: false,
     // },
