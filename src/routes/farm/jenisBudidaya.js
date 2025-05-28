@@ -13,7 +13,7 @@ router.get("/:id", JenisBudidayaController.getJenisBudidayaById);
 
 router.get(
   "/search/:nama/:tipe",
-  JenisBudidayaController.getJenisBudidayaByName
+  JenisBudidayaController.getJenisBudidayaSearch
 );
 
 router.post(

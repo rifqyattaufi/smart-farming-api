@@ -1,5 +1,6 @@
 const { Sequelize, DataTypes } = require('sequelize');
 const defineKematian = require('../../../model/farm/kematian');
+const { isUUID } = require('validator');
 
 describe('Kematian Model', () => {
   let sequelize;
@@ -103,5 +104,30 @@ describe('Kematian Model', () => {
     }
   });
 
+  it('should generate UUID for primary key', async () => {
+    const kematian = await Kematian.create({
+      tanggal: new Date(),
+      penyebab: 'Sakit',
+    });
+    expect(kematian.id).toBeDefined();
+    expect(isUUID(kematian.id)).toBe(true);
+  });
 
+  it('should reject if id is null', async () => {
+    expect.assertions(1);
+    try {
+      await Kematian.create({ id: null, tanggal: new Date(), penyebab: 'Tanpa ID' });
+    } catch (error) {
+      expect(error.name).toBeTruthy();
+    }
+  });
+
+  it('should have createdAt and updatedAt fields', async () => {
+    const kematian = await Kematian.create({
+      tanggal: new Date(),
+      penyebab: 'Sakit',
+    });
+    expect(kematian.createdAt).toBeInstanceOf(Date);
+    expect(kematian.updatedAt).toBeInstanceOf(Date);
+  });
 });

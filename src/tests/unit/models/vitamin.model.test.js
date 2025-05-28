@@ -1,5 +1,6 @@
 const { Sequelize, DataTypes } = require('sequelize');
 const defineVitamin = require('../../../model/farm/vitamin');
+const { isUUID } = require('validator');
 
 describe('Vitamin Model', () => {
   let sequelize;
@@ -72,4 +73,36 @@ describe('Vitamin Model', () => {
     expect(Vitamin.associations.Inventari).toBeDefined();
     expect(Vitamin.associations.Laporan).toBeDefined();
   });  
+
+  it('should have createdAt and updatedAt fields', async () => {
+    const vitamin = await Vitamin.create({ tipe: 'pupuk', jumlah: 4 });
+    expect(vitamin.createdAt).toBeInstanceOf(Date);
+    expect(vitamin.updatedAt).toBeInstanceOf(Date);
+  });
+
+  it('should support soft delete by setting isDeleted = true', async () => {
+    const vitamin = await Vitamin.create({ tipe: 'vitamin', jumlah: 8 });
+    vitamin.isDeleted = true;
+    await vitamin.save();
+
+    const found = await Vitamin.findByPk(vitamin.id);
+    expect(found.isDeleted).toBe(true);
+  });
+
+  it('should generate UUID for primary key', async () => {
+    const vitamin = await Vitamin.create({ tipe: 'vitamin', jumlah: 6 });
+    expect(vitamin.id).toBeDefined();
+    expect(isUUID(vitamin.id)).toBe(true);
+  });
+
+  it('should throw error if id is null', async () => {
+    expect.assertions(1);
+    try {
+      await Vitamin.create({ id: null, tipe: 'vitamin', jumlah: 5 });
+    } catch (error) {
+      expect(error.name).toBeTruthy();
+    }
+  });
+
+
 });

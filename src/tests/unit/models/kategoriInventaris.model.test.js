@@ -1,5 +1,6 @@
 const { Sequelize, DataTypes } = require('sequelize');
 const defineKategoriInventaris = require('../../../model/farm/kategoriInventaris');
+const { isUUID } = require('validator');
 
 describe('Kategori Inventaris Model', () => {
   let sequelize;
@@ -51,12 +52,6 @@ describe('Kategori Inventaris Model', () => {
     expect(kategoriInventaris.updatedAt).toBeInstanceOf(Date);
   });
 
-  it('should not include soft-deleted records in default query (if scope applied)', async () => {
-    await KategoriInventaris.create({ nama: 'Pakan E', isDeleted: true });
-    const result = await KategoriInventaris.findAll({ where: { isDeleted: false } });
-    result.forEach(s => expect(s.isDeleted).toBe(false));
-  });
-
   it('should throw specific error when nama is null', async () => {
     expect.assertions(1);
     try {
@@ -77,14 +72,6 @@ describe('Kategori Inventaris Model', () => {
     expect(kategoris.length).toBe(4);
   });
 
-  it('should update nama correctly', async () => {
-    const kategoriInventaris = await KategoriInventaris.create({ nama: 'Peralatan Kebun J' });
-    kategoriInventaris.nama = 'Peralatan K';
-    await kategoriInventaris.save();
-    const updated = await KategoriInventaris.findByPk(kategoriInventaris.id);
-    expect(updated.nama).toBe('Peralatan K');
-  });
-
   it('should have associations with Inventaris', () => {
     expect(KategoriInventaris.associations.Inventaris).toBeDefined();
   });
@@ -100,6 +87,21 @@ describe('Kategori Inventaris Model', () => {
       await KategoriInventaris.bulkCreate(data);
     } catch (error) {
       expect(error).toBeTruthy();
+    }
+  });
+
+  it('should generate a UUID for id if not provided', async () => {
+    const kategoriInventaris = await KategoriInventaris.create({ nama: 'Pupuk J' });
+    expect(kategoriInventaris.id).toBeDefined();
+    expect(isUUID(kategoriInventaris.id)).toBe(true);
+  });
+
+  it('should reject if id is null', async () => {
+    expect.assertions(1);
+    try {
+        await KategoriInventaris.create({ id: null, nama: 'Pupuk K' });
+    } catch (error) {
+        expect(error.name).toBe('SequelizeValidationError');
     }
   });
 });

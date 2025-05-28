@@ -9,12 +9,18 @@ const KategoriInventaris = sequelize.KategoriInventaris;
 
 router.get("/", kategoriInventarisController.getAllKategoriInventaris);
 
+router.get(
+  "/only",
+  kategoriInventarisController.getKategoriInventarisOnly
+);
+
 router.get("/:id", kategoriInventarisController.getKategoriInventarisById);
 
 router.get(
   "/search/:nama",
   kategoriInventarisController.getKategoriInventarisByName
 );
+
 
 router.post(
   "/",

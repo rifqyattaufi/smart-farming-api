@@ -11,7 +11,7 @@ router.get('/', komoditasController.getAllKomoditas);
 
 router.get('/:id', komoditasController.getKomoditasById);
 
-router.get('/search/:nama/:tipe', komoditasController.getKomoditasByName);
+router.get('/search/:nama/:tipe', komoditasController.getKomoditasSearch);
 
 router.get('/tipe/:tipe', komoditasController.getKomoditasByTipe);
 

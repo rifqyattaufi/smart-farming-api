@@ -68,13 +68,6 @@ const login = async (req, res, next) => {
       });
     }
 
-    if (!userExist) {
-      return res.status(400).json({
-        status: false,
-        message: "Email Belum Terdaftar",
-      });
-    }
-
     const usr = {
       id: userExist.id,
       name: userExist.name,
@@ -796,6 +789,36 @@ const googleLink = async (req, res, next) => {
   })(req, res, next);
 };
 
+const updateFcmToken = async (req, res, next) => {
+  try {
+    const { fcmToken } = req.body;
+    const userId = req.user.id;
+
+    const user = await User.findOne({
+      where: {
+        id: userId,
+      },
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        status: false,
+        message: "User not found",
+      });
+    }
+
+    user.fcmToken = fcmToken;
+    await user.save();
+
+    return res.status(200).json({
+      status: true,
+      message: "FCM token updated successfully",
+    });
+  } catch (error) {
+    next(new Error("controller/auth.js:updateFcmToken: " + error.message));
+  }
+};
+
 module.exports = {
   login,
   register,
@@ -810,4 +833,5 @@ module.exports = {
   googleCallback,
   googleRegister,
   googleLink,
+  updateFcmToken,
 };

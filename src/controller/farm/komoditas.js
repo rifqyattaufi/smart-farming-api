@@ -1,33 +1,46 @@
-const e = require("express");
 const sequelize = require("../../model/index");
-const db = sequelize.sequelize;
 const Komoditas = sequelize.Komoditas;
+const JenisBudidaya = sequelize.JenisBudidaya;
+const Satuan = sequelize.Satuan;
 const Op = sequelize.Sequelize.Op;
+
+const { getPaginationOptions } = require('../../utils/paginationUtils');
 
 const getAllKomoditas = async (req, res) => {
   try {
-    const data = await Komoditas.findAll({
+    const { page, limit } = req.query;
+    const paginationOptions = getPaginationOptions(page, limit);
+
+    const { count, rows } = await Komoditas.findAndCountAll({
       where: {
         isDeleted: false,
       },
       include: [
         {
-          model: sequelize.JenisBudidaya,
+          model: JenisBudidaya,
           required: true,
         },
       ],
       order: [["createdAt", "DESC"]],
+      ...paginationOptions,
     });
 
-    if (data.length === 0) {
-      return res.status(404).json({
+    if (rows.length === 0) {
+      return res.status(200).json({
         message: "Data not found",
+        data: [],
+        totalItems: 0,
+        totalPages: 0,
+        currentPage: parseInt(page, 10) || 1,
       });
     }
 
     return res.status(200).json({
       message: "Successfully retrieved all komoditas data",
-      data: data,
+      data: rows,
+      totalItems: count,
+      totalPages: Math.ceil(count / paginationOptions.limit),
+      currentPage: parseInt(page, 10) || 1,
     });
   } catch (error) {
     res.status(500).json({
@@ -46,11 +59,11 @@ const getKomoditasById = async (req, res) => {
       },
       include: [
         {
-          model: sequelize.Satuan,
+          model: Satuan,
           required: true,
         },
         {
-          model: sequelize.JenisBudidaya,
+          model: JenisBudidaya,
           required: true,
         },
       ],
@@ -74,38 +87,58 @@ const getKomoditasById = async (req, res) => {
   }
 };
 
-const getKomoditasByName = async (req, res) => {
+const getKomoditasSearch = async (req, res) => {
   try {
     const { nama, tipe } = req.params;
+    const { page, limit } = req.query;
+    const paginationOptions = getPaginationOptions(page, limit);
 
-    const data = await Komoditas.findAll({
-      include: [
-        {
-          model: sequelize.JenisBudidaya,
-          required: true,
-          where: {
-            tipe: tipe,
-          },
-        },
-      ],
-      where: {
-        nama: {
-          [Op.like]: `%${nama}%`,
-        },
-        isDeleted: false,
+    const whereClause = {
+      isDeleted: false,
+    };
+    if (nama && nama.toLowerCase() !== 'all' && nama.trim() !== '') {
+      whereClause.nama = {
+        [Op.like]: `%${nama}%`,
+      };
+    }
+    
+    const includeClause = [
+      {
+        model: JenisBudidaya,
+        required: true,
       },
+    ];
+    if (tipe && tipe.toLowerCase() !== 'all' && tipe.trim() !== '') {
+         includeClause[0].where = { tipe: tipe };
+    }
+
+
+    const { count, rows } = await Komoditas.findAndCountAll({
+      include: includeClause,
+      where: whereClause,
       order: [["createdAt", "DESC"]],
+      ...paginationOptions,
     });
 
-    if (data.length === 0) {
-      return res.status(404).json({ message: "Data not found" });
+    if (rows.length === 0) {
+      return res.status(200).json({
+        message: "Data not found for the given search criteria",
+        data: [],
+        totalItems: 0,
+        totalPages: 0,
+        currentPage: parseInt(page, 10) || 1,
+      });
     }
 
     return res.status(200).json({
       message: "Successfully retrieved komoditas data",
-      data: data,
+      data: rows,
+      totalItems: count,
+      totalPages: Math.ceil(count / paginationOptions.limit),
+      currentPage: parseInt(page, 10) || 1,
     });
   } catch (error) {
+    console.error("Error in getKomoditasSearch:", error);
     res.status(500).json({
       message: error.message,
       detail: error,
@@ -116,30 +149,56 @@ const getKomoditasByName = async (req, res) => {
 const getKomoditasByTipe = async (req, res) => {
   try {
     const { tipe } = req.params;
+    const { page, limit } = req.query;
+    const paginationOptions = getPaginationOptions(page, limit);
 
-    const data = await Komoditas.findAll({
+    const { count, rows } = await Komoditas.findAndCountAll({
       include: [
         {
-          model: sequelize.JenisBudidaya,
+          model: JenisBudidaya,
           required: true,
           where: {
             tipe: tipe,
           },
+        },
+        {
+          model: Satuan,
+          required: true,
         },
       ],
       where: {
         isDeleted: false,
       },
       order: [["createdAt", "DESC"]],
+      ...paginationOptions,
     });
 
-    if (data.length === 0) {
-      return res.status(404).json({ message: "Data not found" });
+    if (rows.length === 0 && parseInt(page,10) === 1) {
+      return res.status(200).json({
+        message: "Data not found for this type",
+        data: [],
+        totalItems: 0,
+        totalPages: 0,
+        currentPage: parseInt(page, 10) || 1,
+      });
+    }
+     if (rows.length === 0 && parseInt(page,10) > 1) {
+        return res.status(200).json({
+            message: "No more data for this type",
+            data: [],
+            totalItems: count,
+            totalPages: Math.ceil(count / paginationOptions.limit),
+            currentPage: parseInt(page, 10) || 1,
+        });
     }
 
+
     return res.status(200).json({
-      message: "Successfully retrieved komoditas data",
-      data: data,
+      message: "Successfully retrieved komoditas data by type",
+      data: rows,
+      totalItems: count,
+      totalPages: Math.ceil(count / paginationOptions.limit),
+      currentPage: parseInt(page, 10) || 1,
     });
   } catch (error) {
     res.status(500).json({
@@ -157,11 +216,17 @@ const createKomoditas = async (req, res) => {
       JenisBudidayaId: req.body.jenisBudidayaId,
     });
 
-    res.locals.createdData = data.toJSON();
+    const createdDataWithIncludes = await Komoditas.findOne({
+        where: { id: data.id },
+        include: [{ model: JenisBudidaya }, {model: Satuan}]
+    });
+
+
+    res.locals.createdData = createdDataWithIncludes.toJSON();
 
     return res.status(201).json({
       message: "Successfully created new komoditas data",
-      data: data,
+      data: createdDataWithIncludes,
     });
   } catch (error) {
     res.status(500).json({
@@ -173,32 +238,28 @@ const createKomoditas = async (req, res) => {
 
 const updateKomoditas = async (req, res) => {
   try {
-    const data = await Komoditas.findOne({
+    const komoditasInstance = await Komoditas.findOne({
       where: { id: req.params.id, isDeleted: false },
     });
 
-    if (!data || data.isDeleted) {
+    if (!komoditasInstance) {
       return res.status(404).json({
         message: "Data not found",
       });
     }
 
-    await Komoditas.update(req.body, {
-      where: {
-        id: req.params.id,
-      },
+    await komoditasInstance.update(req.body);
+    
+    const updatedDataWithIncludes = await Komoditas.findOne({
+        where: { id: req.params.id },
+        include: [{ model: JenisBudidaya }, {model: Satuan}]
     });
 
-    const updated = await Komoditas.findOne({ where: { id: req.params.id } });
-
-    res.locals.updatedData = updated.toJSON();
+    res.locals.updatedData = updatedDataWithIncludes.toJSON();
 
     return res.status(200).json({
       message: "Successfully updated komoditas data",
-      data: {
-        id: req.params.id,
-        ...req.body,
-      },
+      data: updatedDataWithIncludes,
     });
   } catch (error) {
     res.status(500).json({
@@ -214,7 +275,7 @@ const deleteKomoditas = async (req, res) => {
       where: { id: req.params.id, isDeleted: false },
     });
 
-    if (!data || data.isDeleted) {
+    if (!data) { 
       return res.status(404).json({
         message: "Data not found",
       });
@@ -223,10 +284,11 @@ const deleteKomoditas = async (req, res) => {
     data.isDeleted = true;
     await data.save();
 
-    res.locals.updatedData = data;
+    res.locals.updatedData = data.toJSON();
 
     return res.status(200).json({
       message: "Successfully deleted komoditas data",
+      data: { id: req.params.id }
     });
   } catch (error) {
     res.status(500).json({
@@ -239,7 +301,7 @@ const deleteKomoditas = async (req, res) => {
 module.exports = {
   getAllKomoditas,
   getKomoditasById,
-  getKomoditasByName,
+  getKomoditasSearch,
   createKomoditas,
   updateKomoditas,
   deleteKomoditas,

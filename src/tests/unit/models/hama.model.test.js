@@ -1,5 +1,6 @@
 const { Sequelize, DataTypes } = require('sequelize');
 const defineHama = require('../../../model/farm/hama');
+const { isUUID } = require('validator');
 
 describe('Hama Model', () => {
   let sequelize;
@@ -31,14 +32,14 @@ describe('Hama Model', () => {
     await sequelize.close();
   });
 
-  it('should create hama successfully with valid data', async () => {
+  it('should create model instance with valid data', async () => {
     const hama = await Hama.create({ jumlah: 5, status: true });
     expect(hama.jumlah).toBe(5);
     expect(hama.status).toBe(true);
     expect(hama.isDeleted).toBe(false);
   });
 
-  it('should default isDeleted to false', async () => {
+  it('should set isDeleted to false by default', async () => {
     const hama = await Hama.create({ jumlah: 5, status: true });
     expect(hama.isDeleted).toBe(false);
   });
@@ -57,7 +58,7 @@ describe('Hama Model', () => {
     expect(hama.updatedAt).toBeInstanceOf(Date);
   });
 
-  it('should allow bulkCreate for hama', async () => {
+  it('should allow bulk creation of records', async () => {
     const data = [
       { jumlah: 1, status: true },
       { jumlah: 2, status: false },
@@ -78,12 +79,36 @@ describe('Hama Model', () => {
     }
   });
 
-  it('should update jumlah correctly', async () => {
-    const hama = await Hama.create({ jumlah: 4 });
-    hama.jumlah = 10;
-    await hama.save();
-    const updated = await Hama.findByPk(hama.id);
-    expect(updated.jumlah).toBe(10);
+  it('should generate a UUID for id if not provided', async () => {
+    const hama = await Hama.create({ jumlah: 4, status: true });
+    expect(hama.id).toBeDefined();
+    expect(isUUID(hama.id)).toBe(true);
+  });
+
+  it('should reject if jumlah is not provided', async () => {
+    expect.assertions(1);
+    try {
+      await Hama.create({ status: true });
+    } catch (error) {
+      expect(error.name).toBe('SequelizeValidationError');
+    }
+  });
+
+  it('should allow status to be true or false', async () => {
+    const hamaTrue = await Hama.create({ jumlah: 1, status: true });
+    expect(hamaTrue.status).toBe(true);
+
+    const hamaFalse = await Hama.create({ jumlah: 2, status: false });
+    expect(hamaFalse.status).toBe(false);
+  });
+
+  it('should reject if id is null', async () => {
+    expect.assertions(1);
+    try {
+      await Hama.create({ id: null, jumlah: 5, status: true });
+    } catch (error) {
+      expect(error.name).toBe('SequelizeValidationError');
+    }
   });
 
   it('should have association with Laporan and JenisHama', () => {

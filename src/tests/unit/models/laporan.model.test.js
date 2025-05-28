@@ -1,5 +1,6 @@
 const { Sequelize, DataTypes } = require('sequelize');
 const defineLaporan = require('../../../model/farm/laporan');
+const { isUUID } = require('validator');
 
 describe('Laporan Model', () => {
   let sequelize;
@@ -76,6 +77,40 @@ describe('Laporan Model', () => {
     expect(Laporan.associations.Panen).toBeDefined();
     expect(Laporan.associations.Sakit).toBeDefined();
     expect(Laporan.associations.Hama).toBeDefined();
-
   });  
+
+  it('should allow soft deletion', async () => {
+    const laporan = await Laporan.create({ judul: 'Laporan Soft Delete', tipe: 'harian' });
+    laporan.isDeleted = true;
+    await laporan.save();
+    const found = await Laporan.findOne({ where: { id: laporan.id } });
+    expect(found.isDeleted).toBe(true);
+  });
+
+  it('should set isDeleted to false by default', async () => {
+    const laporan = await Laporan.create({ judul: 'Laporan Default' });
+    expect(laporan.isDeleted).toBe(false);
+  });
+
+  it('should generate UUID for primary key', async () => {
+    const laporan = await Laporan.create({ judul: 'Laporan UUID', tipe: 'harian' });
+    expect(laporan.id).toBeDefined();
+    expect(isUUID(laporan.id)).toBe(true);
+  });
+
+  it('should throw error if id is null', async () => {
+    expect.assertions(1);
+    try {
+      await Laporan.create({ id: null, judul: 'Laporan Null ID' });
+    } catch (error) {
+      expect(error.name).toBeTruthy();
+    }
+  });
+
+  it('should have createdAt and updatedAt fields', async () => {
+    const laporan = await Laporan.create({ judul: 'Laporan Timestamp' });
+    expect(laporan.createdAt).toBeInstanceOf(Date);
+    expect(laporan.updatedAt).toBeInstanceOf(Date);
+  });
+
 });

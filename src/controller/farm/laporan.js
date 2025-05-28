@@ -15,6 +15,8 @@ const Sakit = sequelize.Sakit;
 const Kematian = sequelize.Kematian;
 const Vitamin = sequelize.Vitamin;
 
+const PanenKebun = sequelize.PanenKebun;
+const PanenRincianGrade = sequelize.PanenRincianGrade;
 const Panen = sequelize.Panen;
 const Hama = sequelize.Hama;
 
@@ -45,6 +47,9 @@ const createLaporanHarianKebun = async (req, res) => {
         penyiraman: harianKebun.penyiraman,
         pruning: harianKebun.pruning,
         repotting: harianKebun.repotting,
+        tinggiTanaman: harianKebun.tinggiTanaman,
+        kondisiDaun: harianKebun.kondisiDaun,
+        statusTumbuh: harianKebun.statusTumbuh,
       },
       { transaction: t }
     );
@@ -288,17 +293,37 @@ const createLaporanVitamin = async (req, res) => {
   try {
     const { vitamin } = req.body;
 
-    await Inventaris.update(
-      {
-        jumlah: sequelize.sequelize.literal(`jumlah - ${vitamin.jumlah}`),
-      },
-      {
-        where: {
-          id: vitamin.inventarisId,
-        },
-        transaction: t,
-      }
-    );
+    if (!vitamin || typeof vitamin.jumlah !== 'number' || vitamin.jumlah <= 0) {
+      await t.rollback();
+      return res.status(400).json({
+        message: "Jumlah penggunaan vitamin tidak valid atau harus lebih besar dari 0.",
+      });
+    }
+    if (!vitamin.inventarisId) {
+        await t.rollback();
+        return res.status(400).json({
+            message: "ID Inventaris untuk vitamin tidak disertakan.",
+        });
+    }
+
+    const inventaris = await Inventaris.findOne({
+      where: { id: vitamin.inventarisId },
+      transaction: t,
+    });
+
+    if (!inventaris) {
+      await t.rollback();
+      return res.status(404).json({
+        message: `Inventaris (vitamin) dengan ID ${vitamin.inventarisId} tidak ditemukan.`,
+      });
+    }
+
+    if (inventaris.jumlah < vitamin.jumlah) {
+      await t.rollback();
+      return res.status(400).json({
+        message: `Stok inventaris (vitamin) "${inventaris.nama}" tidak mencukupi. Tersedia: ${inventaris.jumlah}, Dibutuhkan: ${vitamin.jumlah}.`,
+      });
+    }
 
     const data = await Laporan.create(
       {
@@ -320,14 +345,10 @@ const createLaporanVitamin = async (req, res) => {
       { transaction: t }
     );
 
-    const inventaris = await Inventaris.findOne({
-      where: { id: vitamin.inventarisId },
-    });
-
     inventaris.jumlah -= vitamin.jumlah;
-
+    
     await inventaris.save({ transaction: t });
-
+    
     await t.commit();
 
     res.locals.createdData = { data, laporanVitamin };
@@ -378,6 +399,76 @@ const createLaporanPanen = async (req, res) => {
     });
 
     komoditas.jumlah += panen.jumlah;
+
+    await komoditas.save({ transaction: t });
+
+    await t.commit();
+
+    res.locals.createdData = { data, laporanPanen };
+
+    return res.status(201).json({
+      message: "Successfully created new laporan data",
+      data: {
+        data,
+        laporanPanen,
+      },
+    });
+  } catch (error) {
+    await t.rollback();
+    res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
+  }
+};
+
+const createLaporanPanenKebun = async (req, res) => {
+  const t = await db.transaction();
+
+  try {
+    const { panen } = req.body;
+
+    const data = await Laporan.create(
+      {
+        ...req.body,
+        UnitBudidayaId: req.body.unitBudidayaId,
+        ObjekBudidayaId: req.body.objekBudidayaId,
+        UserId: req.user.id,
+      },
+      { transaction: t }
+    );
+
+    const laporanPanen = await PanenKebun.create(
+      {
+        LaporanId: data.id,
+        komoditasId: panen.komoditasId,
+        tanggalPanen: panen.tanggalPanen,
+        estimasiPanen: panen.estimasiPanen,
+        realisasiPanen: panen.realisasiPanen,
+        gagalPanen: panen.gagalPanen,
+        umurTanamanPanen: panen.umurTanamanPanen,
+      },
+      { transaction: t }
+    );
+
+    if (panen.rincianGrade && panen.rincianGrade.length > 0) { // Check if rincianGrade exists
+      for (const grade of panen.rincianGrade) { // Loop through each grade
+        await PanenRincianGrade.create(
+          {
+            panenKebunId: laporanPanen.id,
+            gradeId: grade.gradeId,
+            jumlah: grade.jumlah,
+          },
+          { transaction: t }
+        );
+      }
+    }
+
+    const komoditas = await Komoditas.findOne({
+      where: { id: panen.komoditasId },
+    });
+
+    komoditas.jumlah += panen.realisasiPanen;
 
     await komoditas.save({ transaction: t });
 
@@ -453,6 +544,32 @@ const createLaporanPenggunaanInventaris = async (req, res) => {
   try {
     const { penggunaanInv } = req.body;
 
+    if (!penggunaanInv || typeof penggunaanInv.jumlah !== 'number' || penggunaanInv.jumlah <= 0) {
+      await t.rollback();
+      return res.status(400).json({
+        message: "Jumlah penggunaan inventaris tidak valid atau harus lebih besar dari 0.",
+      });
+    }
+
+    const inventaris = await Inventaris.findOne({
+      where: { id: penggunaanInv.inventarisId },
+      transaction: t,
+    });
+
+    if (!inventaris) {
+      await t.rollback();
+      return res.status(404).json({
+        message: `Inventaris dengan ID ${penggunaanInv.inventarisId} tidak ditemukan.`,
+      });
+    }
+
+    if (inventaris.jumlah < penggunaanInv.jumlah) {
+      await t.rollback();
+      return res.status(400).json({
+        message: `Stok inventaris "${inventaris.nama}" tidak mencukupi (tersedia: ${inventaris.jumlah}, dibutuhkan: ${penggunaanInv.jumlah}). Inventaris tidak dapat digunakan.`,
+      });
+    }
+
     const data = await Laporan.create(
       {
         ...req.body,
@@ -471,10 +588,6 @@ const createLaporanPenggunaanInventaris = async (req, res) => {
       },
       { transaction: t }
     );
-
-    const inventaris = await Inventaris.findOne({
-      where: { id: penggunaanInv.inventarisId },
-    });
 
     inventaris.jumlah -= penggunaanInv.jumlah;
 
@@ -507,6 +620,7 @@ module.exports = {
   createLaporanKematian,
   createLaporanVitamin,
   createLaporanPanen,
+  createLaporanPanenKebun,
   createLaporanHama,
   createLaporanPenggunaanInventaris,
 };
