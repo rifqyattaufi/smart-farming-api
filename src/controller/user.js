@@ -2,6 +2,8 @@ const e = require("express");
 const sequelize = require("../model/index");
 const db = sequelize.sequelize;
 const User = sequelize.User;
+const Toko = sequelize.Toko;
+const Rekening = sequelize.Rekening;
 
 const getAllUsers = async (req, res) => {
   try {
@@ -115,10 +117,93 @@ const deleteUser = async (req, res) => {
   }
 };
 
+const getPenjual = async (req, res) => {
+  try {
+    const data = await User.findAll({
+      where: {
+        role: 'penjual',
+        isDeleted: false,
+      },
+      include: [
+        {
+          model: Toko,
+          required: true,
+          attributes: ['id', 'nama', 'logoToko', 'alamat', 'deskripsi', 'tokoStatus'],
+          where: {
+            isDeleted: false,
+          },
+        },
+        {
+          model: Rekening,
+          attributes: ['id', 'namaBank', 'nomorRekening', 'namaPenerima'],
+        },
+      ],
+      order: [['createdAt', 'DESC']],
+    });
+
+    if (data.length === 0) {
+      return res.status(404).json({
+        message: "No penjual found",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Successfully retrieved all penjual data",
+      data: data,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
+  }
+}
+const getPenjualById = async (req, res) => {
+  id = req.params.id;
+  try {
+    const data = await User.findOne({
+      where: {
+        id: id,
+        role: 'penjual',
+        isDeleted: false,
+      },
+      include: [
+        {
+          model: Toko,
+          require: true,
+          attributes: ['id', 'nama', 'logoToko', 'alamat', 'deskripsi', 'tokoStatus'],
+        },
+        {
+          model: Rekening,
+          attributes: ['id', 'namaBank', 'nomorRekening', 'namaPenerima'],
+        },
+      ],
+      order: [['createdAt', 'DESC']],
+    });
+
+    if (data.length === 0) {
+      return res.status(404).json({
+        message: "No penjual found",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Successfully retrieved all penjual data",
+      data: data,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
+  }
+}
 module.exports = {
   getAllUsers,
   getUserById,
   createUser,
   updateUser,
   deleteUser,
+  getPenjual,
+  getPenjualById,
 };
