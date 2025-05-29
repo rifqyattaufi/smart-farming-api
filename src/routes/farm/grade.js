@@ -11,7 +11,7 @@ router.get('/', GradeController.getAllGrade);
 
 router.get('/:id', GradeController.getGradeById);
 
-router.get('/search/:nama', GradeController.getGradeByName);
+router.get('/search/:nama', GradeController.getGradeBySearch);
 
 router.post('/', auditMiddleware({ model: Grade, tableName: "Grade" }), GradeController.createGrade);
 

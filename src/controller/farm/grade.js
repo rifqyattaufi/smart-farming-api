@@ -1,28 +1,44 @@
-const e = require("express");
 const sequelize = require("../../model/index");
-const { dataValid } = require("../../validation/dataValidation");
-const db = sequelize.sequelize;
-const Grade = sequelize.Grade;
 const Op = sequelize.Sequelize.Op;
+const Grade = sequelize.Grade;
+const { dataValid } = require("../../validation/dataValidation");
+const { getPaginationOptions } = require('../../utils/paginationUtils');
 
 const getAllGrade = async (req, res) => {
   try {
-    const data = await Grade.findAll({
-      where: {
-        isDeleted: false,
-      },
+    const { page, limit, nama } = req.query;
+    const paginationOptions = getPaginationOptions(page, limit);
+    
+    const whereClause = { isDeleted: false };
+    if (nama && nama.trim() !== '') {
+      whereClause.nama = { [Op.like]: `%${nama}%` };
+    }
+
+    const { count, rows } = await Grade.findAndCountAll({
+      where: whereClause,
       order: [["createdAt", "DESC"]],
+      ...paginationOptions,
     });
 
-    if (data.length === 0) {
-      return res.status(404).json({
-        message: "Data not found",
+    const currentPageNum = parseInt(page, 10) || 1;
+    const totalPages = Math.ceil(count / (paginationOptions.limit || parseInt(limit, 10) || 10));
+
+    if (rows.length === 0) {
+      return res.status(200).json({
+        message: currentPageNum > 1 ? "No more data" : "Data not found",
+        data: [],
+        totalItems: count,
+        totalPages: totalPages,
+        currentPage: currentPageNum,
       });
     }
 
     return res.status(200).json({
       message: "Successfully retrieved all grade data",
-      data: data,
+      data: rows,
+      totalItems: count,
+      totalPages: totalPages,
+      currentPage: currentPageNum,
     });
   } catch (error) {
     res.status(500).json({
@@ -56,27 +72,40 @@ const getGradeById = async (req, res) => {
   }
 };
 
-const getGradeByName = async (req, res) => {
+const getGradeBySearch = async (req, res) => {
   try {
     const { nama } = req.params;
+    const { page, limit } = req.query;
+    const paginationOptions = getPaginationOptions(page, limit);
 
-    const data = await Grade.findAll({
+    const { count, rows } = await Grade.findAndCountAll({
       where: {
-        [Op.or]: [
-          { nama: { [Op.like]: `%${nama}%` } },
-        ],
+        nama: { [Op.like]: `%${nama}%` },
         isDeleted: false,
       },
       order: [["createdAt", "DESC"]],
+      ...paginationOptions,
     });
+    
+    const currentPageNum = parseInt(page, 10) || 1;
+    const totalPages = rows.length > 0 ? Math.ceil(await Grade.count({ where: {nama: { [Op.like]: `%${nama}%` }, isDeleted: false} }) / (paginationOptions.limit || parseInt(limit, 10) || 10)) : 0;
 
-    if (data.length === 0) {
-      return res.status(404).json({ message: "Data not found" });
+
+    if (rows.length === 0) {
+      return res.status(200).json({ 
+        message: currentPageNum > 1 ? "No more data for this name" : "Data not found for this name",
+        data: [],
+        totalItems: totalPages,
+        currentPage: currentPageNum,
+      });
     }
 
     return res.status(200).json({
-      message: "Successfully retrieved grade data",
-      data: data,
+      message: "Successfully retrieved grade data by name",
+      data: rows,
+      totalItems: count,
+      totalPages: totalPages,
+      currentPage: currentPageNum,
     });
   } catch (error) {
     res.status(500).json({
@@ -207,7 +236,7 @@ const deleteGrade = async (req, res) => {
 module.exports = {
   getAllGrade,
   getGradeById,
-  getGradeByName,
+  getGradeBySearch,
   createGrade,
   updateGrade,
   deleteGrade,

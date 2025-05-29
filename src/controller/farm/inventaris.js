@@ -74,14 +74,14 @@ const getInventarisById = async (req, res) => {
       return res.status(404).json({ message: "Data not found" });
     }
 
-    // Initial chart data: Last 7 days of usage
+    // Last 7 days of usage
     const today = new Date();
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(today.getDate() - 7);
 
     const pemakaianTerakhir7Hari = await PenggunaanInventaris.findAll({
       attributes: [
-        [fn('DATE', col('PenggunaanInventaris.createdAt')), 'tanggal'], // Use PenggunaanInventaris.createdAt
+        [fn('DATE', col('PenggunaanInventaris.createdAt')), 'tanggal'],
         [fn('SUM', col('jumlah')), 'stokPemakaian'],
       ],
       where: {
@@ -97,7 +97,6 @@ const getInventarisById = async (req, res) => {
       raw: true, // Get plain objects
     });
     
-    // Fill in missing dates with 0 usage for the last 7 days
     const allDatesLast7Days = [];
     for (let i = 0; i < 7; i++) {
         const date = new Date();
@@ -107,10 +106,9 @@ const getInventarisById = async (req, res) => {
     allDatesLast7Days.reverse(); // from oldest to newest
 
     const defaultChartData = allDatesLast7Days.map(dateStr => {
-    const found = pemakaianTerakhir7Hari.find(p => p.tanggal === dateStr); // p.tanggal di sini mungkin merujuk ke field 'tanggal' dari query pemakaianTerakhir7Hari
-                                                                        // yang mana SELECT fn('DATE', ...) AS 'tanggal'
+    const found = pemakaianTerakhir7Hari.find(p => p.tanggal === dateStr);
     return {
-        period: dateStr, // <--- UBAH 'tanggal' MENJADI 'period'
+        period: dateStr,
         stokPemakaian: found ? parseInt(found.stokPemakaian, 10) : 0,
     };
 });
@@ -120,7 +118,7 @@ const getInventarisById = async (req, res) => {
       message: "Successfully retrieved inventaris data",
       data: {
         inventaris: inventarisData,
-        defaultChartData: defaultChartData, // Renamed from pemakaianPerMinggu
+        defaultChartData: defaultChartData,
       },
     });
   } catch (error) {
@@ -132,13 +130,12 @@ const getInventarisById = async (req, res) => {
 const getStatistikPemakaianInventaris = async (req, res) => {
   try {
     const { id } = req.params;
-    const { startDate, endDate, groupBy } = req.query; // groupBy can be 'day', 'month', 'year'
+    const { startDate, endDate, groupBy } = req.query;
 
     if (!startDate || !endDate || !groupBy) {
       return res.status(400).json({ message: "startDate, endDate, and groupBy query parameters are required." });
     }
 
-    let dateFormat;
     let dateColumn;
 
     switch (groupBy) {
@@ -197,19 +194,19 @@ const getRiwayatPemakaianInventarisPaginated = async (req, res) => {
       include: [
         {
           model: Laporan,
-          as: 'laporan', // Make sure this alias matches your association
+          as: 'laporan',
           attributes: ['id', 'gambar', 'createdAt', 'userId'],
           include: [
             {
               model: User,
-              as: 'user', // Make sure this alias matches your association
+              as: 'user',
               attributes: ['name'],
             }
           ]
         },
         {
           model: Inventaris,
-          as: 'inventaris', // Make sure this alias matches
+          as: 'inventaris',
           attributes: ['nama']
         }
       ],
@@ -222,15 +219,15 @@ const getRiwayatPemakaianInventarisPaginated = async (req, res) => {
         return {
             id: item.id,
             jumlah: item.jumlah,
-            createdAt: item.createdAt, // raw createdAt for potential client-side formatting
+            createdAt: item.createdAt,
             inventarisId: item.inventarisId,
             inventarisNama: item.inventaris?.nama || 'Unknown',
             laporanGambar: item.laporan?.gambar,
             petugasNama: item.laporan?.user?.name || 'Unknown',
-            // Format dates here or send ISO strings and format on client
+            
             laporanTanggal: item.laporan?.createdAt ? new Date(item.laporan.createdAt).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'}) : 'Unknown date',
             laporanWaktu: item.laporan?.createdAt ? new Date(item.laporan.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit'}) : 'Unknown time',
-            laporanId: item.laporan?.id // for navigation
+            laporanId: item.laporan?.id
         };
     });
 
@@ -250,7 +247,7 @@ const getRiwayatPemakaianInventarisPaginated = async (req, res) => {
       message: "Successfully retrieved usage history",
       data: formattedRows,
       totalItems: count,
-      totalPages: Math.ceil(count / (paginationOptions.limit || limit)), // ensure limit is used
+      totalPages: Math.ceil(count / (paginationOptions.limit || limit)),
       currentPage: parseInt(page, 10) || 1,
     });
 

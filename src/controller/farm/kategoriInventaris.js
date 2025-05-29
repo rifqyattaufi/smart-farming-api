@@ -1,29 +1,44 @@
-const e = require("express");
 const sequelize = require("../../model/index");
-const { get } = require("../../routes/farm/satuan");
-const { dataValid } = require("../../validation/dataValidation");
-const db = sequelize.sequelize;
-const KategoriInventaris = sequelize.KategoriInventaris;
 const Op = sequelize.Sequelize.Op;
+const KategoriInventaris = sequelize.KategoriInventaris;
+const { dataValid } = require("../../validation/dataValidation");
+const { getPaginationOptions } = require('../../utils/paginationUtils');
 
 const getAllKategoriInventaris = async (req, res) => {
   try {
-    const data = await KategoriInventaris.findAll({
-      where: {
-        isDeleted: false,
-      },
+    const { page, limit, nama } = req.query;
+    const paginationOptions = getPaginationOptions(page, limit);
+
+    const whereClause = { isDeleted: false };
+    if (nama && nama.trim() !== '') {
+      whereClause.nama = { [Op.like]: `%${nama}%` };
+    }
+
+    const { count, rows } = await KategoriInventaris.findAndCountAll({
+      where: whereClause,
       order: [["createdAt", "DESC"]],
+      ...paginationOptions,
     });
 
-    if (data.length === 0) {
-      return res.status(404).json({
-        message: "Data not found",
+    const currentPageNum = parseInt(page, 10) || 1;
+    const totalPages = Math.ceil(count / (paginationOptions.limit || parseInt(limit, 10) || 10));
+
+    if (rows.length === 0) {
+      return res.status(200).json({
+        message: currentPageNum > 1 ? "No more data" : "Data not found",
+        data: [],
+        totalItems: count,
+        totalPages: totalPages,
+        currentPage: currentPageNum,
       });
     }
 
     return res.status(200).json({
       message: "Successfully retrieved all kategori inventaris data",
-      data: data,
+      data: rows,
+      totalItems: count,
+      totalPages: totalPages,
+      currentPage: currentPageNum,
     });
   } catch (error) {
     res.status(500).json({
@@ -60,27 +75,39 @@ const getKategoriInventarisById = async (req, res) => {
   }
 };
 
-const getKategoriInventarisByName = async (req, res) => {
+const getKategoriInventarisSearch = async (req, res) => {
   try {
     const { nama } = req.params;
+    const { page, limit } = req.query;
+    const paginationOptions = getPaginationOptions(page, limit);
 
-    const data = await KategoriInventaris.findAll({
+    const { count, rows } = await KategoriInventaris.findAndCountAll({
       where: {
-        nama: {
-          [Op.like]: `%${nama}%`,
-        },
+        nama: { [Op.like]: `%${nama}%` },
         isDeleted: false,
       },
       order: [["createdAt", "DESC"]],
-    });
+      ...paginationOptions,
+    })
 
-    if (data.length === 0) {
-      return res.status(404).json({ message: "Data not found" });
+    const currentPageNum = parseInt(page, 10) || 1;
+    const totalPages = rows.length > 0 ? Math.ceil(await KategoriInventaris.count({ where: {nama: { [Op.like]: `%${nama}%` }, isDeleted: false} }) / (paginationOptions.limit || parseInt(limit, 10) || 10)) : 0;
+
+    if (rows.length === 0) {
+      return res.status(200).json({ 
+        message: currentPageNum > 1 ? "No more data for this name" : "Data not found for this name",
+        data: [],
+        totalItems: totalPages,
+        currentPage: currentPageNum,
+      });
     }
 
     return res.status(200).json({
-      message: "Successfully retrieved kategori inventaris data",
-      data: data,
+      message: "Successfully retrieved kategori inventaris data by name",
+      data: rows,
+      totalItems: count,
+      totalPages: totalPages,
+      currentPage: currentPageNum,
     });
   } catch (error) {
     res.status(500).json({
@@ -242,7 +269,7 @@ const deleteKategoriInventaris = async (req, res) => {
 module.exports = {
   getAllKategoriInventaris,
   getKategoriInventarisById,
-  getKategoriInventarisByName,
+  getKategoriInventarisSearch,
   getKategoriInventarisOnly,
   createKategoriInventaris,
   updateKategoriInventaris,

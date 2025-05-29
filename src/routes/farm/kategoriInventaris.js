@@ -18,7 +18,7 @@ router.get("/:id", kategoriInventarisController.getKategoriInventarisById);
 
 router.get(
   "/search/:nama",
-  kategoriInventarisController.getKategoriInventarisByName
+  kategoriInventarisController.getKategoriInventarisSearch
 );
 
 

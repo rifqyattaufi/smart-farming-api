@@ -1,7 +1,5 @@
-const { where, QueryTypes, col, Op, fn, literal } = require("sequelize");
+const { col, Op, fn, literal } = require("sequelize");
 const sequelize = require("../../model/index");
-const { default: axios } = require("axios");
-const db = sequelize.sequelize;
 
 const Inventaris = sequelize.Inventaris;
 const KategoriInventaris = sequelize.KategoriInventaris;
@@ -27,12 +25,20 @@ const dashboardInventaris = async (req, res) => {
             },
         });
 
-        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        const stokHabis = await Inventaris.count({
+            where: {
+                isDeleted: false,
+                jumlah: 0,
+            },
+        });
+
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
         const itemBaru = await Inventaris.count({
             where: {
                 isDeleted: false,
                 createdAt: {
-                    [Op.gte]: oneDayAgo,
+                    [Op.gte]: sevenDaysAgo,
                 },
             },
         });
@@ -50,7 +56,8 @@ const dashboardInventaris = async (req, res) => {
             },
         });
 
-        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
         const penggunaan = await Inventaris.findAll({
             attributes: [
                 "id",
@@ -84,75 +91,96 @@ const dashboardInventaris = async (req, res) => {
         const seringDigunakanCount = seringDigunakan.length;
         const jarangDigunakanCount = jarangDigunakan.length;
 
-        // const daftarPemakaianTerbaru = await PenggunaanInventaris.findAll({
-        //     attributes: [
-        //         "id",
-        //         "jumlah",
-        //         "createdAt",
-        //         [col("Inventaris.id"), "inventarisId"],
-        //         [col("Inventaris.nama"), "inventarisNama"],
-        //         [col("Laporan.userId"), "userId"],
-        //         [col("Laporan.gambar"), "laporanGambar"],
-        //         [col("User.name"), "petugasNama"],
-        //         [fn("DATE_FORMAT", col("Laporan.createdAt"), "%W, %d %M %Y"), "laporanTanggal"],
-        //         [fn("DATE_FORMAT", col("Laporan.createdAt"), "%H:%i"), "laporanWaktu"],
-        //     ],
-        //     include: [
-        //         {
-        //             model: Inventaris,
-        //             attributes: [],
-        //             where: {
-        //                 isDeleted: false,
-        //             },
-        //         },
-        //         {
-        //             model: Laporan,
-        //             attributes: [],
-        //             where: {
-        //                 isDeleted: false,
-        //             },
-        //             include: [
-        //                 {
-        //                     model: User,
-        //                     attributes: [],
-        //                 },
-        //             ],
-        //         },
-        //     ],
-        //     where: {
-        //         isDeleted: false,
-        //     },
-        //     order: [["createdAt", "DESC"]],
-        //     limit: 5,
-        // });
-        const daftarPemakaianTerbaru = await db.query(`
-            SELECT 
-                pi.id,
-                pi.jumlah,
-                pi.createdAt,
-                i.id AS inventarisId,
-                i.nama AS inventarisNama,
-                l.userId AS userId,
-                l.gambar AS laporanGambar,
-                u.name AS petugasNama,
-                DATE_FORMAT(l.createdAt, '%W, %d %M %Y') AS laporanTanggal,
-                DATE_FORMAT(l.createdAt, '%H:%i') AS laporanWaktu
-            FROM 
-                penggunaanInventaris pi
-            JOIN 
-                inventaris i ON pi.inventarisId = i.id
-            JOIN 
-                laporan l ON pi.laporanId = l.id
-            JOIN
-                user u ON l.userId = u.id
-            WHERE 
-                pi.isDeleted = FALSE
-                AND i.isDeleted = FALSE
-            ORDER BY 
-                pi.createdAt DESC
-            LIMIT 5;
-        `, {
-            type: QueryTypes.SELECT,
+        const daftarPemakaianTerbaruOrm = await PenggunaanInventaris.findAll({
+            attributes: [
+                'id',
+                'jumlah',
+                'createdAt',
+            ],
+            include: [
+                {
+                    model: Inventaris,
+                    as: 'inventaris',
+                    attributes: [
+                        'id',
+                        'nama',
+                    ],
+                    where: {
+                        isDeleted: false,
+                    },
+                    required: true,
+                },
+                {
+                    model: Laporan,
+                    as: 'laporan',
+                    attributes: [
+                        'id',
+                        'userId',
+                        'gambar',
+                        'createdAt',
+                    ],
+                    where: { isDeleted: false },
+                    required: true,
+                    include: [
+                        {
+                        model: User,
+                        as: 'user',
+                        attributes: [
+                            'name',
+                        ],
+                        where: {
+                            isDeleted: false,
+                        },
+                        required: true,
+                        },
+                    ],
+                },
+            ],
+            where: {
+                isDeleted: false,
+            },
+            order: [['createdAt', 'DESC']],
+            limit: 5,
+        });
+
+        const daftarPemakaianTerbaru = daftarPemakaianTerbaruOrm.map(item => {
+            const pi = item.toJSON();
+            const inventarisData = pi.inventaris || {};
+            const laporanData = pi.laporan || {};
+            const userData = laporanData.user || {};
+
+            let laporanTanggalFormatted = null;
+            let laporanWaktuFormatted = null;
+
+            if (laporanData.createdAt) {
+                const laporanDate = new Date(laporanData.createdAt);
+                try {
+                    laporanTanggalFormatted = laporanDate.toLocaleDateString('id-ID', {
+                        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+                    });
+                    laporanWaktuFormatted = laporanDate.toLocaleTimeString('id-ID', {
+                        hour: '2-digit', minute: '2-digit'
+                    });
+                } catch (e) {
+                    console.warn("Warning: Locale 'id-ID' not fully supported for date formatting. Using default.", e.message);
+                    laporanTanggalFormatted = laporanDate.toDateString();
+                    laporanWaktuFormatted = laporanDate.toTimeString().substring(0, 5);
+                }
+            }
+
+            return {
+                id: pi.id,
+                jumlah: pi.jumlah,
+                createdAt: pi.createdAt,
+                inventarisId: inventarisData.id,
+                inventarisNama: inventarisData.nama,
+                laporanId: laporanData.id,
+                userId: laporanData.userId,
+                laporanGambar: laporanData.gambar,
+                petugasNama: userData.name,
+                laporanTanggal: laporanTanggalFormatted,
+                laporanWaktu: laporanWaktuFormatted,
+            };
         });
 
         const daftarInventaris = await Inventaris.findAll({
@@ -181,6 +209,7 @@ const dashboardInventaris = async (req, res) => {
             data: {
                 totalItem,
                 stokRendah,
+                stokHabis,
                 itemBaru,
                 totalKategori,
                 itemTersedia,
@@ -193,7 +222,9 @@ const dashboardInventaris = async (req, res) => {
 
     } catch (error) {
         console.error("Error fetching dashboard data:", error);
-        return res.status(500).json({ message: "Internal server error" });
+        const errorMessage = process.env.NODE_ENV === 'development' ? error.message : "Internal server error";
+        const errorDetail = process.env.NODE_ENV === 'development' ? error : {};
+        return res.status(500).json({ message: errorMessage, detail: errorDetail });
     }
 }
 

@@ -11,7 +11,7 @@ router.get('/', SatuanController.getAllSatuan);
 
 router.get('/:id', SatuanController.getSatuanById);
 
-router.get('/search/:nama', SatuanController.getSatuanByName);
+router.get('/search/:nama', SatuanController.getSatuanSearch);
 
 router.post('/', auditMiddleware({ model: Satuan, tableName: "Satuan" }), SatuanController.createSatuan);
 

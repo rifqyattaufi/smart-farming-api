@@ -1,30 +1,47 @@
-const e = require("express");
 const sequelize = require("../../model/index");
-const { dataValid } = require("../../validation/dataValidation");
-const db = sequelize.sequelize;
-const Satuan = sequelize.Satuan;
 const Op = sequelize.Sequelize.Op;
+const Satuan = sequelize.Satuan;
+const { dataValid } = require("../../validation/dataValidation");
+const { getPaginationOptions } = require('../../utils/paginationUtils');
 
 const getAllSatuan = async (req, res) => {
   try {
-    const data = await Satuan.findAll({
-      where: {
-        isDeleted: false,
-      },
+    const { page, limit, nama, lambang } = req.query;
+    const paginationOptions = getPaginationOptions(page, limit);
+
+    const whereClause = { isDeleted: false };
+    if (nama && nama.trim() !== '') {
+      whereClause.nama = { [Op.like]: `%${nama}%` };
+      whereClause.lambang = { [Op.like]: `%${nama}%` };
+    }
+
+    const { count, rows } = await Satuan.findAndCountAll({
+      where: whereClause,
       order: [["createdAt", "DESC"]],
+      ...paginationOptions,
     });
 
-    if (data.length === 0) {
-      return res.status(404).json({
-        message: "Data not found",
+    const currentPageNum = parseInt(page, 10) || 1;
+    const totalPages = Math.ceil(count / (paginationOptions.limit || parseInt(limit, 10) || 10));
+    if (rows.length === 0) {
+      return res.status(200).json({
+        message: currentPageNum > 1 ? "No more data" : "Data not found",
+        data: [],
+        totalItems: count,
+        totalPages: totalPages,
+        currentPage: currentPageNum,
       });
     }
 
     return res.status(200).json({
       message: "Successfully retrieved all satuan data",
-      data: data,
+      data: rows,
+      totalItems: count,
+      totalPages: totalPages,
+      currentPage: currentPageNum,
     });
-  } catch (error) {
+  }
+  catch (error) {
     res.status(500).json({
       message: error.message,
       detail: error,
@@ -56,28 +73,42 @@ const getSatuanById = async (req, res) => {
   }
 };
 
-const getSatuanByName = async (req, res) => {
+const getSatuanSearch = async (req, res) => {
   try {
-    const { nama } = req.params;
+    const { nama, lambang } = req.params;
+    const { page, limit } = req.query;
+    const paginationOptions = getPaginationOptions(page, limit);
 
-    const data = await Satuan.findAll({
+    const { count, rows } = await Satuan.findAndCountAll({
       where: {
         [Op.or]: [
           { nama: { [Op.like]: `%${nama}%` } },
-          { lambang: { [Op.like]: `%${nama}%` } },
+          { lambang: { [Op.like]: `%${lambang}%` } },
         ],
         isDeleted: false,
       },
       order: [["createdAt", "DESC"]],
+      ...paginationOptions,
     });
 
-    if (data.length === 0) {
-      return res.status(404).json({ message: "Data not found" });
+    const currentPageNum = parseInt(page, 10) || 1;
+    const totalPages = rows.length > 0 ? Math.ceil(await Satuan.count({ where: { [Op.or]: [{ nama: { [Op.like]: `%${nama}%` } }, { lambang: { [Op.like]: `%${lambang}%` } }], isDeleted: false } }) / (paginationOptions.limit || parseInt(limit, 10) || 10)) : 0;
+
+    if (rows.length === 0) {
+      return res.status(200).json({ 
+        message: currentPageNum > 1 ? "No more data for this search" : "Data not found for this search",
+        data: [],
+        totalItems: totalPages,
+        currentPage: currentPageNum,
+      });
     }
 
     return res.status(200).json({
-      message: "Successfully retrieved satuan data",
-      data: data,
+      message: "Successfully retrieved grade data",
+      data: rows,
+      totalItems: count,
+      totalPages: totalPages,
+      currentPage: currentPageNum,
     });
   } catch (error) {
     res.status(500).json({
@@ -210,7 +241,7 @@ const deleteSatuan = async (req, res) => {
 module.exports = {
   getAllSatuan,
   getSatuanById,
-  getSatuanByName,
+  getSatuanSearch,
   createSatuan,
   updateSatuan,
   deleteSatuan,

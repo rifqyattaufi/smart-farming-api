@@ -30,6 +30,6 @@ router.use("/dashboard", dashboardRouter);
 router.use("/globalNotification", globalNotificationSettingRouter);
 router.use("/scheduledUnitNotification", scheduledUnitNotificationRouter);
 router.use("/grade", gradeRouter);
-router.use("/hama", laporanHamaRouter);
+router.use("/laporan-hama", laporanHamaRouter);
 
 module.exports = router;

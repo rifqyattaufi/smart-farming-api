@@ -32,6 +32,7 @@ const getAllLaporanHama = async (req, res) => {
         },
         {
           model: User,
+          as: "user",
           attributes: ["id", "name", "avatarUrl"],
         }
       ],
@@ -147,7 +148,6 @@ const searchLaporanHama = async (req, res) => {
     });
 
   } catch (error) {
-    console.error("Error searchLaporanHama:", error);
     res.status(500).json({
       message: error.message,
       detail: error,
@@ -168,7 +168,7 @@ const getLaporanHamaById = async (req, res) => {
                 },
                 { model: UnitBudidaya, required: false },
                 { model: ObjekBudidaya, required: false },
-                { model: User, attributes: ['id', 'nama'], required: false }
+                { model: User, as: 'user', attributes: ['id', 'name'], required: false }
             ],
         });
 
@@ -177,7 +177,6 @@ const getLaporanHamaById = async (req, res) => {
         }
         return res.status(200).json({ message: "Successfully retrieved hama report", data: data });
     } catch (error) {
-        console.error("Error getLaporanHamaById:", error);
         res.status(500).json({ message: error.message, detail: error });
     }
 };
