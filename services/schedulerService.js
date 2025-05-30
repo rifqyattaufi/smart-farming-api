@@ -47,9 +47,10 @@ async function checkAndSendScheduledNotifications() {
         }
       } else if (setting.notificationType === "once") {
         if (!lastTriggered) {
-          const onceDatetime = moment(setting.scheduledDate);
+          const onceDate = moment(setting.scheduledDate);
+          const onceTime = moment(setting.scheduledTime, "HH:mm");
 
-          if (onceDatetime.isSameOrBefore(now)) {
+          if (onceDate.isSameOrBefore(now) && onceTime.isSameOrBefore(now)) {
             send = true;
           }
         }
@@ -65,7 +66,7 @@ async function checkAndSendScheduledNotifications() {
           notificationType: "GLOBAL",
           settingId: setting.id,
         });
-        await setting.update({ lastTriggered: now.toDate() });
+        await setting.update({ lastTriggered: now.toDate(), isActive: false });
       }
     }
   } catch (error) {

@@ -21,6 +21,10 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.TIME,
         allowNull: false,
       },
+      scheduledDate: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
       targetRole: {
         type: DataTypes.ENUM("pjawab", "petugas", "inventor", "all"),
         allowNull: false,
