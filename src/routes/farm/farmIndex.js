@@ -15,6 +15,8 @@ const scheduledUnitNotificationRouter = require("./scheduledUnitNotification");
 const gradeRouter = require("./grade");
 const laporanHamaRouter = require("./laporanHama");
 
+const reportRouter = require("./report");
+
 const dashboardRouter = require("./dashboard");
 
 router.use("/jenis-budidaya", jenisBudidayaRouter);
@@ -31,5 +33,6 @@ router.use("/globalNotification", globalNotificationSettingRouter);
 router.use("/scheduledUnitNotification", scheduledUnitNotificationRouter);
 router.use("/grade", gradeRouter);
 router.use("/laporan-hama", laporanHamaRouter);
+router.use("/report", reportRouter);
 
 module.exports = router;
