@@ -32,6 +32,7 @@ module.exports = (sequelize, DataTypes) => {
   Vitamin.associate = (models) => {
     Vitamin.belongsTo(models.Inventaris, {
       foreignKey: "inventarisId",
+      as: "inventaris",
     });
     Vitamin.belongsTo(models.Laporan);
   };

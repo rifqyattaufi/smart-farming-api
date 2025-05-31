@@ -219,7 +219,7 @@ const getStatistikHarianJenisBudidaya = async (req, res) => {
         }
 
         alasanStatusKlasifikasi = alasanDetailParts.filter(part => part && part.length > 0).join('. ').trim();
-        if (alasanStatusKlasifikasi && !alasanStatusKlasifikasi.endsWith('.')) { 
+        if (alasanStatusKlasifikasi && !alasanStatusKlasifikasi.endsWith('.')) {
             alasanStatusKlasifikasi += '.';
         }
         alasanStatusKlasifikasi = alasanStatusKlasifikasi.replace(/\.\.+/g, '.');
@@ -240,7 +240,7 @@ const getStatistikHarianJenisBudidaya = async (req, res) => {
         kondisiDaunDisplay = 'Tidak Ada Data';
         statusKlasifikasi = 'Perlu Perhatian';
         perluPerhatian++;
-        alasanStatusKlasifikasi = "Tidak ada data laporan harian terbaru untuk evaluasi kondisi.";
+        alasanStatusKlasifikasi = "Tidak ada data laporan harian terbaru untuk evaluasi.";
         tanamanPerluPerhatianTanpaDataList.push(namaTanaman);
         if (jumlahLaporan === 0) {
             skorMasalah = 1;
@@ -287,7 +287,7 @@ const getStatistikHarianJenisBudidaya = async (req, res) => {
             const detailText = perluPerhatianDetailsCombined.join('; dan ');
             if (criticalMessage) { 
                 // Jika ada pesan kritis sebelumnya
-                attentionMessage = `\nSelain itu, ${perluPerhatian} tanaman juga memerlukan perhatian lebih lanjut, yaitu: ${detailText}.`;
+                attentionMessage = `\n\nSelain itu, ${perluPerhatian} tanaman juga memerlukan perhatian lebih lanjut, yaitu: ${detailText}.`;
             
             } else if (tanamanSehat < totalTanaman) { // Hanya jika tidak semua sehat (dan tidak ada kritis)
                 attentionMessage = `\nTerdapat ${perluPerhatian} tanaman yang memerlukan perhatian lebih lanjut, yaitu: ${detailText}.`;
@@ -329,8 +329,435 @@ const getStatistikHarianJenisBudidaya = async (req, res) => {
   }
 };
 
+const getStatistikLaporanHarian = async (req, res) => {
+  try {
+    const jenisBudidayaId = req.params.id;
+    const { startDate, endDate, groupBy } = req.query;
 
+    if (!jenisBudidayaId) {
+        return res.status(400).json({ message: "Path parameter 'id' (jenisBudidayaId) is required." });
+    }
+    if (!startDate || !endDate || !groupBy) {
+      return res.status(400).json({ message: "startDate, endDate, and groupBy query parameters are required." });
+    }
+
+    let dateColumnFormat;
+    switch (groupBy) {
+      case 'day': dateColumnFormat = fn('DATE', col('Laporan.createdAt')); break;
+      case 'month': dateColumnFormat = fn('DATE_FORMAT', col('Laporan.createdAt'), '%Y-%m-01'); break;
+      case 'year': dateColumnFormat = fn('DATE_FORMAT', col('Laporan.createdAt'), '%Y-01-01'); break;
+      default: return res.status(400).json({ message: "Invalid groupBy value." });
+    }
+
+    const statistik = await Laporan.findAll({
+      attributes: [
+        [dateColumnFormat, 'period'],
+        [fn('COUNT', col('Laporan.id')), 'jumlahLaporan'],
+      ],
+      include: [{
+        model: ObjekBudidaya,
+        attributes: [],
+        required: true,
+        include: [{
+          model: UnitBudidaya,
+          attributes: [],
+          required: true,
+          where: {
+            jenisBudidayaId: jenisBudidayaId,
+            isDeleted: false,
+          }
+        }],
+        where: {
+          isDeleted: false,
+        }
+      }],
+      where: {
+        isDeleted: false,
+        tipe: 'harian',
+        createdAt: {
+          [Op.between]: [new Date(startDate), new Date(endDate + 'T23:59:59.999Z')],
+        },
+      },
+      group: ['period'],
+      order: [['period', 'ASC']],
+    });
+
+    console.log("Statistik instances from findAll (before map):", statistik.map(s => s.toJSON()));
+
+    const formattedStatistik = statistik.map(sequelizeInstance => {
+      const plainObject = sequelizeInstance.toJSON();
+
+      plainObject.jumlahLaporan = plainObject.jumlahLaporan !== null && !isNaN(plainObject.jumlahLaporan)
+          ? parseInt(plainObject.jumlahLaporan, 10) : 0;
+
+      return plainObject;
+    });
+
+    console.log("Formatted Statistik (to be sent in response):", JSON.stringify(formattedStatistik, null, 2));
+
+    return res.status(200).json({
+      message: `Successfully retrieved daily report statistics for JenisBudidaya ID: ${jenisBudidayaId}`,
+      data: formattedStatistik,
+    });
+
+  } catch (error) {
+    console.error(`Error getStatistikLaporanHarian for JenisBudidaya ID ${req.params.id}:`, error);
+    res.status(500).json({ message: error.message, detail: error });
+  }
+};
+
+const getStatistikPenyiraman = async (req, res) => {
+  try {
+    const jenisBudidayaId = req.params.id;
+    const { startDate, endDate, groupBy } = req.query;
+
+    if (!jenisBudidayaId) {
+        return res.status(400).json({ message: "Path parameter 'id' (jenisBudidayaId) is required." });
+    }
+    if (!startDate || !endDate || !groupBy) {
+      return res.status(400).json({ message: "startDate, endDate, and groupBy query parameters are required." });
+    }
+
+    let dateColumnFormat;
+    switch (groupBy) {
+      case 'day': dateColumnFormat = fn('DATE', col('Laporan.createdAt')); break;
+      case 'month': dateColumnFormat = fn('DATE_FORMAT', col('Laporan.createdAt'), '%Y-%m-01'); break;
+      case 'year': dateColumnFormat = fn('DATE_FORMAT', col('Laporan.createdAt'), '%Y-01-01'); break;
+      default: return res.status(400).json({ message: "Invalid groupBy value." });
+    }
+
+    const statistik = await Laporan.findAll({
+      attributes: [
+        [dateColumnFormat, 'period'],
+        [fn('COUNT', col('HarianKebun.id')), 'jumlahPenyiraman'],
+      ],
+      include: [
+        {
+          model: HarianKebun,
+          attributes: [],
+          where: {
+            penyiraman: 1,
+            isDeleted: false,
+          },
+          required: true,
+        },
+        {
+          model: ObjekBudidaya,
+          attributes: [],
+          required: true,
+          include: [{
+            model: UnitBudidaya,
+            attributes: [],
+            required: true,
+            where: {
+              jenisBudidayaId: jenisBudidayaId,
+              isDeleted: false,
+            }
+          }],
+          where: {
+            isDeleted: false,
+          }
+        }
+      ],
+      where: {
+        isDeleted: false,
+        tipe: 'harian',
+        createdAt: {
+          [Op.between]: [new Date(startDate), new Date(endDate + 'T23:59:59.999Z')],
+        },
+      },
+      group: ['period'],
+      order: [['period', 'ASC']],
+    });
+
+    console.log("Statistik instances from findAll (before map):", statistik.map(s => s.toJSON()));
+
+    const formattedStatistik = statistik.map(sequelizeInstance => {
+      const plainObject = sequelizeInstance.toJSON();
+
+      plainObject.jumlahPenyiraman = plainObject.jumlahPenyiraman !== null && !isNaN(plainObject.jumlahPenyiraman)
+          ? parseInt(plainObject.jumlahPenyiraman, 10) : 0;
+
+      return plainObject;
+    });
+
+    console.log("Formatted Statistik (to be sent in response):", JSON.stringify(formattedStatistik, null, 2));
+
+    return res.status(200).json({
+      message: `Successfully retrieved plant watering statistics for JenisBudidaya ID: ${jenisBudidayaId}`,
+      data: formattedStatistik,
+    });
+  } catch (error) {
+    console.error(`Error getStatistikPenyiraman for JenisBudidaya ID ${req.params.id}:`, error);
+    res.status(500).json({ message: error.message, detail: error });
+  }
+};
+
+const getStatistikPemberianNutrisi = async (req, res) => {
+  try {
+    const jenisBudidayaId = req.params.id;
+    const { startDate, endDate, groupBy } = req.query;
+
+    if (!jenisBudidayaId) {
+        return res.status(400).json({ message: "Path parameter 'id' (jenisBudidayaId) is required." });
+    }
+    if (!startDate || !endDate || !groupBy) {
+      return res.status(400).json({ message: "startDate, endDate, and groupBy query parameters are required." });
+    }
+
+    let dateColumnFormat;
+    switch (groupBy) {
+      case 'day': dateColumnFormat = fn('DATE', col('Laporan.createdAt')); break;
+      case 'month': dateColumnFormat = fn('DATE_FORMAT', col('Laporan.createdAt'), '%Y-%m-01'); break;
+      case 'year': dateColumnFormat = fn('DATE_FORMAT', col('Laporan.createdAt'), '%Y-01-01'); break;
+      default: return res.status(400).json({ message: "Invalid groupBy value." });
+    }
+
+    const statistikFrekuensi = await Laporan.findAll({
+      attributes: [
+        [dateColumnFormat, 'period'],
+        [fn('COUNT', col('Vitamin.id')), 'jumlahKejadianPemberianPupuk'],
+      ],
+      include: [
+        { 
+          model: Vitamin,
+          attributes: [],
+          where: {
+            tipe: 'pupuk',
+            isDeleted: false,
+          },
+          required: true,
+        },
+        { 
+          model: ObjekBudidaya,
+          attributes: [],
+          required: true,
+          include: [{
+            model: UnitBudidaya,
+            attributes: [],
+            required: true,
+            where: {
+              jenisBudidayaId: jenisBudidayaId,
+              isDeleted: false,
+            }
+          }],
+          where: {
+            isDeleted: false,
+          }
+        }
+      ],
+      where: {
+        isDeleted: false,
+        tipe: 'vitamin',
+        createdAt: {
+          [Op.between]: [new Date(startDate), new Date(endDate + 'T23:59:59.999Z')],
+        },
+      },
+      group: ['period'],
+      order: [['period', 'ASC']],
+    });
+    
+    console.log("Statistik instances from findAll (before map):", statistikFrekuensi.map(s => s.toJSON()));
+
+    const formattedStatistik = statistikFrekuensi.map(sequelizeInstance => {
+      const plainObject = sequelizeInstance.toJSON();
+
+      plainObject.jumlahKejadianPemberianPupuk = plainObject.jumlahKejadianPemberianPupuk !== null && !isNaN(plainObject.jumlahKejadianPemberianPupuk)
+          ? parseInt(plainObject.jumlahKejadianPemberianPupuk, 10) : 0;
+
+      return plainObject;
+    });
+
+    console.log("Formatted Statistik (to be sent in response):", JSON.stringify(formattedStatistik, null, 2));
+
+    return res.status(200).json({
+      message: `Successfully retrieved nutrient (fertilizer) application statistics for JenisBudidaya ID: ${jenisBudidayaId}`,
+      data: formattedStatistik,
+    });
+  } catch (error) {
+    console.error(`Error getStatistikPemberianNutrisi for JenisBudidaya ID ${req.params.id}:`, error);
+    res.status(500).json({ message: error.message, detail: error });
+  }
+};
+
+const getRiwayatLaporanUmumPerJenisBudidaya = async (req, res) => {
+    const { jenisBudidayaId } = req.params;
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 5;
+    const offset = (page - 1) * limit;
+
+    try {
+        const { count, rows } = await Laporan.findAndCountAll({
+            include: [
+                {
+                    model: ObjekBudidaya,
+                    attributes: ['id', 'namaId'],
+                    required: true,
+                    where: { isDeleted: false },
+                    include: [{
+                        model: UnitBudidaya,
+                        attributes: [],
+                        required: true,
+                        where: {
+                            jenisBudidayaId: jenisBudidayaId,
+                            isDeleted: false,
+                        }
+                    }]
+                },
+                {
+                    model: User,
+                    as: 'user',
+                    attributes: ['name'],
+                    required: false,
+                }
+            ],
+            where: {
+                isDeleted: false,
+            },
+            order: [['createdAt', 'DESC']],
+            limit: limit,
+            offset: offset,
+            distinct: true,
+        });
+
+        const formattedRows = rows.map(laporan => {
+            let descriptiveText = laporan.judul || `Laporan ${laporan.tipe || 'Umum'}`;
+            if (laporan.ObjekBudidaya && laporan.ObjekBudidaya.namaId) {
+                descriptiveText += ` (${laporan.ObjekBudidaya.namaId})`;
+            }
+            
+            return {
+                id: laporan.id,
+                laporanId: laporan.id,
+                text: descriptiveText,
+                gambar: laporan.gambar,
+                iconType: laporan.tipe ? laporan.tipe.toLowerCase() : 'umum',
+                time: laporan.createdAt,
+                petugasNama: laporan.user ? laporan.user.name : 'Petugas Tidak Diketahui',
+                judul: laporan.judul || 'Tidak Ada Judul',
+            };
+        });
+
+        return res.status(200).json({
+            status: true,
+            message: 'Riwayat pelaporan umum berhasil diambil.',
+            data: formattedRows,
+            currentPage: page,
+            totalPages: Math.ceil(count / limit),
+            totalItems: count,
+        });
+
+    } catch (error) {
+        console.error("Error getRiwayatLaporanUmumPerJenisBudidaya:", error);
+        res.status(500).json({
+            status: false,
+            message: "Gagal mengambil riwayat pelaporan umum.",
+            error: error.message
+        });
+    }
+};
+
+const getRiwayatPemberianNutrisiPerJenisBudidaya = async (req, res) => {
+    const { jenisBudidayaId } = req.params;
+    const tipeNutrisiFilter = req.query.tipeNutrisi;
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 3;
+    const offset = (page - 1) * limit;
+
+    const whereDetailPemberian = { isDeleted: false };
+    if (tipeNutrisiFilter) {
+        whereDetailPemberian.tipe = { [Op.in]: tipeNutrisiFilter.split(',') };
+    } else {
+    }
+
+    try {
+        const { count, rows } = await Vitamin.findAndCountAll({
+            where: whereDetailPemberian,
+            include: [
+                {
+                    model: Laporan,
+                    attributes: ['id', 'createdAt', 'objekBudidayaId'],
+                    required: true,
+                    where: { isDeleted: false },
+                    include: [
+                        {
+                            model: ObjekBudidaya,
+                            attributes: [],
+                            required: true,
+                            where: { isDeleted: false },
+                            include: [{
+                                model: UnitBudidaya,
+                                attributes: [],
+                                required: true,
+                                where: {
+                                    jenisBudidayaId: jenisBudidayaId,
+                                    isDeleted: false,
+                                }
+                            }]
+                        },
+                        {
+                            model: User,
+                            as: 'user',
+                            attributes: ['name'],
+                            required: false,
+                        }
+                    ]
+                },
+                {
+                    model: Inventaris,
+                    as: 'inventaris',
+                    attributes: ['nama', 'gambar'],
+                    required: true,
+                    where: { isDeleted: false },
+                    include: [{
+                        model: Satuan,
+                        attributes: ['lambang', 'nama'],
+                        required: false,
+                    }]
+                }
+            ],
+            order: [[{ model: Laporan, as: 'Laporan' }, 'createdAt', 'DESC']],
+            limit: limit,
+            offset: offset,
+            distinct: true,
+        });
+
+        const formattedRows = rows.map(dp => {
+            return {
+                laporanId: dp.Laporan ? dp.Laporan.id : null,
+                name: `${dp.inventaris ? dp.inventaris.nama : 'Item Tidak Dikenal'} - ${dp.jumlah || ''} ${dp.inventaris && dp.inventaris.Satuan ? dp.inventaris.Satuan.lambang : ''}`.trim(),
+                category: dp.tipe ? dp.tipe.charAt(0).toUpperCase() + dp.tipe.slice(1) : 'Nutrisi', // Misal "Pupuk"
+                image: dp.Laporan ? dp.Laporan.gambar : null,
+                person: dp.Laporan && dp.Laporan.user ? dp.Laporan.user.name : 'Petugas Tidak Diketahui',
+                date: dp.Laporan ? dp.Laporan.createdAt : dp.createdAt,
+                time: dp.Laporan ? dp.Laporan.createdAt : dp.createdAt,
+            };
+        });
+
+        return res.status(200).json({
+            status: true,
+            message: 'Riwayat pemberian nutrisi berhasil diambil.',
+            data: formattedRows,
+            currentPage: page,
+            totalPages: Math.ceil(count / limit),
+            totalItems: count,
+        });
+
+    } catch (error) {
+        console.error("Error getRiwayatPemberianNutrisiPerJenisBudidaya:", error);
+        res.status(500).json({
+            status: false,
+            message: "Gagal mengambil riwayat pemberian nutrisi.",
+            error: error.message
+        });
+    }
+};
 
 module.exports = {
-    getStatistikHarianJenisBudidaya
+    getStatistikHarianJenisBudidaya,
+    getStatistikLaporanHarian,
+    getStatistikPenyiraman,
+    getStatistikPemberianNutrisi,
+    getRiwayatLaporanUmumPerJenisBudidaya,
+    getRiwayatPemberianNutrisiPerJenisBudidaya
 };
