@@ -172,11 +172,11 @@ const getStatistikHarianJenisBudidaya = async (req, res) => {
 
         if (kondisiDaun === 'sehat') {
             tempSkorKondisi = 0;
-            alasanDetailParts.push(`Kondisi daun: '${kondisiDaun}'`);
+            alasanDetailParts.push(`\nKondisi daun: '${kondisiDaun}'`);
         
         } else if (['kering', 'layu', 'keriting', 'rusak'].includes(kondisiDaun)) {
             tempSkorKondisi = 3; // Kritis
-            alasanDetailParts.push(`Kondisi daun: '${kondisiDaun}'`);
+            alasanDetailParts.push(`\nKondisi daun: '${kondisiDaun}'`);
             
             // Cek apakah 'pruning' bernilai truthy (1, "1", atau true)
             if ((String(pruning) === "1" || pruning === true) && kondisiDaun === 'rusak') {
@@ -185,18 +185,18 @@ const getStatistikHarianJenisBudidaya = async (req, res) => {
 
         } else if (['kuning', 'bercak'].includes(kondisiDaun)) {
             tempSkorKondisi = 2; // Perlu Perhatian
-            alasanDetailParts.push(`Kondisi daun: '${kondisiDaun}'`);
+            alasanDetailParts.push(`\nKondisi daun: '${kondisiDaun}'`);
         
         } else {
             tempSkorKondisi = 1; // Perlu Perhatian
-            alasanDetailParts.push(`Kondisi daun: '${kondisiDaun}' (tidak terdefinisi secara spesifik)`);
+            alasanDetailParts.push(`\nKondisi daun: '${kondisiDaun}' (tidak terdefinisi secara spesifik)`);
         }
 
         if (typeof tinggiTanaman !== 'undefined' && tinggiTanaman !== null) {
-            alasanDetailParts.push(`Tinggi tanaman: ${tinggiTanaman} cm`);
+            alasanDetailParts.push(`\nTinggi tanaman: ${tinggiTanaman} cm`);
         }
         if (statusTumbuh && typeof statusTumbuh === 'string' && statusTumbuh.trim() !== '') {
-            alasanDetailParts.push(`Status tumbuh: '${statusTumbuh}'`);
+            alasanDetailParts.push(`\nStatus tumbuh: '${statusTumbuh}'`);
         }
 
         let kegiatanList = [];
@@ -213,13 +213,13 @@ const getStatistikHarianJenisBudidaya = async (req, res) => {
         }
 
         if (kegiatanList.length > 0) {
-            alasanDetailParts.push(`Kegiatan tercatat pada laporan ini: ${kegiatanList.join(', ')}`);
+            alasanDetailParts.push(`\n\nKegiatan tercatat pada laporan ini: ${kegiatanList.join(', ')}`);
         } else {
-            alasanDetailParts.push("Tidak ada kegiatan spesifik (penyiraman/pruning/repotting) tercatat pada laporan ini.");
+            alasanDetailParts.push("\n\nTidak ada kegiatan spesifik (penyiraman/pruning/repotting) tercatat pada laporan ini.");
         }
 
         alasanStatusKlasifikasi = alasanDetailParts.filter(part => part && part.length > 0).join('. ').trim();
-        if (alasanStatusKlasifikasi && !alasanStatusKlasifikasi.endsWith('.')) {
+        if (alasanStatusKlasifikasi && !alasanStatusKlasifikasi.endsWith('.')) { 
             alasanStatusKlasifikasi += '.';
         }
         alasanStatusKlasifikasi = alasanStatusKlasifikasi.replace(/\.\.+/g, '.');
