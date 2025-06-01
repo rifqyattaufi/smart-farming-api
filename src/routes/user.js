@@ -1,20 +1,25 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const UsersController = require('../controller/user.js');
+const UsersController = require("../controller/user.js");
 
-router.get('/', UsersController.getAllUsers);
+router.get("/", UsersController.getAllUsers);
 
-router.get('/id/:id', UsersController.getUserById);
+router.get("/byRole", UsersController.getUsersGroupByRole);
 
-router.get('/seller/:id', UsersController.getPenjualById);
+router.delete("/deactivate/:id", UsersController.deactivateUser);
 
-router.post('/', UsersController.createUser);
+router.put("/activate/:id", UsersController.activateUser);
 
-router.put('/:id', UsersController.updateUser);
+router.get("/id/:id", UsersController.getUserById);
 
-router.delete('/:id', UsersController.deleteUser);
+router.get("/seller/:id", UsersController.getPenjualById);
 
-router.get('/seller', UsersController.getPenjual);
+router.post("/", UsersController.createUser);
 
+router.put("/:id", UsersController.updateUser);
+
+router.delete("/:id", UsersController.deleteUser);
+
+router.get("/seller", UsersController.getPenjual);
 
 module.exports = router;
