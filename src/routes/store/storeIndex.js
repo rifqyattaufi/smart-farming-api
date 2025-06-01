@@ -8,6 +8,7 @@ const produkRouter = require('./produk');
 const keranjangRouter = require('./keranjang');
 const midtransRouter = require('./midtrans');
 const pesananRouter = require('./pesanan');
+const pendapatanRouter = require('./pendapatan');
 
 router.use('/artikel', artikelRouter);
 router.use('/toko', tokoRouter);
@@ -16,4 +17,6 @@ router.use('/produk', produkRouter);
 router.use('/keranjang', keranjangRouter);
 router.use('/pesanan', pesananRouter);
 router.use('/midtrans', midtransRouter);
+router.use('/pendapatan', pendapatanRouter);
+
 module.exports = router;

@@ -1,3 +1,4 @@
+const { where } = require("sequelize");
 const sequelize = require("../../model");
 const Pesanan = sequelize.Pesanan;
 const PesananDetail = sequelize.PesananDetail;
@@ -126,6 +127,63 @@ const getPesananByUser = async (req, res) => {
     }
 };
 
+const getPesananById = async (req, res) => {
+    try {
+        const pesananId = req.params.id;
+        if (!pesananId) {
+            return res.status(400).json({
+                message: "ID pesanan diperlukan"
+            });
+        }
+
+        const pesanan = await Pesanan.findOne({
+            where: { id: pesananId, isDeleted: false },
+            include: [
+                {
+                    model: PesananDetail,
+                    include: [
+                        {
+                            model: Produk,
+                            attributes: ['id', 'nama', 'gambar', 'satuan', 'harga'],
+                            include: [
+                                {
+                                    model: sequelize.Toko,
+                                    attributes: ['id', 'nama', 'alamat']
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    model: sequelize.Toko,
+                    attributes: ['id', 'nama', 'alamat', 'logoToko']
+                },
+                {
+                    model: midtransOrder,
+                    attributes: ['id', 'transaction_status', 'transaction_time', 'bank']
+                }
+            ]
+        });
+
+        if (!pesanan) {
+            return res.status(404).json({
+                message: "Pesanan tidak ditemukan"
+            });
+        }
+
+        return res.status(200).json({
+            message: "Berhasil mengambil detail pesanan",
+            data: pesanan
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message: "Gagal mengambil detail pesanan",
+            detail: error.message
+        });
+    }
+}
+
 const updatePesananStatus = async (req, res) => {
     const t = await sequelize.sequelize.transaction();
     try {
@@ -234,10 +292,49 @@ const getPesananByTokoId = async (req, res) => {
         });
     }
 }
+const CreatebuktiDiterima = async (req, res) => {
+    try {
+        const { buktiDiterima, pesananId } = req.body;
+
+        if (!pesananId || !buktiDiterima) {
+            return res.status(400).json({
+                message: "Bukti diterima dan pesanan Id diperlukan"
+            });
+        }
+
+        const bukti = await sequelize.BuktiDiterima.create({
+            fotoBukti: buktiDiterima,
+        });
+
+        await Pesanan.update({
+            buktiDiterimaId: bukti.id,
+        }, {
+            where: {
+                id: pesananId,
+                isDeleted: false
+            }
+        }
+        )
+
+        return res.status(200).json({
+            message: "Bukti diterima berhasil dibuat",
+            data: {
+                buktiDiterima
+            }
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message: "Gagal membuat bukti diterima",
+            detail: error.message
+        });
+    }
+}
 
 module.exports = {
     createPesanan,
     getPesananByUser,
     updatePesananStatus,
-    getPesananByTokoId
+    getPesananByTokoId,
+    CreatebuktiDiterima
 };

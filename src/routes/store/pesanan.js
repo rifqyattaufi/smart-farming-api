@@ -12,5 +12,6 @@ router.post('/', auditMiddleware({ model: Pesanan, tableName: "Pesanan" }), pesa
 router.get('/user', pesananController.getPesananByUser);
 router.put('/status', pesananController.updatePesananStatus);
 router.get('/toko/:id', pesananController.getPesananByTokoId);
+router.post('/bukti', pesananController.CreatebuktiDiterima);
 
-module.exports = router;
+module.exports = router;  
