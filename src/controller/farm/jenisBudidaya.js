@@ -72,6 +72,13 @@ const getJenisBudidayaById = async (req, res) => {
         jenisBudidayaId: req.params.id,
         isDeleted: false,
       },
+      include: [
+        {
+          model: ObjekBudidaya,
+          where: { isDeleted: false },
+          required: false,
+        },
+      ],
       order: [["createdAt", "DESC"]],
     });
 
@@ -80,7 +87,6 @@ const getJenisBudidayaById = async (req, res) => {
       const unitBudidaya = dataUnitBudidaya[i];
       jumlahBudidaya += unitBudidaya["jumlah"];
     }
-
 
     return res.status(200).json({
       message: "Successfully retrieved jenis budidaya data",
@@ -330,7 +336,6 @@ const deleteJenisBudidaya = async (req, res) => {
     });
   }
 };
-
 
 module.exports = {
   getAllJenisBudidaya,

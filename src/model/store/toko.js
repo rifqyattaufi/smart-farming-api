@@ -58,6 +58,10 @@ module.exports = (sequelize, DataTypes) => {
     Toko.hasMany(models.Pesanan);
 
     Toko.belongsTo(models.User);
+    Toko.hasMany(models.Pendapatan, {
+      foreignKey: "tokoId",
+      as: "pendapatan",
+    });
   };
 
   return Toko;

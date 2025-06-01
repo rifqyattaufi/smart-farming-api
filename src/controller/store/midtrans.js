@@ -77,7 +77,7 @@ const createTransaction = async (req, res) => {
     }
 };
 const getTransactionStatus = async (req, res) => {
-    const { orderId } = req.params;
+    const orderId = req.params.id;
 
     if (!orderId) {
         return res.status(400).json({ message: 'order_id wajib diisi' });
@@ -163,10 +163,6 @@ const handleWebhook = async (req, res) => {
         const orderId = body.order_id;
         const transactionStatus = body.transaction_status;
         const transactionId = body.transaction_id;
-        await MidtransOrder.destroy({
-            where: { id: orderId },
-        })
-
         await MidtransOrder.upsert({
             id: orderId,
             transaction_id: transactionId,

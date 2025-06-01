@@ -33,6 +33,7 @@ module.exports = (sequelize, DataTypes) => {
     Pesanan.belongsTo(models.Toko);
     Pesanan.hasMany(models.PesananDetail);
     Pesanan.belongsTo(models.MidtransOrder);
+    Pesanan.belongsTo(models.BuktiDiterima);
   };
 
   return Pesanan;
