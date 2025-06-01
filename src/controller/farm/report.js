@@ -389,19 +389,15 @@ const getStatistikLaporanHarian = async (req, res) => {
     const { startDate, endDate, groupBy } = req.query;
 
     if (!jenisBudidayaId) {
-      return res
-        .status(400)
-        .json({
-          message: "Path parameter 'id' (jenisBudidayaId) is required.",
-        });
+      return res.status(400).json({
+        message: "Path parameter 'id' (jenisBudidayaId) is required.",
+      });
     }
     if (!startDate || !endDate || !groupBy) {
-      return res
-        .status(400)
-        .json({
-          message:
-            "startDate, endDate, and groupBy query parameters are required.",
-        });
+      return res.status(400).json({
+        message:
+          "startDate, endDate, and groupBy query parameters are required.",
+      });
     }
 
     let dateColumnFormat;
@@ -507,19 +503,15 @@ const getStatistikPenyiraman = async (req, res) => {
     const { startDate, endDate, groupBy } = req.query;
 
     if (!jenisBudidayaId) {
-      return res
-        .status(400)
-        .json({
-          message: "Path parameter 'id' (jenisBudidayaId) is required.",
-        });
+      return res.status(400).json({
+        message: "Path parameter 'id' (jenisBudidayaId) is required.",
+      });
     }
     if (!startDate || !endDate || !groupBy) {
-      return res
-        .status(400)
-        .json({
-          message:
-            "startDate, endDate, and groupBy query parameters are required.",
-        });
+      return res.status(400).json({
+        message:
+          "startDate, endDate, and groupBy query parameters are required.",
+      });
     }
 
     let dateColumnFormat;
@@ -635,19 +627,15 @@ const getStatistikPemberianNutrisi = async (req, res) => {
     const { startDate, endDate, groupBy } = req.query;
 
     if (!jenisBudidayaId) {
-      return res
-        .status(400)
-        .json({
-          message: "Path parameter 'id' (jenisBudidayaId) is required.",
-        });
+      return res.status(400).json({
+        message: "Path parameter 'id' (jenisBudidayaId) is required.",
+      });
     }
     if (!startDate || !endDate || !groupBy) {
-      return res
-        .status(400)
-        .json({
-          message:
-            "startDate, endDate, and groupBy query parameters are required.",
-        });
+      return res.status(400).json({
+        message:
+          "startDate, endDate, and groupBy query parameters are required.",
+      });
     }
 
     let dateColumnFormat;
@@ -857,7 +845,7 @@ const getRiwayatPemberianNutrisiPerJenisBudidaya = async (req, res) => {
       include: [
         {
           model: Laporan,
-          attributes: ["id", "createdAt", "objekBudidayaId"],
+          attributes: ["id", "gambar", "createdAt", "objekBudidayaId"],
           required: true,
           where: { isDeleted: false },
           include: [
@@ -920,7 +908,7 @@ const getRiwayatPemberianNutrisiPerJenisBudidaya = async (req, res) => {
         category: dp.tipe
           ? dp.tipe.charAt(0).toUpperCase() + dp.tipe.slice(1)
           : "Nutrisi", // Misal "Pupuk"
-        image: dp.Laporan ? dp.Laporan.gambar : null,
+        gambar: dp.Laporan ? dp.Laporan.gambar : null,
         person:
           dp.Laporan && dp.Laporan.user
             ? dp.Laporan.user.name

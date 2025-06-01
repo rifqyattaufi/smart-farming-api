@@ -148,12 +148,10 @@ const getStatistikPemakaianInventaris = async (req, res) => {
     const { startDate, endDate, groupBy } = req.query;
 
     if (!startDate || !endDate || !groupBy) {
-      return res
-        .status(400)
-        .json({
-          message:
-            "startDate, endDate, and groupBy query parameters are required.",
-        });
+      return res.status(400).json({
+        message:
+          "startDate, endDate, and groupBy query parameters are required.",
+      });
     }
 
     let dateColumn;
@@ -177,11 +175,9 @@ const getStatistikPemakaianInventaris = async (req, res) => {
         );
         break;
       default:
-        return res
-          .status(400)
-          .json({
-            message: "Invalid groupBy value. Use 'day', 'month', or 'year'.",
-          });
+        return res.status(400).json({
+          message: "Invalid groupBy value. Use 'day', 'month', or 'year'.",
+        });
     }
 
     const statistik = await PenggunaanInventaris.findAll({
@@ -390,6 +386,9 @@ const getInventarisByKategoriName = async (req, res) => {
         isDeleted: false,
         jumlah: {
           [Op.gt]: 0,
+          tanggalKadaluwarsa: {
+            [Op.gte]: new Date(),
+          },
         },
       },
       order: [["createdAt", "DESC"]],
@@ -483,6 +482,12 @@ const updateInventaris = async (req, res) => {
       return res.status(404).json({
         message: "Data not found",
       });
+    }
+
+    if (req.body.jumlah === 0) {
+      req.body.ketersediaan = "tidak tersedia";
+    } else if (req.body.jumlah > 0) {
+      req.body.ketersediaan = "tersedia";
     }
 
     await Inventaris.update(req.body, {
