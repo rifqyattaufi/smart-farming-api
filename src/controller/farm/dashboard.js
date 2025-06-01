@@ -9,6 +9,100 @@ const Panen = sequelize.Panen;
 const UnitBudidaya = sequelize.UnitBudidaya;
 const JenisBudidaya = sequelize.JenisBudidaya;
 const Komoditas = sequelize.Komoditas;
+const Laporan = sequelize.Laporan;
+const HarianKebun = sequelize.HarianKebun;
+const Sakit = sequelize.Sakit;
+
+async function hitungSemuaTanamanSehatTumbuhan() {
+    const semuaObjekBudidayaTumbuhan = await ObjekBudidaya.findAll({
+        include: [{
+            model: UnitBudidaya,
+            required: true,
+            include: [{
+                model: JenisBudidaya,
+                required: true,
+                where: { tipe: "tumbuhan", isDeleted: false }
+            }],
+            where: { isDeleted: false }
+        }],
+        where: { isDeleted: false },
+        attributes: ['id']
+    });
+
+    if (!semuaObjekBudidayaTumbuhan.length) {
+      console.log("Tidak ada ObjekBudidaya tumbuhan ditemukan.");
+        
+        return 0;
+    }
+    const semuaObjekBudidayaIds = semuaObjekBudidayaTumbuhan.map(ob => ob.id);
+
+    const semuaLaporanHarian = await Laporan.findAll({
+        where: {
+            objekBudidayaId: { [sequelize.Sequelize.Op.in]: semuaObjekBudidayaIds },
+            isDeleted: false,
+            tipe: 'harian'
+        },
+        include: [{
+            model: HarianKebun,
+            required: true
+        }],
+        order: [
+            ['objekBudidayaId', 'ASC'],
+            ['createdAt', 'DESC']
+        ]
+    });
+
+    const latestSehatHarianReportDateMap = new Map();
+    for (const laporan of semuaLaporanHarian) {
+        if (!latestSehatHarianReportDateMap.has(laporan.objekBudidayaId)) {
+            if (laporan.HarianKebun && laporan.HarianKebun.kondisiDaun === 'sehat') {
+                latestSehatHarianReportDateMap.set(laporan.objekBudidayaId, new Date(laporan.createdAt));
+            }
+          }
+        }
+
+    const semuaLaporanSakitDenganDetail = await Laporan.findAll({
+        where: {
+            objekBudidayaId: { [sequelize.Sequelize.Op.in]: semuaObjekBudidayaIds },
+            isDeleted: false,
+            tipe: 'sakit'
+        },
+        include: [{
+            model: Sakit,
+            required: true
+        }],
+        attributes: ['objekBudidayaId', 'createdAt'],
+        order: [
+            ['objekBudidayaId', 'ASC'],
+            ['createdAt', 'DESC']
+        ]
+    });
+
+    const latestSakitReportDateMap = new Map();
+    for (const laporanSakit of semuaLaporanSakitDenganDetail) {
+        if (!latestSakitReportDateMap.has(laporanSakit.objekBudidayaId)) {
+            latestSakitReportDateMap.set(laporanSakit.objekBudidayaId, new Date(laporanSakit.createdAt));
+        }
+    }
+
+    let tanamanSehatCount = 0;
+    for (const objekId of semuaObjekBudidayaIds) {
+        const tanggalLaporanHarianSehat = latestSehatHarianReportDateMap.get(objekId);
+
+        if (tanggalLaporanHarianSehat) {
+            const tanggalLaporanSakitTerbaru = latestSakitReportDateMap.get(objekId);
+
+            if (!tanggalLaporanSakitTerbaru) {
+                tanamanSehatCount++;
+            } else {
+                if (tanggalLaporanHarianSehat > tanggalLaporanSakitTerbaru) {
+                    tanamanSehatCount++;
+                }
+            }
+        }
+    }
+    return tanamanSehatCount;
+}
 
 const dashboardPerkebunan = async (req, res) => {
   const openWeatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=-7.249&lon=112.751&units=metric&appid=${process.env.OPEN_WEATHER_API_KEY}`;
@@ -20,6 +114,48 @@ const dashboardPerkebunan = async (req, res) => {
       where: {
         tipe: "tumbuhan",
         isDeleted: false,
+      },
+    });
+
+    const jumlahSehat = hitungSemuaTanamanSehatTumbuhan();
+    const jumlahSehatCount = await jumlahSehat;
+
+    const jumlahSakit = await Sakit.count({
+      include: [
+        {
+          model: sequelize.Laporan,
+          required: true,
+          where: {
+            isDeleted: false,
+          },
+          include: [
+            {
+              model: sequelize.UnitBudidaya,
+              required: true,
+              where: {
+                isDeleted: false,
+              },
+              include: [
+                {
+                  model: sequelize.JenisBudidaya,
+                  required: true,
+                  where: {
+                    tipe: "tumbuhan",
+                    isDeleted: false,
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      where: {
+        isDeleted: false,
+        createdAt: {
+          [sequelize.Sequelize.Op.gte]: new Date(
+            new Date() - 30 * 24 * 60 * 60 * 1000
+          ),
+        },
       },
     });
 
@@ -197,7 +333,9 @@ const dashboardPerkebunan = async (req, res) => {
       data: {
         suhu: Math.round(suhu.data.main.temp),
         jenisTanaman: jenisTanaman,
+        jumlahSehat: jumlahSehatCount,
         jumlahKematian: jumlahKematian,
+        jumlahSakit: jumlahSakit,
         jumlahPanen: jumlahPanen,
         aktivitasTerbaru: aktivitasTerbaruFormatted,
         daftarKebun: daftarKebun,

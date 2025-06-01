@@ -52,7 +52,10 @@ module.exports = (sequelize, DataTypes) => {
     Inventaris.hasMany(models.PenggunaanInventaris, {
       foreignKey: "inventarisId",
     });
-    Inventaris.hasMany(models.Vitamin);
+    Inventaris.hasMany(models.Vitamin, {
+      foreignKey: "inventarisId",
+      as: "vitamin",
+    });
 
     Inventaris.belongsTo(models.KategoriInventaris, {
       foreignKey: "kategoriInventarisId",
