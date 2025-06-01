@@ -7,6 +7,11 @@ const sequelize = require("../../model/index");
 const db = sequelize.sequelize;
 const Laporan = sequelize.Laporan;
 
+router.get(
+  "/harian-kebun/last/:objekBudidayaId",
+  laporanController.getLastHarianKebunByObjekBudidayaId
+);
+
 router.post(
   "/harian-kebun",
   auditMiddleware({ model: Laporan, tableName: "Laporan" }),

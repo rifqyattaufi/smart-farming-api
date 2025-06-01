@@ -123,21 +123,21 @@ const dashboardPerkebunan = async (req, res) => {
     const jumlahSakit = await Sakit.count({
       include: [
         {
-          model: sequelize.Laporan,
+          model: Laporan,
           required: true,
           where: {
             isDeleted: false,
           },
           include: [
             {
-              model: sequelize.UnitBudidaya,
+              model: UnitBudidaya,
               required: true,
               where: {
                 isDeleted: false,
               },
               include: [
                 {
-                  model: sequelize.JenisBudidaya,
+                  model: JenisBudidaya,
                   required: true,
                   where: {
                     tipe: "tumbuhan",
