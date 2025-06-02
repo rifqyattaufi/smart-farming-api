@@ -11,6 +11,8 @@ const Pesanan = sequelize.Pesanan;
 router.post('/', auditMiddleware({ model: Pesanan, tableName: "Pesanan" }), pesananController.createPesanan);
 router.get('/user', pesananController.getPesananByUser);
 router.put('/status', pesananController.updatePesananStatus);
+router.put('/statusss', pesananController.updatePesananStatusandNotif);
+router.get('/id/:id', pesananController.getPesananById);
 router.get('/toko/:id', pesananController.getPesananByTokoId);
 router.post('/bukti', pesananController.CreatebuktiDiterima);
 

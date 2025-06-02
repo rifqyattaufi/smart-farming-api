@@ -1,5 +1,6 @@
 const { where } = require("sequelize");
 const sequelize = require("../../model");
+const { sendNotificationToSingleUserById } = require('../../../services/notificationService');
 const Pesanan = sequelize.Pesanan;
 const PesananDetail = sequelize.PesananDetail;
 const Produk = sequelize.Produk;
@@ -155,12 +156,12 @@ const getPesananById = async (req, res) => {
                     ]
                 },
                 {
-                    model: sequelize.Toko,
-                    attributes: ['id', 'nama', 'alamat', 'logoToko']
+                    model: sequelize.User,
+                    attributes: ['id', 'name', 'email', 'phone']
                 },
                 {
                     model: midtransOrder,
-                    attributes: ['id', 'transaction_status', 'transaction_time', 'bank']
+                    attributes: ['id', 'transaction_status', 'transaction_time', 'bank', 'payment_type', 'gross_amount']
                 }
             ]
         });
@@ -225,6 +226,7 @@ const updatePesananStatus = async (req, res) => {
             message: "Status pesanan berhasil diperbarui",
             data: {
                 id: pesanan.id,
+                UserId: pesanan.UserId,
                 status: pesanan.status,
                 updatedAt: pesanan.updatedAt
             }
@@ -238,6 +240,86 @@ const updatePesananStatus = async (req, res) => {
         });
     }
 };
+
+const updatePesananStatusandNotif = async (req, res) => {
+    const t = await sequelize.sequelize.transaction();
+    try {
+        const { pesananId, status } = req.body;
+
+        if (!pesananId) {
+            return res.status(400).json({
+                message: "ID pesanan diperlukan"
+            });
+        }
+
+        const validStatuses = ['menunggu', 'diterima', 'selesai', 'ditolak'];
+        if (!status || !validStatuses.includes(status)) {
+            return res.status(400).json({
+                message: `Status tidak valid. Status harus salah satu dari: ${validStatuses.join(', ')}`
+            });
+        }
+        const pesanan = await Pesanan.findOne({
+            where: {
+                id: pesananId,
+                isDeleted: false
+            },
+            transaction: t
+        });
+
+        if (!pesanan) {
+            await t.rollback();
+            return res.status(404).json({
+                message: "Pesanan tidak ditemukan"
+            });
+        }
+        pesanan.status = status;
+        await pesanan.save({ transaction: t });
+        await t.commit();
+
+        if (pesanan.UserId) {
+            const targetUserId = pesanan.UserId;
+            const notificationTitle = "Status Pesanan Anda Diperbarui";
+            const notificationBody = `Status pesanan untuk pesanan id #${pesanan.id} Anda telah diubah menjadi "${status}".`;
+            const notificationData = {
+                pesananId: String(pesanan.id),
+                newStatus: status,
+                notificationType: "ORDER_STATUS_UPDATE"
+            };
+
+            try {
+                console.log(`Attempting to send notification to userId: ${targetUserId} for order ${pesanan.id}`);
+                await sendNotificationToSingleUserById(
+                    targetUserId,
+                    notificationTitle,
+                    notificationBody,
+                    notificationData
+                );
+            } catch (notifError) {
+                console.error(`Failed to send notification for order ${pesanan.id} to user ${targetUserId}:`, notifError);
+            }
+        } else {
+            console.log(`UserId not found on order ${pesanan.id}, skipping notification.`);
+        }
+
+        return res.status(200).json({
+            message: "Status pesanan berhasil diperbarui",
+            data: {
+                id: pesanan.id,
+                UserId: pesanan.UserId,
+                status: pesanan.status,
+                updatedAt: pesanan.updatedAt
+            }
+        });
+    } catch (error) {
+        await t.rollback();
+        console.error(`Gagal memperbarui status pesanan: ${error.message}`);
+        return res.status(500).json({
+            message: "Gagal memperbarui status pesanan",
+            detail: error.message
+        });
+    }
+};
+
 const getPesananByTokoId = async (req, res) => {
     try {
         const tokoId = req.params.id;
@@ -334,7 +416,9 @@ const CreatebuktiDiterima = async (req, res) => {
 module.exports = {
     createPesanan,
     getPesananByUser,
+    getPesananById,
     updatePesananStatus,
     getPesananByTokoId,
     CreatebuktiDiterima
+    , updatePesananStatusandNotif
 };
