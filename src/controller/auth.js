@@ -81,6 +81,7 @@ const login = async (req, res, next) => {
       email: userExist.email,
       phone: userExist.phone,
       role: userExist.role,
+      oAuthStatus: userExist.oAuthStatus,
       avatar: userExist.avatarUrl,
     };
 
