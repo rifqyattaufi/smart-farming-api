@@ -128,7 +128,77 @@ async function sendNotificationToUser(
     return { successCount: 0, failureCount: 0, error: error.message };
   }
 }
+async function sendNotificationToSingleUserById(userId, title, body, dataPayload = {}) {
+  if (!firebaseApp) {
+    console.error("Firebase Admin SDK not initialized. Notification not sent.");
+    return {
+      success: false,
+      error: "Firebase Admin SDK not initialized",
+    };
+  }
+
+  try {
+    const user = await User.findOne({
+      where: {
+        id: userId,
+        fcmToken: { 
+          [Op.not]: null,
+          [Op.ne]: "",
+        },
+      },
+      attributes: ["fcmToken"],
+    });
+
+    if (!user || !user.fcmToken) {
+      console.log(
+        `User with ID "${userId}" not found or has no valid FCM token. Notification for "${title}" not sent.`
+      );
+      return { success: false, error: "User not found or no FCM token" };
+    }
+
+    const token = user.fcmToken;
+
+    const stringDataPayload = {};
+    for (const key in dataPayload) {
+      if (Object.hasOwnProperty.call(dataPayload, key)) {
+        stringDataPayload[key] = String(dataPayload[key]);
+      }
+    }
+
+    const message = {
+      notification: {
+        title: title,
+        body: body,
+      },
+      data: stringDataPayload,
+      token: token,
+      android: {
+        priority: "high",
+        notification: {
+          sound: "default",
+        },
+      },
+    };
+
+    const response = await admin.messaging().send(message);
+    console.log(
+      `Successfully sent message to user ${userId} for title: "${title}":`,
+      response
+    );
+
+    return { success: true, messageId: response }; 
+
+  } catch (error) {
+    console.error(
+      `Error in sendNotificationToSingleUserById for userId "${userId}", title "${title}":`,
+      error
+    );
+    return { success: false, error: error.message };
+  }
+}
 
 module.exports = {
   sendNotificationToUser,
+  sendNotificationToSingleUserById,
+
 };
