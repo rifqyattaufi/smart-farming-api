@@ -228,7 +228,7 @@ const createLaporanKematian = async (req, res) => {
     });
 
     if (unitBudidaya.tipe == "individu") {
-      ObjekBudidaya.update(
+      await ObjekBudidaya.update(
         {
           isDeleted: true,
         },
@@ -242,7 +242,7 @@ const createLaporanKematian = async (req, res) => {
     }
 
     if (jumlah != null) {
-      unitBudidaya.update(
+      await unitBudidaya.update(
         {
           jumlah: unitBudidaya.jumlah - jumlah,
         },
@@ -251,7 +251,7 @@ const createLaporanKematian = async (req, res) => {
         }
       );
     } else {
-      unitBudidaya.update(
+      await unitBudidaya.update(
         {
           jumlah: unitBudidaya.jumlah - 1,
         },
