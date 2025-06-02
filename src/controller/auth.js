@@ -55,9 +55,16 @@ const login = async (req, res, next) => {
     }
 
     if (!userExist.isActive) {
+      if (userExist.role === "user" || userExist.role === "penjual") {
+        return res.status(400).json({
+          status: false,
+          message: "Email belum diaktifkan",
+        });
+      }
+
       return res.status(400).json({
         status: false,
-        message: "Email belum diaktifkan",
+        message: "Akun anda di nonaktifkan, silahkan hubungi admin",
       });
     }
 
@@ -100,7 +107,7 @@ const register = async (req, res, next) => {
     name: "required",
     email: "required|email",
     phone: "required|phone",
-    password: "required|strongPassword",
+    password: "required",
     confirmPassword: "required|same:password",
     role: "required|contains:inventor,user,penjual,petugas,pjawab",
   };
@@ -141,13 +148,15 @@ const register = async (req, res, next) => {
     if (
       userExisted &&
       !userExisted.isActive &&
-      Date.parse(userExisted.expiredTime) > new Date()
+      Date.parse(userExisted.expiredTime) > new Date() &&
+      (userExisted.role === "user" || userExisted.role === "penjual")
     ) {
       return res.status(400).json({
         message:
           "Email sudah terdaftar namun belum diaktifkan, silahkan melakukan login untuk mengaktifkan akun",
       });
     }
+
     if (phoneExisted) {
       return res.status(400).json({
         message:
@@ -166,6 +175,9 @@ const register = async (req, res, next) => {
 
     if (user.data.role == "user" || user.data.role == "penjual") {
       userData.isActive = false;
+    } else {
+      userData.isActive = true;
+      userData.expiredTime = null;
     }
 
     const newUser = await User.create(userData, {

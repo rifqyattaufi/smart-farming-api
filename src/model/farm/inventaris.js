@@ -28,14 +28,9 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.DATE,
       },
       ketersediaan: {
-        type: DataTypes.ENUM("tersedia", "tidak tersedia", "kadaluwarsa"),
+        type: DataTypes.ENUM("tersedia", "tidak tersedia"),
         allowNull: false,
         defaultValue: "tersedia",
-      },
-      kondisi: {
-        type: DataTypes.ENUM("baik", "rusak"),
-        allowNull: false,
-        defaultValue: "baik",
       },
       isDeleted: {
         type: DataTypes.BOOLEAN,

@@ -74,6 +74,42 @@ const createLaporanHarianKebun = async (req, res) => {
   }
 };
 
+const getLastHarianKebunByObjekBudidayaId = async (req, res) => {
+  try {
+    const { objekBudidayaId } = req.params;
+
+    const laporan = await Laporan.findOne({
+      where: {
+        objekBudidayaId: objekBudidayaId,
+        isDeleted: false,
+        tipe: "harian",
+      },
+      order: [["createdAt", "DESC"]],
+      include: [
+        {
+          model: HarianKebun,
+        },
+      ],
+    });
+
+    if (!laporan) {
+      return res.status(404).json({
+        message: "Laporan not found",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Successfully retrieved last harian kebun data",
+      data: laporan,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
+  }
+};
+
 const createLaporanHarianTernak = async (req, res) => {
   const t = await db.transaction();
 
@@ -293,17 +329,18 @@ const createLaporanVitamin = async (req, res) => {
   try {
     const { vitamin } = req.body;
 
-    if (!vitamin || typeof vitamin.jumlah !== 'number' || vitamin.jumlah <= 0) {
+    if (!vitamin || typeof vitamin.jumlah !== "number" || vitamin.jumlah <= 0) {
       await t.rollback();
       return res.status(400).json({
-        message: "Jumlah penggunaan vitamin tidak valid atau harus lebih besar dari 0.",
+        message:
+          "Jumlah penggunaan vitamin tidak valid atau harus lebih besar dari 0.",
       });
     }
     if (!vitamin.inventarisId) {
-        await t.rollback();
-        return res.status(400).json({
-            message: "ID Inventaris untuk vitamin tidak disertakan.",
-        });
+      await t.rollback();
+      return res.status(400).json({
+        message: "ID Inventaris untuk vitamin tidak disertakan.",
+      });
     }
 
     const inventaris = await Inventaris.findOne({
@@ -346,9 +383,9 @@ const createLaporanVitamin = async (req, res) => {
     );
 
     inventaris.jumlah -= vitamin.jumlah;
-    
+
     await inventaris.save({ transaction: t });
-    
+
     await t.commit();
 
     res.locals.createdData = { data, laporanVitamin };
@@ -451,13 +488,13 @@ const createLaporanPanenKebun = async (req, res) => {
       { transaction: t }
     );
 
-    if (panen.rincianGrade && panen.rincianGrade.length > 0) { // Check if rincianGrade exists
-      for (const grade of panen.rincianGrade) { // Loop through each grade
+    if (panen.rincianGrade && panen.rincianGrade.length > 0) {
+      for (const rincianGrade of panen.rincianGrade) {
         await PanenRincianGrade.create(
           {
             panenKebunId: laporanPanen.id,
-            gradeId: grade.gradeId,
-            jumlah: grade.jumlah,
+            gradeId: rincianGrade.gradeId,
+            jumlah: rincianGrade.jumlah,
           },
           { transaction: t }
         );
@@ -544,10 +581,15 @@ const createLaporanPenggunaanInventaris = async (req, res) => {
   try {
     const { penggunaanInv } = req.body;
 
-    if (!penggunaanInv || typeof penggunaanInv.jumlah !== 'number' || penggunaanInv.jumlah <= 0) {
+    if (
+      !penggunaanInv ||
+      typeof penggunaanInv.jumlah !== "number" ||
+      penggunaanInv.jumlah <= 0
+    ) {
       await t.rollback();
       return res.status(400).json({
-        message: "Jumlah penggunaan inventaris tidak valid atau harus lebih besar dari 0.",
+        message:
+          "Jumlah penggunaan inventaris tidak valid atau harus lebih besar dari 0.",
       });
     }
 
@@ -615,6 +657,7 @@ const createLaporanPenggunaanInventaris = async (req, res) => {
 
 module.exports = {
   createLaporanHarianKebun,
+  getLastHarianKebunByObjekBudidayaId,
   createLaporanHarianTernak,
   createLaporanSakit,
   createLaporanKematian,

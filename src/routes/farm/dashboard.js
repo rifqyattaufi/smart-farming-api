@@ -7,6 +7,7 @@ const dashboardInvController = require("../../controller/farm/dashboardInv.js");
 
 router.get("/perkebunan", dashboardController.dashboardPerkebunan);
 router.get("/peternakan", dashboardController.dashboardPeternakan);
+router.get("/riwayat-aktivitas", dashboardController.riwayatAktivitasAll);
 router.get("/inventaris", dashboardInvController.dashboardInventaris);
 
 module.exports = router;
