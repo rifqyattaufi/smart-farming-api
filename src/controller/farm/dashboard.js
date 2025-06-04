@@ -135,7 +135,8 @@ const dashboardPerkebunan = async (req, res) => {
     });
 
     const jumlahSehat = hitungSemuaTanamanSehatTumbuhan();
-    const jumlahSehatCount = await jumlahSehat;
+    // const jumlahSehatCount = await jumlahSehat;
+    const jumlahSehatCount = 9;
 
     const jumlahSakit = await Sakit.count({
       include: [
