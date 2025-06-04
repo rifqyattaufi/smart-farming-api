@@ -282,13 +282,23 @@ const activatePhone = async (req, res, next) => {
 };
 const resendOtp = async (req, res, next) => {
   try {
-    const { phone } = req.body;
+    const { phone, email } = req.body;
 
-    const user = await User.findOne({
-      where: {
-        phone: phone,
-      },
-    });
+    var user;
+
+    if (email) {
+      user = await User.findOne({
+        where: {
+          email: email,
+        },
+      });
+    } else {
+      await User.findOne({
+        where: {
+          phone: phone,
+        },
+      });
+    }
 
     if (!user) {
       return res.status(400).json({
@@ -304,7 +314,7 @@ const resendOtp = async (req, res, next) => {
       });
     }
 
-    if (user.isActive) {
+    if (user.isActive && (user.role === "user" || user.role === "penjual")) {
       return res.status(400).json({
         status: false,
         message: "Nomor telepon sudah diaktifkan",
@@ -312,24 +322,103 @@ const resendOtp = async (req, res, next) => {
     }
 
     const otp = await generateOTP(user.id);
-    const result = await sendOTP(phone, otp);
 
-    if (result == false) {
-      return res.status(500).json({
-        status: false,
-        message: "OTP Gagal dikirim, silahkan coba beberapa saat lagi",
+    if (email) {
+      const result = await sendMail(email, otp);
+      if (result == false) {
+        return res.status(500).json({
+          status: false,
+          message: "Email Gagal dikirim, silahkan coba beberapa saat lagi",
+        });
+      }
+
+      return res.status(200).json({
+        status: true,
+        message: "Email Berhasil dikirim",
+      });
+    } else {
+      const result = await sendOTP(phone, otp);
+
+      if (result == false) {
+        return res.status(500).json({
+          status: false,
+          message: "OTP Gagal dikirim, silahkan coba beberapa saat lagi",
+        });
+      }
+
+      return res.status(200).json({
+        status: true,
+        message: "OTP Berhasil dikirim",
       });
     }
-
-    return res.status(200).json({
-      status: true,
-      message: "OTP Berhasil dikirim",
-    });
   } catch (error) {
     next(new Error("controller/auth.js:resendOtp: " + error.message));
     console.log(error);
   }
 };
+
+const checkOtp = async (req, res, next) => {
+  try {
+    const { email, phone, otp } = req.body;
+
+    var user;
+
+    if (email) {
+      user = await User.findOne({
+        where: {
+          email: email,
+        },
+      });
+    } else {
+      user = await User.findOne({
+        where: {
+          phone: phone,
+        },
+      });
+    }
+
+    if (!user) {
+      return res.status(400).json({
+        status: false,
+        message: "Email atau nomor telepon tidak terdaftar",
+      });
+    }
+    if (user.isDeleted) {
+      return res.status(400).json({
+        status: false,
+        message: "Akun sudah dibanned",
+      });
+    }
+    if (user.isActive && (user.role === "user" || user.role === "penjual")) {
+      return res.status(400).json({
+        status: false,
+        message: "Akun sudah diaktifkan",
+      });
+    }
+    const savedOTP = await client.get(`otp:${user.id}`);
+    if (!savedOTP) {
+      return res.status(400).json({
+        status: false,
+        message: "Kode OTP sudah kadaluarsa",
+      });
+    }
+    if (savedOTP !== otp) {
+      return res.status(400).json({
+        status: false,
+        message: "Kode OTP tidak valid",
+      });
+    }
+
+    return res.status(200).json({
+      status: true,
+      message: "Otp Valid",
+    });
+  } catch (error) {
+    next(new Error("controller/auth.js:checkOtp: " + error.message));
+    console.log(error);
+  }
+};
+
 const getPhoneByEmail = async (req, res, next) => {
   try {
     const { email } = req.body;
@@ -532,7 +621,7 @@ const forgotPassword = async (req, res, next) => {
         data: null,
       });
     }
-    if (userExist) {
+    if (userExist.role == "user" || userExist.role == "penjual") {
       const otp = await generateOTP(userExist.id);
       const result = await sendOTP(userExist.phone, otp);
       if (result == false) {
@@ -548,6 +637,24 @@ const forgotPassword = async (req, res, next) => {
         message: "OTP Berhasil dikirim",
         data: {
           phone: userExist.phone,
+        },
+      });
+    } else {
+      const otp = await generateOTP(userExist.id);
+      const result = await sendResetPasswordMail(userExist.email, otp);
+      if (result == false) {
+        return res.status(500).json({
+          status: false,
+          message: "Email Gagal dikirim, silahkan coba beberapa saat lagi",
+          data: null,
+        });
+      }
+      await t.commit();
+      return res.status(200).json({
+        status: true,
+        message: "Email Berhasil dikirim",
+        data: {
+          email: userExist.email,
         },
       });
     }
@@ -846,4 +953,5 @@ module.exports = {
   googleRegister,
   googleLink,
   updateFcmToken,
+  checkOtp,
 };

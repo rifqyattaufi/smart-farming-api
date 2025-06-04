@@ -17,6 +17,7 @@ router.get("/google/link", authController.googleLink);
 router.get("/google/callback", authController.googleCallback);
 router.post("/verifyPhone", authController.activatePhone);
 router.post("/getPhoneByEmail", authController.getPhoneByEmail);
+router.post("/checkOtp", authController.checkOtp);
 router.put(
   "/fcmToken",
   authenticate(["pjawab", "inventor", "petugas", "penjual", "user"]),
