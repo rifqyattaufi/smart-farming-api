@@ -5,6 +5,7 @@ const Pesanan = sequelize.Pesanan;
 const PesananDetail = sequelize.PesananDetail;
 const Produk = sequelize.Produk;
 const midtransOrder = sequelize.MidtransOrder;
+const { creditUserSaldo } = require('./saldo.js');
 
 const createPesanan = async (req, res) => {
     const t = await sequelize.sequelize.transaction();
@@ -192,6 +193,7 @@ const updatePesananStatus = async (req, res) => {
         const userId = req.user.id;
 
         if (!pesananId) {
+            await t.rollback();
             return res.status(400).json({
                 message: "ID pesanan diperlukan"
             });
@@ -199,6 +201,7 @@ const updatePesananStatus = async (req, res) => {
 
         const validStatuses = ['menunggu', 'diterima', 'selesai', 'ditolak'];
         if (!status || !validStatuses.includes(status)) {
+            await t.rollback();
             return res.status(400).json({
                 message: `Status tidak valid. Status harus salah satu dari: ${validStatuses.join(', ')}`
             });
@@ -217,13 +220,45 @@ const updatePesananStatus = async (req, res) => {
                 message: "Pesanan tidak ditemukan"
             });
         }
-
+        const statusSebelumnya = pesanan.status;
         pesanan.status = status;
         await pesanan.save({ transaction: t });
+
+        if (status === 'ditolak' && statusSebelumnya !== 'ditolak') {
+            const userIdPembeli = pesanan.UserId;
+            const jumlahRefund = pesanan.totalHarga;
+
+            if (!userIdPembeli) {
+                await t.rollback();
+                console.error(`Error: Pesanan ${pesananId} tidak memiliki UserId (pembeli). Refund gagal.`);
+                return res.status(500).json({ message: "Data pesanan tidak lengkap (tidak ada info pembeli), refund gagal." });
+            }
+
+            if (jumlahRefund === undefined || jumlahRefund === null || parseFloat(jumlahRefund) <= 0) {
+                await t.rollback();
+                console.error(`Error: Jumlah refund untuk pesanan ${pesananId} tidak valid atau nol (${jumlahRefund}). Refund tidak diproses.`);
+                return res.status(400).json({ message: `Jumlah refund untuk pesanan ${pesananId} tidak valid atau nol. Refund tidak diproses.` });
+            }
+
+            await creditUserSaldo(
+                userIdPembeli,
+                parseFloat(jumlahRefund),
+                'refund_pesanan_pembeli',
+                pesanan.id,
+                'pesanan',
+                `Refund untuk pesanan #${pesanan.id} karena status diubah menjadi 'ditolak'.`,
+                t
+            );
+        }
         await t.commit();
 
+        let responseMessage = "Status pesanan berhasil diperbarui";
+        if (status === 'ditolak' && statusSebelumnya !== 'ditolak') {
+            responseMessage = "Status pesanan berhasil diperbarui menjadi 'ditolak' dan dana telah dikembalikan ke saldo pembeli.";
+        }
+
         return res.status(200).json({
-            message: "Status pesanan berhasil diperbarui",
+            message: responseMessage,
             data: {
                 id: pesanan.id,
                 UserId: pesanan.UserId,
@@ -233,13 +268,14 @@ const updatePesananStatus = async (req, res) => {
         });
     } catch (error) {
         await t.rollback();
-        console.error(`Gagal memperbarui status pesanan: ${error.message}`);
+        console.error(`Gagal memperbarui status pesanan (ID: ${req.body.pesananId}): ${error.message}`, error);
         return res.status(500).json({
             message: "Gagal memperbarui status pesanan",
             detail: error.message
         });
     }
 };
+
 
 const updatePesananStatusandNotif = async (req, res) => {
     const t = await sequelize.sequelize.transaction();
