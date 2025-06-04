@@ -303,8 +303,7 @@ const getAllPenarikanSaldoRequests = async (req, res) => {
 
 const prosesPenarikanSaldo = async (req, res) => {
     const { id } = req.params;
-    const { status, catatanAdmin, buktiTransfer, referensiBank } = req.body; // status baru: 'completed' atau 'rejected'
-
+    const { status, catatanAdmin, buktiTransfer, referensiBank } = req.body; 
     if (req.user.role !== 'pjawab') {
         return res.status(403).json({ message: "Forbidden: Admin access required" });
     }
