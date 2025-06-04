@@ -386,9 +386,10 @@ const getInventarisByKategoriName = async (req, res) => {
         isDeleted: false,
         jumlah: {
           [Op.gt]: 0,
-          tanggalKadaluwarsa: {
-            [Op.gte]: new Date(),
-          },
+        },
+        tanggalKadaluwarsa: {
+          // Ensure the item is not expired
+          [Op.gte]: new Date(), //gte is greater than or equal to today's date
         },
       },
       order: [["createdAt", "DESC"]],
