@@ -12,6 +12,7 @@ const Komoditas = sequelize.Komoditas;
 const Laporan = sequelize.Laporan;
 const HarianKebun = sequelize.HarianKebun;
 const Sakit = sequelize.Sakit;
+const Satuan = sequelize.Satuan;
 
 const { getPaginationOptions } = require("../../utils/paginationUtils");
 
@@ -337,6 +338,13 @@ const dashboardPerkebunan = async (req, res) => {
             tipe: "tumbuhan",
           },
         },
+        {
+          model: Satuan,
+          required: true,
+          where: {
+            isDeleted: false,
+          },
+        },
       ],
       where: {
         isDeleted: false,
@@ -344,7 +352,7 @@ const dashboardPerkebunan = async (req, res) => {
       order: [["createdAt", "DESC"]],
       limit: 2,
     });
-
+    
     res.status(200).json({
       status: "success",
       message: "Dashboard data retrieved successfully",
@@ -667,12 +675,19 @@ const dashboardPeternakan = async (req, res) => {
             isDeleted: false,
           },
         },
+        {
+          model: Satuan,
+          required: true,
+          where: {
+            isDeleted: false,
+          },
+        },
       ],
       where: {
         isDeleted: false,
       },
       order: [["createdAt", "DESC"]],
-      limit: 2,
+      limit: 5,
     });
 
     res.status(200).json({

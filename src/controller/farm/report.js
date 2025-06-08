@@ -1,31 +1,33 @@
 const { QueryTypes, Op, fn, col, where } = require("sequelize");
 const sequelize = require("../../model/index");
 const { getPaginationOptions } = require("../../utils/paginationUtils");
+const komoditas = require("../../model/farm/komoditas");
 
 const db = sequelize.sequelize;
 
 // Models
-const JenisBudidaya = sequelize.JenisBudidaya;
-const UnitBudidaya = sequelize.UnitBudidaya;
-const ObjekBudidaya = sequelize.ObjekBudidaya;
 const Laporan = sequelize.Laporan;
 const User = sequelize.User;
-const HarianKebun = sequelize.HarianKebun;
-// const HarianTernak = sequelize.HarianTernak;
+const UnitBudidaya = sequelize.UnitBudidaya;
+const HarianTernak = sequelize.HarianTernak;
 const Sakit = sequelize.Sakit;
 const Kematian = sequelize.Kematian;
+
+const JenisBudidaya = sequelize.JenisBudidaya;
+const ObjekBudidaya = sequelize.ObjekBudidaya;
+const HarianKebun = sequelize.HarianKebun;
 const Vitamin = sequelize.Vitamin;
 // const Grade = sequelize.Grade;
 // const PanenRincianGrade = sequelize.PanenRincianGrade;
 // const PanenKebun = sequelize.PanenKebun;
-// const Panen = sequelize.Panen;
+const Panen = sequelize.Panen;
 const Satuan = sequelize.Satuan;
 // const JenisHama = sequelize.JenisHama;
 // const Hama = sequelize.Hama;
 // const KategoriInventaris = sequelize.KategoriInventaris;
 const Inventaris = sequelize.Inventaris;
 // const PenggunaanInventaris = sequelize.PenggunaanInventaris;
-// const Komoditas = sequelize.Komoditas;
+const Komoditas = sequelize.Komoditas;
 
 // --- CONSTANTS ---
 const MAX_PLANTS_TO_LIST_IN_SUMMARY = 3;
@@ -130,25 +132,16 @@ async function fetchAggregatedStats({
     const { jenisBudidayaId, startDate, endDate, dateColumnFormat } =
       validationResult;
 
-    const includeChainForLaporan = [
+    includeChainForLaporan = [
       {
-        model: ObjekBudidaya,
+        model: UnitBudidaya,
         attributes: [],
         required: true,
-        include: [
-          {
-            model: UnitBudidaya,
-            attributes: [],
-            required: true,
-            where: { jenisBudidayaId, isDeleted: false },
-          },
-        ],
-        where: { isDeleted: false },
+        where: { jenisBudidayaId, isDeleted: false },
       },
     ];
 
     let attributeToCount;
-
     if (countedModel && countedModel.name !== Laporan.name) {
       includeChainForLaporan.unshift({
         model: countedModel,
@@ -177,7 +170,7 @@ async function fetchAggregatedStats({
           countedModelWhere),
         createdAt: {
           [Op.between]: [
-            new Date(startDate),
+            new Date(startDate + "T00:00:00.000Z"),
             new Date(endDate + "T23:59:59.999Z"),
           ],
         },
@@ -186,6 +179,14 @@ async function fetchAggregatedStats({
       order: [["period", "ASC"]],
       raw: true,
     });
+
+    console.log("Query Parameters:", {
+      startDate,
+      endDate,
+      laporanTipe,
+      countedModelAlias,
+    });
+    console.log("Result:", statistik);
 
     const formattedStatistik = statistik.map((item) => ({
       ...item,
@@ -242,43 +243,6 @@ async function fetchPaginatedHistory({
 
   try {
     let finalIncludes = [...(includeItems || [])];
-    if (mainModel.name === Laporan.name) {
-      finalIncludes.push({
-        model: ObjekBudidaya,
-        attributes: [],
-        required: true,
-        where: { isDeleted: false },
-        include: [
-          {
-            model: UnitBudidaya,
-            attributes: [],
-            required: true,
-            where: { jenisBudidayaId, isDeleted: false },
-          },
-        ],
-      });
-    } else if (
-      mainModel.associations.Laporan ||
-      mainModel.associations.laporan
-    ) {
-      // If mainModel has Laporan
-      finalIncludes
-        .find((inc) => inc.model.name === Laporan.name)
-        .include.push({
-          model: ObjekBudidaya,
-          attributes: [],
-          required: true,
-          where: { isDeleted: false },
-          include: [
-            {
-              model: UnitBudidaya,
-              attributes: [],
-              required: true,
-              where: { jenisBudidayaId, isDeleted: false },
-            },
-          ],
-        });
-    }
 
     const { count, rows } = await mainModel.findAndCountAll({
       where: baseWhereClause,
@@ -313,7 +277,330 @@ async function fetchPaginatedHistory({
   }
 }
 
-// --- CONTROLLERS ---
+// --- WORKS ---
+const getStatistikLaporanHarian = (req, res) =>
+  fetchAggregatedStats({
+    req,
+    res,
+    countedModel: Laporan,
+    countedModelAlias: "jumlahLaporan",
+    laporanTipe: REPORT_TYPES.HARIAN,
+    successMessagePrefix: "Successfully retrieved daily report statistics for",
+  });
+
+const getStatistikPakan = (req, res) =>
+  fetchAggregatedStats({
+    req,
+    res,
+    countedModel: HarianTernak,
+    countedModelAlias: "jumlahPakan",
+    laporanTipe: REPORT_TYPES.HARIAN,
+    countedModelWhere: { pakan: true },
+    successMessagePrefix:
+      "Successfully retrieved animal feeding statistics for",
+  });
+
+const getStatistikCekKandang = (req, res) =>
+  fetchAggregatedStats({
+    req,
+    res,
+    countedModel: HarianTernak,
+    countedModelAlias: "jumlahCekKandang",
+    laporanTipe: REPORT_TYPES.HARIAN,
+    countedModelWhere: { cekKandang: true },
+    successMessagePrefix:
+      "Successfully retrieved animal shelter check statistics for",
+  });
+
+const getRiwayatPelaporanHarianTernak = (req, res) => {
+  const { jenisBudidayaId } = req.params;
+  const page = parseInt(req.query.page, 10) || 1;
+  const limit = parseInt(req.query.limit, 10) || 5;
+
+  return fetchPaginatedHistory({
+    req,
+    res,
+    page,
+    limit,
+    mainModel: HarianTernak,
+    baseWhereClause: { isDeleted: false },
+    attributes: ["id", "pakan", "cekKandang", "createdAt", "laporanId"],
+    includeItems: [
+      {
+        model: Laporan,
+        attributes: ["id", "judul", "gambar", "createdAt", "objekBudidayaId"],
+        required: true,
+        where: { isDeleted: false },
+        include: [
+          { model: User, as: "user", attributes: ["name"], required: false },
+          {
+            model: UnitBudidaya,
+            attributes: [],
+            required: true,
+            where: { jenisBudidayaId, isDeleted: false },
+          },
+        ],
+      },
+    ],
+    dataFormatter: (harianTernak) => ({
+      laporanId: harianTernak.Laporan ? harianTernak.Laporan.id : null,
+      text: harianTernak.Laporan
+        ? harianTernak.Laporan.judul
+        : "Laporan Harian Ternak",
+      gambar: harianTernak.Laporan ? harianTernak.Laporan.gambar : null,
+      person:
+        harianTernak.Laporan && harianTernak.Laporan.user
+          ? harianTernak.Laporan.user.name
+          : "Petugas Tidak Diketahui",
+      date: harianTernak.Laporan
+        ? harianTernak.Laporan.createdAt
+        : harianTernak.createdAt,
+      time: harianTernak.Laporan
+        ? harianTernak.Laporan.createdAt
+        : harianTernak.createdAt,
+    }),
+    order: [[{ model: Laporan, as: "Laporan" }, "createdAt", "DESC"]],
+    successMessage: "Riwayat pelaporan harian ternak berhasil diambil.",
+  });
+};
+
+const getStatistikSakit = (req, res) =>
+  fetchAggregatedStats({
+    req,
+    res,
+    countedModel: Laporan,
+    countedModelAlias: "jumlahSakit",
+    laporanTipe: REPORT_TYPES.SAKIT,
+    successMessagePrefix: "Successfully retrieved disease statistics for",
+  });
+
+const getRiwayatPelaporanSakitPerJenisBudidaya = (req, res) => {
+  const { jenisBudidayaId } = req.params;
+  const page = parseInt(req.query.page, 10) || 1;
+  const limit = parseInt(req.query.limit, 10) || 5;
+
+  return fetchPaginatedHistory({
+    req,
+    res,
+    page,
+    limit,
+    mainModel: Sakit,
+    baseWhereClause: { isDeleted: false },
+    attributes: ["id", "penyakit", "createdAt", "laporanId"],
+    includeItems: [
+      {
+        model: Laporan,
+        attributes: ["id", "judul", "gambar", "createdAt", "objekBudidayaId"],
+        required: true,
+        where: { isDeleted: false },
+        include: [
+          { model: User, as: "user", attributes: ["name"], required: false },
+          {
+            model: UnitBudidaya,
+            attributes: [],
+            required: true,
+            where: { jenisBudidayaId, isDeleted: false },
+          },
+        ],
+      },
+    ],
+    dataFormatter: (sakit) => ({
+      laporanId: sakit.Laporan ? sakit.Laporan.id : null,
+      text: sakit.Laporan ? sakit.Laporan.judul : "Laporan Sakit Ternak",
+      gambar: sakit.Laporan ? sakit.Laporan.gambar : null,
+      person:
+        sakit.Laporan && sakit.Laporan.user
+          ? sakit.Laporan.user.name
+          : "Petugas Tidak Diketahui",
+      date: sakit.Laporan ? sakit.Laporan.createdAt : sakit.createdAt,
+      time: sakit.Laporan ? sakit.Laporan.createdAt : sakit.createdAt,
+    }),
+    order: [[{ model: Laporan, as: "Laporan" }, "createdAt", "DESC"]],
+    successMessage: "Riwayat pelaporan sakit berhasil diambil.",
+  });
+};
+
+const getStatistikKematian = (req, res) =>
+  fetchAggregatedStats({
+    req,
+    res,
+    countedModel: Laporan,
+    countedModelAlias: "jumlahKematian",
+    laporanTipe: REPORT_TYPES.KEMATIAN,
+    successMessagePrefix: "Successfully retrieved death statistics for",
+  });
+
+const getRiwayatPelaporanKematianPerJenisBudidaya = (req, res) => {
+  const { jenisBudidayaId } = req.params;
+  const page = parseInt(req.query.page, 10) || 1;
+  const limit = parseInt(req.query.limit, 10) || 5;
+
+  return fetchPaginatedHistory({
+    req,
+    res,
+    page,
+    limit,
+    mainModel: Kematian,
+    baseWhereClause: { isDeleted: false },
+    attributes: ["id", "penyebab", "tanggal", "laporanId"],
+    includeItems: [
+      {
+        model: Laporan,
+        attributes: ["id", "judul", "gambar", "createdAt", "objekBudidayaId"],
+        required: true,
+        where: { isDeleted: false },
+        include: [
+          { model: User, as: "user", attributes: ["name"], required: false },
+          {
+            model: UnitBudidaya,
+            attributes: [],
+            required: true,
+            where: { jenisBudidayaId, isDeleted: false },
+          },
+        ],
+      },
+    ],
+    dataFormatter: (kematian) => ({
+      laporanId: kematian.Laporan ? kematian.Laporan.id : null,
+      text: kematian.Laporan
+        ? kematian.Laporan.judul
+        : "Laporan Kematian Ternak",
+      gambar: kematian.Laporan ? kematian.Laporan.gambar : null,
+      person:
+        kematian.Laporan && kematian.Laporan.user
+          ? kematian.Laporan.user.name
+          : "Petugas Tidak Diketahui",
+      date: kematian.Laporan ? kematian.Laporan.createdAt : kematian.tanggal,
+      time: kematian.Laporan ? kematian.Laporan.createdAt : kematian.tanggal,
+    }),
+    order: [[{ model: Laporan, as: "Laporan" }, "createdAt", "DESC"]],
+    successMessage: "Riwayat pelaporan kematian berhasil diambil.",
+  });
+};
+
+const getStatistikPemberianNutrisi = (req, res) =>
+  fetchAggregatedStats({
+    req,
+    res,
+    countedModel: Vitamin,
+    countedModelAlias: "jumlahKejadianPemberianPupuk",
+    laporanTipe: REPORT_TYPES.VITAMIN,
+    countedModelWhere: { tipe: NUTRIENT_TYPES.PUPUK },
+    successMessagePrefix:
+      "Successfully retrieved nutrient (fertilizer) application statistics for",
+  });
+
+const getRiwayatPemberianNutrisiPerJenisBudidaya = (req, res) => {
+  const { jenisBudidayaId } = req.params;
+  const tipeNutrisiFilter = req.query.tipeNutrisi;
+  const page = parseInt(req.query.page, 10) || 1;
+  const limit = parseInt(req.query.limit, 10) || 3;
+
+  const whereDetailPemberian = { isDeleted: false };
+  if (tipeNutrisiFilter) {
+    whereDetailPemberian.tipe = { [Op.in]: tipeNutrisiFilter.split(",") };
+  }
+
+  return fetchPaginatedHistory({
+    req,
+    res,
+    page,
+    limit,
+    mainModel: Vitamin, // Main model adalah Vitamin
+    baseWhereClause: whereDetailPemberian,
+    attributes: [
+      "id",
+      "jumlah",
+      "tipe",
+      "createdAt",
+      "laporanId",
+      "inventarisId",
+    ],
+    includeItems: [
+      {
+        model: Laporan,
+        attributes: ["id", "judul", "gambar", "createdAt", "objekBudidayaId"],
+        required: true,
+        where: { isDeleted: false },
+        include: [
+          { model: User, as: "user", attributes: ["name"], required: false },
+          {
+            model: UnitBudidaya,
+            attributes: [],
+            required: true,
+            where: { jenisBudidayaId, isDeleted: false },
+          },
+        ],
+      },
+      {
+        model: Inventaris,
+        as: "inventaris",
+        attributes: ["nama", "gambar"],
+        required: true, // Atau false jika bisa null
+        where: { isDeleted: false },
+        include: [
+          { model: Satuan, attributes: ["lambang", "nama"], required: false },
+        ],
+      },
+    ],
+    dataFormatter: (dp) => ({
+      laporanId: dp.Laporan ? dp.Laporan.id : null,
+      name: `${dp.inventaris ? dp.inventaris.nama : "Item Tidak Dikenal"} - ${
+        dp.jumlah || ""
+      } ${
+        dp.inventaris && dp.inventaris.Satuan
+          ? dp.inventaris.Satuan.lambang
+          : ""
+      }`.trim(),
+      category: dp.tipe
+        ? dp.tipe.charAt(0).toUpperCase() + dp.tipe.slice(1)
+        : "Nutrisi",
+      gambar: dp.Laporan
+        ? dp.Laporan.gambar
+        : dp.inventaris
+        ? dp.inventaris.gambar
+        : null,
+      person:
+        dp.Laporan && dp.Laporan.user
+          ? dp.Laporan.user.name
+          : "Petugas Tidak Diketahui",
+      date: dp.Laporan ? dp.Laporan.createdAt : dp.createdAt,
+      time: dp.Laporan ? dp.Laporan.createdAt : dp.createdAt,
+    }),
+    order: [[{ model: Laporan, as: "Laporan" }, "createdAt", "DESC"]],
+    successMessage: "Riwayat pemberian nutrisi berhasil diambil.",
+  });
+};
+
+const getStatistikVitamin = (req, res) => {
+  fetchAggregatedStats({
+    req,
+    res,
+    countedModel: Vitamin,
+    countedModelAlias: "jumlahPemberianVitamin",
+    laporanTipe: REPORT_TYPES.VITAMIN,
+    countedModelWhere: {
+      tipe: { [Op.in]: [NUTRIENT_TYPES.VITAMIN] },
+    },
+    successMessagePrefix:
+      "Successfully retrieved vitamin application statistics for",
+  });
+};
+
+const getStatistikVaksin = (req, res) => {
+  fetchAggregatedStats({
+    req,
+    res,
+    countedModel: Vitamin,
+    countedModelAlias: "jumlahPemberianVaksin",
+    laporanTipe: REPORT_TYPES.VITAMIN,
+    countedModelWhere: {
+      tipe: { [Op.in]: [NUTRIENT_TYPES.VAKSIN] },
+    },
+    successMessagePrefix:
+      "Successfully retrieved vaksin application statistics for",
+  });
+};
 
 const getStatistikHarianJenisBudidaya = async (req, res) => {
   try {
@@ -690,17 +977,6 @@ const getStatistikHarianJenisBudidaya = async (req, res) => {
   }
 };
 
-const getStatistikLaporanHarian = (req, res) =>
-  fetchAggregatedStats({
-    req,
-    res,
-    countedModel: Laporan, // Counting Laporan itself
-    countedModelAlias: "jumlahLaporan",
-    laporanTipe: REPORT_TYPES.HARIAN,
-    // countedModelWhere: {}, // No specific where for Laporan itself beyond tipe
-    successMessagePrefix: "Successfully retrieved daily report statistics for",
-  });
-
 const getStatistikPenyiraman = (req, res) =>
   fetchAggregatedStats({
     req,
@@ -708,7 +984,7 @@ const getStatistikPenyiraman = (req, res) =>
     countedModel: HarianKebun,
     countedModelAlias: "jumlahPenyiraman",
     laporanTipe: REPORT_TYPES.HARIAN,
-    countedModelWhere: { penyiraman: true }, // Sequelize handles true for boolean or 1 for tinyint
+    countedModelWhere: { penyiraman: true },
     successMessagePrefix:
       "Successfully retrieved plant watering statistics for",
   });
@@ -736,358 +1012,192 @@ const getStatistikRepotting = (req, res) =>
       "Successfully retrieved plant repotting statistics for",
   });
 
-const getStatistikPemberianNutrisi = (req, res) =>
+const getStatistikPanenTernak = (req, res) =>
   fetchAggregatedStats({
-    // Ini untuk Pupuk
     req,
     res,
-    countedModel: Vitamin, // Detail ada di model Vitamin (atau nama lain untuk nutrisi)
-    countedModelAlias: "jumlahKejadianPemberianPupuk",
-    laporanTipe: REPORT_TYPES.VITAMIN, // Laporan utama bertipe 'vitamin'
-    countedModelWhere: { tipe: NUTRIENT_TYPES.PUPUK }, // Filter di model Vitamin untuk tipe 'pupuk'
+    countedModel: Laporan,
+    countedModelAlias: "jumlahLaporanPanenTernak",
+    laporanTipe: REPORT_TYPES.PANEN_TERNAK,
     successMessagePrefix:
-      "Successfully retrieved nutrient (fertilizer) application statistics for",
+      "Successfully retrieved animal harvest report statistics for",
   });
 
-const getStatistikSakit = (req, res) =>
-  fetchAggregatedStats({
-    req,
-    res,
-    countedModel: Sakit,
-    countedModelAlias: "jumlahSakit", // Diperbaiki dari jumlahKematian
-    laporanTipe: REPORT_TYPES.SAKIT,
-    // countedModelWhere: {}, // Jika tidak ada filter spesifik di model Sakit
-    successMessagePrefix: "Successfully retrieved disease statistics for",
-  });
-
-const getStatistikKematian = (req, res) =>
-  fetchAggregatedStats({
-    req,
-    res,
-    countedModel: Kematian,
-    countedModelAlias: "jumlahKematian",
-    laporanTipe: REPORT_TYPES.KEMATIAN,
-    // countedModelWhere: {}, // Jika tidak ada filter spesifik di model Kematian
-    successMessagePrefix: "Successfully retrieved death statistics for",
-  });
-
-// --- RIWAYAT (HISTORY) CONTROLLERS ---
-
-const getRiwayatLaporanUmumPerJenisBudidaya = (req, res) =>
-  fetchPaginatedHistory({
-    req,
-    res,
-    mainModel: Laporan,
-    attributes: [
-      "id",
-      "judul",
-      "gambar",
-      "tipe",
-      "createdAt",
-      "objekBudidayaId",
-    ],
-    baseWhereClause: { isDeleted: false }, // Filter Laporan yang tidak dihapus
-    includeItems: [
-      {
-        model: ObjekBudidaya,
-        attributes: ["id", "namaId"],
-        required: true,
-        where: { isDeleted: false } /* ObjekBudidaya tidak dihapus */,
-      },
-      { model: User, as: "user", attributes: ["name"], required: false },
-    ],
-    dataFormatter: (laporan) => {
-      let descriptiveText =
-        laporan.judul || `Laporan ${laporan.tipe || "Umum"}`;
-      if (laporan.ObjekBudidaya && laporan.ObjekBudidaya.namaId) {
-        descriptiveText += ` (${laporan.ObjekBudidaya.namaId})`;
-      }
-      return {
-        id: laporan.id,
-        laporanId: laporan.id,
-        text: descriptiveText,
-        gambar: laporan.gambar,
-        tipe: laporan.tipe ? laporan.tipe.toLowerCase() : "umum",
-        time: laporan.createdAt,
-        petugasNama: laporan.user
-          ? laporan.user.name
-          : "Petugas Tidak Diketahui",
-        judul: laporan.judul || "Tidak Ada Judul",
-      };
-    },
-    order: [["createdAt", "DESC"]], // Laporan diorder langsung
-    successMessage: "Riwayat pelaporan umum berhasil diambil.",
-    limit: parseInt(req.query.limit, 10) || 5,
-  });
-
-const getRiwayatPemberianNutrisiPerJenisBudidaya = (req, res) => {
+const getStatistikJumlahPanenTernak = async (req, res) => {
   const { jenisBudidayaId } = req.params;
-  const tipeNutrisiFilter = req.query.tipeNutrisi;
-  const page = parseInt(req.query.page, 10) || 1;
-  const limit = parseInt(req.query.limit, 10) || 3;
+  const { startDate, endDate } = req.query;
 
-  const whereDetailPemberian = { isDeleted: false };
-  if (tipeNutrisiFilter) {
-    whereDetailPemberian.tipe = { [Op.in]: tipeNutrisiFilter.split(",") };
+  if (!jenisBudidayaId) {
+    return res
+      .status(400)
+      .json({ message: "Path parameter 'jenisBudidayaId' is required." });
   }
+
+  const dateWhereClause = {};
+  if (startDate && endDate) {
+    dateWhereClause.createdAt = {
+      [Op.between]: [
+        new Date(startDate + "T00:00:00.000Z"),
+        new Date(endDate + "T23:59:59.999Z"),
+      ],
+    };
+  }
+
+  try {
+    const statistikPanen = await Panen.findAll({
+      attributes: [
+        [col("komoditas.nama"), "namaKomoditas"],
+        [col("komoditas->Satuan.lambang"), "lambangSatuan"],
+        [fn("SUM", col("Panen.jumlah")), "totalPanen"],
+      ],
+      include: [
+        {
+          model: Komoditas,
+          as: "komoditas",
+          attributes: [],
+          required: true,
+          include: [{ model: Satuan, attributes: [], required: false }],
+        },
+        {
+          model: Laporan,
+          attributes: [],
+          required: true,
+          where: {
+            isDeleted: false,
+            tipe: REPORT_TYPES.PANEN_TERNAK,
+            ...dateWhereClause,
+          },
+          include: [
+            {
+              model: UnitBudidaya,
+              attributes: [],
+              required: true,
+              where: {
+                jenisBudidayaId: jenisBudidayaId,
+                isDeleted: false,
+              },
+            },
+          ],
+        },
+      ],
+      where: {
+        isDeleted: false,
+      },
+      group: ["komoditas.id"],
+      raw: true,
+    });
+
+    const formattedStatistik = statistikPanen.map((item) => ({
+      ...item,
+      totalPanen: parseFloat(item.totalPanen) || 0,
+    }));
+
+    return res.status(200).json({
+      status: true,
+      message: `Statistik jumlah panen untuk JenisBudidaya ID: ${jenisBudidayaId} berhasil diambil.`,
+      data: formattedStatistik,
+    });
+  } catch (error) {
+    console.error(
+      `Error fetching statistik panen for JenisBudidaya ID ${jenisBudidayaId}:`,
+      error
+    );
+    res.status(500).json({
+      status: false,
+      message: "Gagal mengambil statistik jumlah panen.",
+      detail:
+        process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+const getRiwayatPelaporanPanenTernak = (req, res) => {
+  const { jenisBudidayaId } = req.params;
+  const page = parseInt(req.query.page, 10) || 1;
+  const limit = parseInt(req.query.limit, 10) || 5;
 
   return fetchPaginatedHistory({
     req,
     res,
     page,
     limit,
-    mainModel: Vitamin, // Main model adalah Vitamin
-    baseWhereClause: whereDetailPemberian,
-    attributes: [
-      "id",
-      "jumlah",
-      "tipe",
-      "createdAt",
-      "laporanId",
-      "inventarisId",
-    ], // atribut Vitamin
+    mainModel: Panen,
+    baseWhereClause: { isDeleted: false },
+    attributes: ["id", "jumlah"],
     includeItems: [
       {
         model: Laporan,
-        attributes: ["id", "gambar", "createdAt", "objekBudidayaId"],
+        attributes: ["id", "judul", "gambar", "createdAt", "objekBudidayaId"],
         required: true,
         where: { isDeleted: false },
         include: [
-          // Nested include untuk Laporan
           { model: User, as: "user", attributes: ["name"], required: false },
-          // Filter jenisBudidayaId melalui Laporan -> ObjekBudidaya -> UnitBudidaya
           {
-            model: ObjekBudidaya,
-            attributes: ["namaId"],
+            model: UnitBudidaya,
+            attributes: [],
             required: true,
-            where: { isDeleted: false },
-            include: [
-              {
-                model: UnitBudidaya,
-                attributes: [],
-                required: true,
-                where: { jenisBudidayaId, isDeleted: false },
-              },
-            ],
+            where: { jenisBudidayaId, isDeleted: false },
           },
         ],
       },
       {
-        model: Inventaris,
-        as: "inventaris", // Pastikan alias ini sesuai dengan definisi model Anda
-        attributes: ["nama", "gambar"],
-        required: true, // Atau false jika bisa null
+        model: Komoditas,
+        as: "komoditas",
+        attributes: ["id", "nama"],
+        required: true,
         where: { isDeleted: false },
         include: [
           { model: Satuan, attributes: ["lambang", "nama"], required: false },
         ],
       },
     ],
-    dataFormatter: (dp) => ({
-      // dp adalah instance Vitamin
-      laporanId: dp.Laporan ? dp.Laporan.id : null,
-      objekBudidayaNama:
-        dp.Laporan && dp.Laporan.ObjekBudidaya
-          ? dp.Laporan.ObjekBudidaya.namaId
-          : "N/A",
-      name: `${dp.inventaris ? dp.inventaris.nama : "Item Tidak Dikenal"} - ${
-        dp.jumlah || ""
-      } ${
-        dp.inventaris && dp.inventaris.Satuan
-          ? dp.inventaris.Satuan.lambang
-          : ""
-      }`.trim(),
-      category: dp.tipe
-        ? dp.tipe.charAt(0).toUpperCase() + dp.tipe.slice(1)
-        : "Nutrisi",
-      gambar: dp.Laporan
-        ? dp.Laporan.gambar
-        : dp.inventaris
-        ? dp.inventaris.gambar
-        : null,
+    dataFormatter: (panen) => ({
+      laporanId: panen.Laporan ? panen.Laporan.id : null,
+      text: panen.Laporan ? panen.Laporan.judul : "Laporan panen Ternak",
+      komoditas: panen.komoditas
+        ? `${panen.komoditas.nama} - ${panen.jumlah || ""} ${
+            panen.komoditas.Satuan ? panen.komoditas.Satuan.lambang : ""
+          }`.trim()
+        : "Komoditas Tidak Diketahui",
+      gambar: panen.Laporan ? panen.Laporan.gambar : null,
       person:
-        dp.Laporan && dp.Laporan.user
-          ? dp.Laporan.user.name
+        panen.Laporan && panen.Laporan.user
+          ? panen.Laporan.user.name
           : "Petugas Tidak Diketahui",
-      date: dp.Laporan ? dp.Laporan.createdAt : dp.createdAt,
-      time: dp.Laporan ? dp.Laporan.createdAt : dp.createdAt,
+      date: panen.Laporan ? panen.Laporan.createdAt : panen.tanggal,
+      time: panen.Laporan ? panen.Laporan.createdAt : panen.tanggal,
     }),
     order: [[{ model: Laporan, as: "Laporan" }, "createdAt", "DESC"]],
-    successMessage: "Riwayat pemberian nutrisi berhasil diambil.",
+    successMessage: "Riwayat pelaporan panen berhasil diambil.",
   });
 };
 
-const getRiwayatPelaporanSakitPerJenisBudidaya = (req, res) => {
-  const { jenisBudidayaId } = req.params;
-  const page = parseInt(req.query.page, 10) || 1;
-  const limit = parseInt(req.query.limit, 10) || 5;
-
-  return fetchPaginatedHistory({
-    req,
-    res,
-    page,
-    limit,
-    mainModel: Sakit,
-    baseWhereClause: { isDeleted: false },
-    attributes: ["id", "penyakit", "createdAt", "laporanId"],
-    includeItems: [
-      {
-        model: Laporan,
-        attributes: ["id", "gambar", "createdAt", "objekBudidayaId"],
-        required: true,
-        where: { isDeleted: false },
-        include: [
-          { model: User, as: "user", attributes: ["name"], required: false },
-          {
-            model: ObjekBudidaya,
-            attributes: ["namaId"],
-            required: true,
-            where: { isDeleted: false },
-            include: [
-              {
-                model: UnitBudidaya,
-                attributes: [],
-                required: true,
-                where: { jenisBudidayaId, isDeleted: false },
-              },
-            ],
-          },
-        ],
-      },
-    ],
-    dataFormatter: (sakit) => ({
-      laporanId: sakit.Laporan ? sakit.Laporan.id : null,
-      objekBudidayaNama:
-        sakit.Laporan && sakit.Laporan.ObjekBudidaya
-          ? sakit.Laporan.ObjekBudidaya.namaId
-          : "N/A",
-      text: `Laporan Sakit ${sakit.penyakit || "Umum"}`,
-      gambar: sakit.Laporan ? sakit.Laporan.gambar : null,
-      person:
-        sakit.Laporan && sakit.Laporan.user
-          ? sakit.Laporan.user.name
-          : "Petugas Tidak Diketahui",
-      date: sakit.Laporan ? sakit.Laporan.createdAt : sakit.createdAt,
-      time: sakit.Laporan ? sakit.Laporan.createdAt : sakit.createdAt,
-    }),
-    order: [[{ model: Laporan, as: "Laporan" }, "createdAt", "DESC"]],
-    successMessage: "Riwayat pelaporan sakit berhasil diambil.",
-  });
-};
-
-const getRiwayatPelaporanKematianPerJenisBudidaya = (req, res) => {
-  const { jenisBudidayaId } = req.params;
-  const page = parseInt(req.query.page, 10) || 1;
-  const limit = parseInt(req.query.limit, 10) || 5;
-
-  return fetchPaginatedHistory({
-    req,
-    res,
-    page,
-    limit,
-    mainModel: Kematian,
-    baseWhereClause: { isDeleted: false },
-    attributes: ["id", "penyebab", "tanggal", "laporanId"],
-    includeItems: [
-      {
-        model: Laporan,
-        attributes: ["id", "gambar", "createdAt", "objekBudidayaId"],
-        required: true,
-        where: { isDeleted: false },
-        include: [
-          { model: User, as: "user", attributes: ["name"], required: false },
-          {
-            model: ObjekBudidaya,
-            attributes: ["namaId"],
-            required: true,
-            where: { isDeleted: false },
-            include: [
-              {
-                model: UnitBudidaya,
-                attributes: [],
-                required: true,
-                where: { jenisBudidayaId, isDeleted: false },
-              },
-            ],
-          },
-        ],
-      },
-    ],
-    dataFormatter: (kematian) => ({
-      laporanId: kematian.Laporan ? kematian.Laporan.id : null,
-      objekBudidayaNama:
-        kematian.Laporan && kematian.Laporan.ObjekBudidaya
-          ? kematian.Laporan.ObjekBudidaya.namaId
-          : "N/A",
-      text: `Laporan Kematian ${kematian.penyebab || "Umum"}`,
-      gambar: kematian.Laporan ? kematian.Laporan.gambar : null,
-      person:
-        kematian.Laporan && kematian.Laporan.user
-          ? kematian.Laporan.user.name
-          : "Petugas Tidak Diketahui",
-      date: kematian.Laporan ? kematian.Laporan.createdAt : kematian.tanggal,
-      time: kematian.Laporan ? kematian.Laporan.createdAt : kematian.tanggal,
-    }),
-    order: [[{ model: Laporan, as: "Laporan" }, "createdAt", "DESC"]],
-    successMessage: "Riwayat pelaporan kematian berhasil diambil.",
-  });
-};
-
-// --- STUBBED FUNCTIONS (Implementasi serupa menggunakan helper jika memungkinkan) ---
-const getStatistikPanenKebun = async (req, res) => {
-  return res.status(501).json({ message: "Endpoint belum diimplementasikan." });
-};
-const getStatistikPanenTernak = async (req, res) => {
-  return res.status(501).json({ message: "Endpoint belum diimplementasikan." });
-};
-// Jika ada statistik khusus untuk vitamin (non-pupuk)
-const getStatistikVitaminNonPupuk = async (req, res) => {
-  // return fetchAggregatedStats({
-  //     req, res,
-  //     countedModel: Vitamin,
-  //     countedModelAlias: "jumlahPemberianVitamin",
-  //     laporanTipe: REPORT_TYPES.VITAMIN,
-  //     countedModelWhere: { tipe: { [Op.ne]: NUTRIENT_TYPES.PUPUK } }, // Contoh: bukan pupuk
-  //     successMessagePrefix: "Successfully retrieved vitamin (non-fertilizer) application statistics for"
-  //   });
-  return res.status(501).json({ message: "Endpoint belum diimplementasikan." });
-};
-
-const getRiwayatPelaporanPanenKebunPerJenisBudidaya = async (req, res) => {
-  return res.status(501).json({ message: "Endpoint belum diimplementasikan." });
-};
-const getRiwayatPelaporanPanenTernakPerJenisBudidaya = async (req, res) => {
-  return res.status(501).json({ message: "Endpoint belum diimplementasikan." });
-};
-const getRiwayatPemberianVitaminPerJenisBudidaya = async (req, res) => {
-  // Untuk Vitamin (Non-Pupuk)
-  return res.status(501).json({ message: "Endpoint belum diimplementasikan." });
-};
 
 module.exports = {
-  getStatistikHarianJenisBudidaya,
-
   getStatistikLaporanHarian,
-  getStatistikPenyiraman,
-  getStatistikPruning,
-  getStatistikRepotting,
-  getStatistikPemberianNutrisi, // Ini untuk pupuk
-
-  getRiwayatLaporanUmumPerJenisBudidaya,
-  getRiwayatPemberianNutrisiPerJenisBudidaya, // Ini untuk pupuk
-
+  getRiwayatPemberianNutrisiPerJenisBudidaya,
   getStatistikSakit,
   getRiwayatPelaporanSakitPerJenisBudidaya,
 
   getStatistikKematian,
   getRiwayatPelaporanKematianPerJenisBudidaya,
 
-  getStatistikPanenKebun, // Stub
-  getRiwayatPelaporanPanenKebunPerJenisBudidaya, // Stub
+  //Perkebunan
+  getStatistikHarianJenisBudidaya,
+  getStatistikPenyiraman,
+  getStatistikPruning,
+  getStatistikRepotting,
 
-  getStatistikPanenTernak, // Stub
-  getRiwayatPelaporanPanenTernakPerJenisBudidaya, // Stub
+  getStatistikPemberianNutrisi,
 
-  getStatistikVitamin: getStatistikVitaminNonPupuk, // Mengarah ke stub atau implementasi vitamin non-pupuk
-  getRiwayatPemberianVitaminPerJenisBudidaya, // Stub
+  //Peternakan
+  getStatistikPakan,
+  getStatistikCekKandang,
+  getRiwayatPelaporanHarianTernak,
+  getStatistikVitamin,
+  getStatistikVaksin,
+
+  getStatistikPanenTernak,
+  getStatistikJumlahPanenTernak,
+  getRiwayatPelaporanPanenTernak,
 };
