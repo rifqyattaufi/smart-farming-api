@@ -42,11 +42,11 @@ module.exports = (sequelize, DataTypes) => {
   );
 
   Laporan.associate = (models) => {
-    // Laporan.belongsTo(models.User, {
-    //   foreignKey: "userId",
-    //   as: "user",
-    // });
-    Laporan.belongsTo(models.User);
+    Laporan.belongsTo(models.User, {
+      foreignKey: "userId",
+      as: "user",
+    });
+    // Laporan.belongsTo(models.User);
     Laporan.belongsTo(models.UnitBudidaya);
     Laporan.belongsTo(models.ObjekBudidaya);
 
