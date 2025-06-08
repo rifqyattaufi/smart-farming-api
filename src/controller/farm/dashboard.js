@@ -281,27 +281,6 @@ const dashboardPerkebunan = async (req, res) => {
       { type: QueryTypes.SELECT }
     );
 
-    const aktivitasTerbaruFormatted = aktivitasTerbaru.map((aktivitas) => {
-      const userName = aktivitas.userName || "Pengguna";
-      let judul;
-
-      switch (aktivitas.tipe) {
-        case "inventaris":
-          judul = `${userName} telah melaporkan penggunaan ${aktivitas.inventarisNama}`;
-          break;
-        case "vitamin":
-          judul = `${userName} telah melaporkan penggunaan ${aktivitas.vitaminNama}`;
-          break;
-        default:
-          judul = `${userName} telah melaporkan ${aktivitas.tipe} ${aktivitas.jenisBudidayaTipe}`;
-      }
-
-      return {
-        ...aktivitas,
-        judul: judul,
-      };
-    });
-
     const daftarKebun = await UnitBudidaya.findAll({
       include: [
         {
@@ -363,7 +342,7 @@ const dashboardPerkebunan = async (req, res) => {
         jumlahKematian: jumlahKematian,
         jumlahSakit: jumlahSakit,
         jumlahPanen: jumlahPanen,
-        aktivitasTerbaru: aktivitasTerbaruFormatted,
+        aktivitasTerbaru: aktivitasTerbaru,
         daftarKebun: daftarKebun,
         daftarTanaman: daftarTanaman,
         daftarKomoditas: daftarKomoditas,
@@ -421,38 +400,11 @@ const riwayatAktivitasAll = async (req, res) => {
     const totalItems = parseInt(totalItemsResult[0].totalItems, 10);
     const totalPages = Math.ceil(totalItems / limit);
 
-    const aktivitasTerbaruFormatted = aktivitasTerbaru.map((aktivitas) => {
-      const userName = aktivitas.userName || "Pengguna";
-      let judul;
-
-      switch (aktivitas.tipe) {
-        case "inventaris":
-          judul = `${userName} telah melaporkan penggunaan ${
-            aktivitas.inventarisNama || "Inventaris tidak diketahui"
-          }`;
-          break;
-        case "vitamin":
-          judul = `${userName} telah melaporkan penggunaan ${
-            aktivitas.vitaminNama || "Vitamin tidak diketahui"
-          }`;
-          break;
-        default:
-          judul = `${userName} telah melaporkan ${
-            aktivitas.tipe || "aktivitas"
-          } ${aktivitas.jenisBudidayaTipe || ""}`;
-      }
-
-      return {
-        ...aktivitas,
-        judul: judul,
-      };
-    });
-
     res.status(200).json({
       status: "success",
       message: "Riwayat aktivitas retrieved successfully",
       data: {
-        aktivitasTerbaru: aktivitasTerbaruFormatted,
+        aktivitasTerbaru: aktivitasTerbaru,
       },
       pagination: {
         currentPage: currentPage,
@@ -614,27 +566,6 @@ const dashboardPeternakan = async (req, res) => {
       { type: QueryTypes.SELECT }
     );
 
-    const aktivitasTerbaruFormatted = aktivitasTerbaru.map((aktivitas) => {
-      const userName = aktivitas.userName || "Pengguna";
-      let judul;
-
-      switch (aktivitas.tipe) {
-        case "inventaris":
-          judul = `${userName} telah melaporkan penggunaan ${aktivitas.inventarisNama}`;
-          break;
-        case "vitamin":
-          judul = `${userName} telah melaporkan penggunaan ${aktivitas.vitaminNama}`;
-          break;
-        default:
-          judul = `${userName} telah melaporkan ${aktivitas.tipe} ${aktivitas.jenisBudidayaTipe}`;
-      }
-
-      return {
-        ...aktivitas,
-        judul: judul,
-      };
-    });
-
     const daftarKandang = await UnitBudidaya.findAll({
       include: [
         {
@@ -698,7 +629,7 @@ const dashboardPeternakan = async (req, res) => {
         jenisTernak: jenisTernak,
         jumlahKematian: jumlahKematian,
         jumlahPanen: jumlahPanen,
-        aktivitasTerbaru: aktivitasTerbaruFormatted,
+        aktivitasTerbaru: aktivitasTerbaru,
         daftarKandang: daftarKandang,
         daftarTernak: daftarTernak,
         daftarKomoditas: daftarKomoditas,

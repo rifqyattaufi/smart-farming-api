@@ -63,4 +63,25 @@ router.post(
   laporanController.createLaporanPanenKebun
 );
 
+router.get("/harian-ternak/:id", laporanController.getLaporanHarianTernakById);
+
+router.get("/harian-kebun/:id", laporanController.getLaporanHarianKebunById);
+
+router.get("/sakit/:id", laporanController.getLaporanSakitById);
+
+router.get("/kematian/:id", laporanController.getLaporanKematianById);
+
+router.get("/vitamin/:id", laporanController.getLaporanVitaminById);
+
+router.get("/panen/:id", laporanController.getLaporanPanenById);
+
+router.get("/hama/:id", laporanController.getLaporanHamaById);
+
+router.get(
+  "/penggunaan-inventaris/:id",
+  laporanController.getLaporanPenggunaanInventarisById
+);
+
+router.get("/panen-kebun/:id", laporanController.getLaporanPanenKebunById);
+
 module.exports = router;

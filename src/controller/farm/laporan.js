@@ -1,12 +1,16 @@
 const e = require("express");
 const sequelize = require("../../model/index");
 const { where } = require("sequelize");
+const model = require("../../model/index");
 const db = sequelize.sequelize;
 const Op = sequelize.Sequelize.Op;
 const Laporan = sequelize.Laporan;
 
+const User = sequelize.User;
+
 const UnitBudidaya = sequelize.UnitBudidaya;
 const ObjekBudidaya = sequelize.ObjekBudidaya;
+const JenisBudidaya = sequelize.JenisBudidaya;
 
 const HarianKebun = sequelize.HarianKebun;
 const HarianTernak = sequelize.HarianTernak;
@@ -21,9 +25,12 @@ const Panen = sequelize.Panen;
 const Hama = sequelize.Hama;
 
 const PenggunaanInventaris = sequelize.PenggunaanInventaris;
+const KategoriInventaris = sequelize.KategoriInventaris;
 
 const Inventaris = sequelize.Inventaris;
 const Komoditas = sequelize.Komoditas;
+const Satuan = sequelize.Satuan;
+const Grade = sequelize.Grade;
 
 const createLaporanHarianKebun = async (req, res) => {
   const t = await db.transaction();
@@ -218,7 +225,7 @@ const createLaporanKematian = async (req, res) => {
   try {
     const { kematian } = req.body;
 
-    let { jumlah } = req.body;
+    const { jumlah } = req.body;
 
     const unitBudidaya = await UnitBudidaya.findOne({
       where: {
@@ -241,7 +248,7 @@ const createLaporanKematian = async (req, res) => {
       );
     }
 
-    if (jumlah != null) {
+    if (jumlah != "") {
       await unitBudidaya.update(
         {
           jumlah: unitBudidaya.jumlah - jumlah,
@@ -259,13 +266,13 @@ const createLaporanKematian = async (req, res) => {
           transaction: t,
         }
       );
-      jumlah = 1;
     }
 
     let data;
     let laporanKematian;
 
-    for (let i = 0; i < jumlah; i++) {
+    let i = 0;
+    do {
       data = await Laporan.create(
         {
           ...req.body,
@@ -284,7 +291,8 @@ const createLaporanKematian = async (req, res) => {
         },
         { transaction: t }
       );
-    }
+      i++;
+    } while (i < jumlah);
 
     await t.commit();
 
@@ -655,6 +663,530 @@ const createLaporanPenggunaanInventaris = async (req, res) => {
   }
 };
 
+const getLaporanHarianKebunById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const laporan = await Laporan.findOne({
+      where: {
+        id: id,
+        isDeleted: false,
+        tipe: "harian",
+      },
+      include: [
+        {
+          model: HarianKebun,
+          attributes: {
+            exclude: ["createdAt", "updatedAt", "LaporanId", "id", "isDeleted"],
+          },
+          require: true,
+        },
+        {
+          model: ObjekBudidaya,
+          attributes: ["namaId"],
+          require: true,
+        },
+        {
+          model: UnitBudidaya,
+          attributes: ["nama"],
+          require: true,
+          include: [
+            {
+              model: JenisBudidaya,
+              attributes: ["nama"],
+              require: true,
+            },
+          ],
+        },
+        {
+          model: User,
+          attributes: ["name"],
+          require: true,
+        },
+      ],
+    });
+
+    if (!laporan) {
+      return res.status(404).json({
+        message: "Laporan not found",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Successfully retrieved laporan data",
+      data: laporan,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
+  }
+};
+
+const getLaporanHarianTernakById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const laporan = await Laporan.findOne({
+      where: {
+        id: id,
+        isDeleted: false,
+        tipe: "harian",
+      },
+      include: [
+        {
+          model: HarianTernak,
+          attributes: {
+            exclude: ["createdAt", "updatedAt", "LaporanId", "id", "isDeleted"],
+          },
+          require: true,
+        },
+        {
+          model: UnitBudidaya,
+          attributes: ["nama"],
+          require: true,
+          include: [
+            {
+              model: JenisBudidaya,
+              attributes: ["nama"],
+              require: true,
+            },
+          ],
+        },
+        {
+          model: User,
+          attributes: ["name"],
+          require: true,
+        },
+      ],
+    });
+
+    if (!laporan) {
+      return res.status(404).json({
+        message: "Laporan not found",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Successfully retrieved laporan data",
+      data: laporan,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
+  }
+};
+
+const getLaporanSakitById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const laporan = await Laporan.findOne({
+      where: {
+        id: id,
+        isDeleted: false,
+        tipe: "sakit",
+      },
+      include: [
+        {
+          model: Sakit,
+          attributes: ["penyakit"],
+          require: true,
+        },
+        {
+          model: ObjekBudidaya,
+          attributes: ["namaId"],
+          require: false,
+        },
+        {
+          model: UnitBudidaya,
+          attributes: ["nama"],
+          require: true,
+          include: [
+            {
+              model: JenisBudidaya,
+              attributes: ["nama", "tipe"],
+              require: true,
+            },
+          ],
+        },
+        {
+          model: User,
+          attributes: ["name"],
+          require: true,
+        },
+      ],
+    });
+
+    if (!laporan) {
+      return res.status(404).json({
+        message: "Laporan not found",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Successfully retrieved laporan data",
+      data: laporan,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
+  }
+};
+
+const getLaporanKematianById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const laporan = await Laporan.findOne({
+      where: {
+        id: id,
+        isDeleted: false,
+        tipe: "kematian",
+      },
+      include: [
+        {
+          model: Kematian,
+          attributes: ["tanggal", "penyebab"],
+          require: true,
+        },
+        {
+          model: ObjekBudidaya,
+          attributes: ["namaId"],
+          require: false,
+        },
+        {
+          model: UnitBudidaya,
+          attributes: ["nama"],
+          require: true,
+          include: [
+            {
+              model: JenisBudidaya,
+              attributes: ["nama", "tipe"],
+              require: true,
+            },
+          ],
+        },
+        {
+          model: User,
+          attributes: ["name"],
+          require: true,
+        },
+      ],
+    });
+
+    if (!laporan) {
+      return res.status(404).json({
+        message: "Laporan not found",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Successfully retrieved laporan data",
+      data: laporan,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
+  }
+};
+
+const getLaporanVitaminById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const laporan = await Laporan.findOne({
+      where: {
+        id: id,
+        isDeleted: false,
+        tipe: "vitamin",
+      },
+      include: [
+        {
+          model: Vitamin,
+          attributes: ["tipe", "jumlah"],
+          include: [
+            {
+              as: "inventaris",
+              model: Inventaris,
+              attributes: ["nama", "gambar"],
+              require: true,
+              include: [
+                {
+                  model: KategoriInventaris,
+                  as: "kategoriInventaris",
+                  attributes: ["nama"],
+                },
+                {
+                  model: Satuan,
+                  attributes: ["nama", "lambang"],
+                  require: true,
+                },
+              ],
+            },
+          ],
+          require: true,
+        },
+        {
+          model: ObjekBudidaya,
+          attributes: ["namaId"],
+          require: false,
+        },
+        {
+          model: UnitBudidaya,
+          attributes: ["nama"],
+          require: true,
+          include: [
+            {
+              model: JenisBudidaya,
+              attributes: ["nama", "tipe"],
+              require: true,
+            },
+          ],
+        },
+        {
+          model: User,
+          attributes: ["name"],
+          require: true,
+        },
+      ],
+    });
+
+    if (!laporan) {
+      return res.status(404).json({
+        message: "Laporan not found",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Successfully retrieved laporan data",
+      data: laporan,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
+  }
+};
+
+const getLaporanPanenById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const laporan = await Laporan.findOne({
+      where: {
+        id: id,
+        isDeleted: false,
+        tipe: "panen",
+      },
+      include: [
+        {
+          model: Panen,
+          include: [
+            {
+              model: Komoditas,
+              attributes: ["nama"],
+              include: [
+                {
+                  model: Satuan,
+                  attributes: ["nama", "lambang"],
+                }
+              ]
+            }
+          ]
+        },
+        {
+          model: ObjekBudidaya,
+          attributes: ["namaId"],
+          require: false,
+        },
+        {
+          model: UnitBudidaya,
+          attributes: ["nama"],
+          require: true,
+          include: [
+            {
+              model: JenisBudidaya,
+              attributes: ["nama", "tipe"],
+              require: true,
+            },
+          ],
+        },
+        {
+          model: User,
+          attributes: ["name"],
+          require: true,
+        },
+      ],
+    });
+
+    if (!laporan) {
+      return res.status(404).json({
+        message: "Laporan not found",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Successfully retrieved laporan data",
+      data: laporan,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
+  }
+};
+
+const getLaporanPanenKebunById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const laporan = await Laporan.findOne({
+      where: {
+        id: id,
+        isDeleted: false,
+        tipe: "panen",
+      },
+      include: [
+        {
+          model: PanenKebun,
+          include: [
+            {
+              model: Komoditas,
+              attributes: ["nama"],
+              include: [
+                {
+                  model: Satuan,
+                  attributes: ["nama", "lambang"],
+                },
+              ],
+            },
+            {
+              model: PanenRincianGrade,
+              include: [
+                {
+                  model: Grade,
+                  attributes: ["nama"],
+                },
+              ],
+            },
+          ],
+        },
+        {
+          model: UnitBudidaya,
+          attributes: ["nama"],
+          include: [
+            {
+              model: JenisBudidaya,
+              attributes: ["nama"],
+            },
+          ],
+        },
+        {
+          model: User,
+          attributes: ["name"],
+        },
+      ],
+    });
+
+    if (!laporan) {
+      return res.status(404).json({
+        message: "Laporan not found",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Successfully retrieved laporan data",
+      data: laporan,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
+  }
+};
+
+const getLaporanHamaById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const laporan = await Laporan.findOne({
+      where: {
+        id: id,
+        isDeleted: false,
+        tipe: "hama",
+      },
+      include: [
+        {
+          model: Hama,
+        },
+      ],
+    });
+
+    if (!laporan) {
+      return res.status(404).json({
+        message: "Laporan not found",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Successfully retrieved laporan data",
+      data: laporan,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
+  }
+};
+
+const getLaporanPenggunaanInventarisById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const laporan = await Laporan.findOne({
+      where: {
+        id: id,
+        isDeleted: false,
+        tipe: "inventaris",
+      },
+      include: [
+        {
+          model: PenggunaanInventaris,
+          include: [Inventaris],
+        },
+      ],
+    });
+
+    if (!laporan) {
+      return res.status(404).json({
+        message: "Laporan not found",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Successfully retrieved laporan data",
+      data: laporan,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
+  }
+};
+
 module.exports = {
   createLaporanHarianKebun,
   getLastHarianKebunByObjekBudidayaId,
@@ -666,4 +1198,13 @@ module.exports = {
   createLaporanPanenKebun,
   createLaporanHama,
   createLaporanPenggunaanInventaris,
+  getLaporanHarianKebunById,
+  getLaporanHarianTernakById,
+  getLaporanSakitById,
+  getLaporanKematianById,
+  getLaporanVitaminById,
+  getLaporanPanenById,
+  getLaporanPanenKebunById,
+  getLaporanHamaById,
+  getLaporanPenggunaanInventarisById,
 };
