@@ -732,6 +732,7 @@ const getLaporanHarianKebunById = async (req, res) => {
         },
         {
           model: User,
+          as: "user",
           attributes: ["name"],
           require: true,
         },
@@ -788,6 +789,7 @@ const getLaporanHarianTernakById = async (req, res) => {
         },
         {
           model: User,
+          as: "user",
           attributes: ["name"],
           require: true,
         },
@@ -847,6 +849,7 @@ const getLaporanSakitById = async (req, res) => {
         },
         {
           model: User,
+          as: "user",
           attributes: ["name"],
           require: true,
         },
@@ -906,6 +909,7 @@ const getLaporanKematianById = async (req, res) => {
         },
         {
           model: User,
+          as: "user",
           attributes: ["name"],
           require: true,
         },
@@ -985,6 +989,7 @@ const getLaporanVitaminById = async (req, res) => {
         },
         {
           model: User,
+          as: "user",
           attributes: ["name"],
           require: true,
         },
@@ -1025,6 +1030,7 @@ const getLaporanPanenById = async (req, res) => {
           include: [
             {
               model: Komoditas,
+              as: "komoditas",
               attributes: ["nama"],
               include: [
                 {
@@ -1054,6 +1060,7 @@ const getLaporanPanenById = async (req, res) => {
         },
         {
           model: User,
+          as: "user",
           attributes: ["name"],
           require: true,
         },
@@ -1125,6 +1132,7 @@ const getLaporanPanenKebunById = async (req, res) => {
         },
         {
           model: User,
+          as: "user",
           attributes: ["name"],
         },
       ],
