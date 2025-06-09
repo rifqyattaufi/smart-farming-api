@@ -248,7 +248,7 @@ const createLaporanKematian = async (req, res) => {
       );
     }
 
-    if (jumlah != "") {
+    if (jumlah && !isNaN(jumlah) && jumlah > 0) {
       await unitBudidaya.update(
         {
           jumlah: unitBudidaya.jumlah - jumlah,
@@ -998,10 +998,10 @@ const getLaporanPanenById = async (req, res) => {
                 {
                   model: Satuan,
                   attributes: ["nama", "lambang"],
-                }
-              ]
-            }
-          ]
+                },
+              ],
+            },
+          ],
         },
         {
           model: ObjekBudidaya,
