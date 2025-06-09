@@ -28,6 +28,14 @@ router.get(
   "/statistik-laporan-kematian/:id",
   reportController.getStatistikKematian
 );
+router.get(
+  "/statistik-penyakit/:jenisBudidayaId",
+  reportController.getStatistikPenyakit
+);
+router.get(
+  "/statistik-penyebab-kematian/:jenisBudidayaId",
+  reportController.getStatistikPenyebabKematian
+);
 
 //Peternakan
 router.get(

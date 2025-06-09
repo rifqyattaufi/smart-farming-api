@@ -374,6 +374,158 @@ const getStatistikSakit = (req, res) =>
     successMessagePrefix: "Successfully retrieved disease statistics for",
   });
 
+const getStatistikPenyakit = async (req, res) => {
+  const { jenisBudidayaId } = req.params;
+  const { startDate, endDate } = req.query;
+
+  if (!jenisBudidayaId) {
+    return res
+      .status(400)
+      .json({ message: "Path parameter 'jenisBudidayaId' is required." });
+  }
+
+  const dateWhereClause = {};
+  if (startDate && endDate) {
+    dateWhereClause.createdAt = {
+      [Op.between]: [
+        new Date(startDate + "T00:00:00.000Z"),
+        new Date(endDate + "T23:59:59.999Z"),
+      ],
+    };
+  }
+
+  try {
+    const statistikPenyakit = await Sakit.findAll({
+      attributes: [
+        [fn("LOWER", col("Sakit.penyakit")), "penyakit"],
+        [fn("COUNT", col("Sakit.id")), "jumlahKasus"],
+      ],
+      include: [
+        {
+          model: Laporan,
+          attributes: [],
+          required: true,
+          where: {
+            isDeleted: false,
+            tipe: REPORT_TYPES.SAKIT,
+            ...dateWhereClause,
+          },
+          include: [
+            {
+              model: UnitBudidaya,
+              attributes: [],
+              required: true,
+              where: {
+                jenisBudidayaId: jenisBudidayaId,
+                isDeleted: false,
+              },
+            },
+          ],
+        },
+      ],
+      where: {
+        isDeleted: false,
+      },
+      group: ["Sakit.penyakit"],
+      order: [[fn("COUNT", col("Sakit.id")), "DESC"]],
+      raw: true,
+    });
+
+    return res.status(200).json({
+      status: true,
+      message: "Statistik penyakit berhasil diambil.",
+      data: statistikPenyakit,
+    });
+  } catch (error) {
+    console.error(
+      `Error fetching statistik penyakit for JenisBudidaya ID ${jenisBudidayaId}:`,
+      error
+    );
+    res.status(500).json({
+      status: false,
+      message: "Gagal mengambil statistik penyakit.",
+      detail:
+        process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+const getStatistikPenyebabKematian = async (req, res) => {
+  const { jenisBudidayaId } = req.params;
+  const { startDate, endDate } = req.query;
+
+  if (!jenisBudidayaId) {
+    return res
+      .status(400)
+      .json({ message: "Path parameter 'jenisBudidayaId' is required." });
+  }
+
+  const dateWhereClause = {};
+  if (startDate && endDate) {
+    dateWhereClause.tanggal = {
+      [Op.between]: [
+        new Date(startDate + "T00:00:00.000Z"),
+        new Date(endDate + "T23:59:59.999Z"),
+      ],
+    };
+  }
+
+  try {
+    const statistikPenyebabKematian = await Kematian.findAll({
+      attributes: [
+        [fn("LOWER", col("Kematian.penyebab")), "penyebab"],
+        [fn("COUNT", col("Kematian.id")), "jumlahKematian"],
+      ],
+      include: [
+        {
+          model: Laporan,
+          attributes: [],
+          required: true,
+          where: {
+            isDeleted: false,
+            tipe: REPORT_TYPES.KEMATIAN,
+          },
+          include: [
+            {
+              model: UnitBudidaya,
+              attributes: [],
+              required: true,
+              where: {
+                jenisBudidayaId: jenisBudidayaId,
+                isDeleted: false,
+              },
+            },
+          ],
+        },
+      ],
+      where: {
+        isDeleted: false,
+        ...dateWhereClause,
+      },
+      group: [fn("LOWER", col("Kematian.penyebab"))],
+      order: [[fn("COUNT", col("Kematian.id")), "DESC"]],
+      raw: true,
+    });
+
+    return res.status(200).json({
+      status: true,
+      message: "Statistik penyebab kematian berhasil diambil.",
+      data: statistikPenyebabKematian,
+    });
+  } catch (error) {
+    console.error(
+      `Error fetching statistik penyebab kematian for JenisBudidaya ID ${jenisBudidayaId}:`,
+      error
+    );
+    res.status(500).json({
+      status: false,
+      message: "Gagal mengambil statistik penyebab kematian.",
+      detail:
+        process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
 const getRiwayatPelaporanSakitPerJenisBudidaya = (req, res) => {
   const { jenisBudidayaId } = req.params;
   const page = parseInt(req.query.page, 10) || 1;
@@ -420,15 +572,100 @@ const getRiwayatPelaporanSakitPerJenisBudidaya = (req, res) => {
   });
 };
 
-const getStatistikKematian = (req, res) =>
-  fetchAggregatedStats({
-    req,
-    res,
-    countedModel: Laporan,
-    countedModelAlias: "jumlahKematian",
-    laporanTipe: REPORT_TYPES.KEMATIAN,
-    successMessagePrefix: "Successfully retrieved death statistics for",
-  });
+const getStatistikKematian = async (req, res) => {
+  const { id: jenisBudidayaId } = req.params;
+  const { startDate, endDate, groupBy } = req.query;
+
+  if (!jenisBudidayaId || !startDate || !endDate || !groupBy) {
+    return res.status(400).json({
+      message:
+        "Path parameter 'id', dan query 'startDate', 'endDate', 'groupBy' dibutuhkan.",
+    });
+  }
+
+  let dateColumnFormat;
+  switch (groupBy) {
+    case GROUP_BY_OPTIONS.DAY:
+      dateColumnFormat = fn("DATE", col("Kematian.tanggal"));
+      break;
+    case GROUP_BY_OPTIONS.MONTH:
+      dateColumnFormat = fn("DATE_FORMAT", col("Kematian.tanggal"), "%Y-%m-01");
+      break;
+    case GROUP_BY_OPTIONS.YEAR:
+      dateColumnFormat = fn("DATE_FORMAT", col("Kematian.tanggal"), "%Y-01-01");
+      break;
+    default:
+      return res
+        .status(400)
+        .json({
+          message:
+            "Nilai groupBy tidak valid. Gunakan 'day', 'month', atau 'year'.",
+        });
+  }
+
+  try {
+    const statistik = await Kematian.findAll({
+      attributes: [
+        [dateColumnFormat, "period"],
+        [fn("COUNT", col("Kematian.id")), "jumlahKematian"],
+      ],
+      include: [
+        {
+          model: Laporan,
+          attributes: [],
+          required: true,
+          where: { tipe: REPORT_TYPES.KEMATIAN, isDeleted: false },
+          include: [
+            {
+              model: ObjekBudidaya,
+              attributes: [],
+              required: true,
+              include: [
+                {
+                  model: UnitBudidaya,
+                  attributes: [],
+                  required: true,
+                  where: { jenisBudidayaId, isDeleted: false },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      where: {
+        isDeleted: false,
+        tanggal: {
+          [Op.between]: [
+            new Date(startDate + "T00:00:00.000Z"),
+            new Date(endDate + "T23:59:59.999Z"),
+          ],
+        },
+      },
+      group: ["period"],
+      order: [["period", "ASC"]],
+      raw: true,
+    });
+
+    const formattedStatistik = statistik.map((item) => ({
+      ...item,
+      jumlahKematian: parseInt(item.jumlahKematian, 10) || 0,
+    }));
+
+    return res.status(200).json({
+      status: true,
+      message: "Statistik kematian berhasil diambil.",
+      data: formattedStatistik,
+    });
+  } catch (error) {
+    console.error(`Error fetching statistik kematian:`, error);
+    res.status(500).json({
+      status: false,
+      message: "Gagal mengambil statistik kematian.",
+      detail:
+        process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
 
 const getRiwayatPelaporanKematianPerJenisBudidaya = (req, res) => {
   const { jenisBudidayaId } = req.params;
@@ -470,8 +707,8 @@ const getRiwayatPelaporanKematianPerJenisBudidaya = (req, res) => {
         kematian.Laporan && kematian.Laporan.user
           ? kematian.Laporan.user.name
           : "Petugas Tidak Diketahui",
-      date: kematian.Laporan ? kematian.Laporan.createdAt : kematian.tanggal,
-      time: kematian.Laporan ? kematian.Laporan.createdAt : kematian.tanggal,
+      date: kematian.tanggal ? kematian.tanggal : kematian.Laporan?.createdAt,
+      time: kematian.tanggal ? kematian.tanggal : kematian.Laporan?.createdAt,
     }),
     order: [[{ model: Laporan, as: "Laporan" }, "createdAt", "DESC"]],
     successMessage: "Riwayat pelaporan kematian berhasil diambil.",
@@ -1172,13 +1409,14 @@ const getRiwayatPelaporanPanenTernak = (req, res) => {
   });
 };
 
-
 module.exports = {
   getStatistikLaporanHarian,
   getRiwayatPemberianNutrisiPerJenisBudidaya,
   getStatistikSakit,
   getRiwayatPelaporanSakitPerJenisBudidaya,
+  getStatistikPenyakit,
 
+  getStatistikPenyebabKematian,
   getStatistikKematian,
   getRiwayatPelaporanKematianPerJenisBudidaya,
 
