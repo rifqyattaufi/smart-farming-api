@@ -1,6 +1,6 @@
 const e = require("express");
 const sequelize = require("../../model/index");
-const { where } = require("sequelize");
+const { where, fn, col } = require("sequelize");
 const model = require("../../model/index");
 const db = sequelize.sequelize;
 const Op = sequelize.Sequelize.Op;
@@ -663,6 +663,38 @@ const createLaporanPenggunaanInventaris = async (req, res) => {
   }
 };
 
+const getJumlahKematian = async (req, res) => {
+  try {
+    const { unitBudidayaId } = req.params;
+
+    const laporan = await Laporan.findAll({
+      where: {
+        UnitBudidayaId: unitBudidayaId,
+        isDeleted: false,
+        tipe: "kematian",
+      },
+      attributes: [[fn("COUNT", col("id")), "jumlahKematian"]],
+      group: ["UnitBudidayaId"],
+    });
+
+    if (laporan.length === 0) {
+      return res.status(404).json({
+        message: "No kematian reports found for this unit.",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Successfully retrieved jumlah kematian",
+      data: laporan[0].dataValues.jumlahKematian,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
+  }
+};
+
 const getLaporanHarianKebunById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -1207,4 +1239,5 @@ module.exports = {
   getLaporanPanenKebunById,
   getLaporanHamaById,
   getLaporanPenggunaanInventarisById,
+  getJumlahKematian,
 };

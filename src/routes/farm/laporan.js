@@ -71,6 +71,8 @@ router.get("/sakit/:id", laporanController.getLaporanSakitById);
 
 router.get("/kematian/:id", laporanController.getLaporanKematianById);
 
+router.get("/jumlah-kematian/:unitBudidayaId", laporanController.getJumlahKematian);
+
 router.get("/vitamin/:id", laporanController.getLaporanVitaminById);
 
 router.get("/panen/:id", laporanController.getLaporanPanenById);
