@@ -1101,6 +1101,7 @@ const getLaporanPanenKebunById = async (req, res) => {
           include: [
             {
               model: Komoditas,
+              as: "komoditas",
               attributes: ["nama"],
               include: [
                 {

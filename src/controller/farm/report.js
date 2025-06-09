@@ -17,9 +17,9 @@ const JenisBudidaya = sequelize.JenisBudidaya;
 const ObjekBudidaya = sequelize.ObjekBudidaya;
 const HarianKebun = sequelize.HarianKebun;
 const Vitamin = sequelize.Vitamin;
-// const Grade = sequelize.Grade;
-// const PanenRincianGrade = sequelize.PanenRincianGrade;
-// const PanenKebun = sequelize.PanenKebun;
+const Grade = sequelize.Grade;
+const PanenRincianGrade = sequelize.PanenRincianGrade;
+const PanenKebun = sequelize.PanenKebun;
 const Panen = sequelize.Panen;
 const Satuan = sequelize.Satuan;
 // const JenisHama = sequelize.JenisHama;
@@ -361,6 +361,62 @@ const getRiwayatPelaporanHarianTernak = (req, res) => {
     }),
     order: [[{ model: Laporan, as: "Laporan" }, "createdAt", "DESC"]],
     successMessage: "Riwayat pelaporan harian ternak berhasil diambil.",
+  });
+};
+
+const getRiwayatPelaporanHarianTanaman = (req, res) => {
+  const { jenisBudidayaId } = req.params;
+  const page = parseInt(req.query.page, 10) || 1;
+  const limit = parseInt(req.query.limit, 10) || 5;
+
+  return fetchPaginatedHistory({
+    req,
+    res,
+    page,
+    limit,
+    mainModel: HarianKebun,
+    baseWhereClause: { isDeleted: false },
+    attributes: [
+      "id",
+      "penyiraman",
+      "pruning",
+      "repotting",
+      "tinggiTanaman",
+      "kondisiDaun",
+      "statusTumbuh",
+      "createdAt",
+      "laporanId",
+    ],
+    includeItems: [
+      {
+        model: Laporan,
+        attributes: ["id", "judul", "gambar", "createdAt", "objekBudidayaId"],
+        required: true,
+        where: { isDeleted: false },
+        include: [
+          { model: User, as: "user", attributes: ["name"], required: false },
+          {
+            model: UnitBudidaya,
+            attributes: [],
+            required: true,
+            where: { jenisBudidayaId, isDeleted: false },
+          },
+        ],
+      },
+    ],
+    dataFormatter: (harian) => ({
+      laporanId: harian.Laporan ? harian.Laporan.id : null,
+      text: harian.Laporan ? harian.Laporan.judul : "Laporan Harian Tanaman",
+      gambar: harian.Laporan ? harian.Laporan.gambar : null,
+      person:
+        harian.Laporan && harian.Laporan.user
+          ? harian.Laporan.user.name
+          : "Petugas Tidak Diketahui",
+      date: harian.Laporan ? harian.Laporan.createdAt : harian.createdAt,
+      time: harian.Laporan ? harian.Laporan.createdAt : harian.createdAt,
+    }),
+    order: [[{ model: Laporan, as: "Laporan" }, "createdAt", "DESC"]],
+    successMessage: "Riwayat pelaporan harian tanaman berhasil diambil.",
   });
 };
 
@@ -1273,6 +1329,17 @@ const getStatistikPanenTernak = (req, res) =>
       "Successfully retrieved animal harvest report statistics for",
   });
 
+const getStatistikPanenTanaman = (req, res) =>
+  fetchAggregatedStats({
+    req,
+    res,
+    countedModel: Laporan,
+    countedModelAlias: "jumlahLaporanPanenTanaman",
+    laporanTipe: REPORT_TYPES.PANEN_KEBUN,
+    successMessagePrefix:
+      "Successfully retrieved plant harvest report statistics for",
+  });
+
 const getStatistikJumlahPanenTernak = async (req, res) => {
   const { jenisBudidayaId } = req.params;
   const { startDate, endDate } = req.query;
@@ -1315,6 +1382,94 @@ const getStatistikJumlahPanenTernak = async (req, res) => {
           where: {
             isDeleted: false,
             tipe: REPORT_TYPES.PANEN_TERNAK,
+            ...dateWhereClause,
+          },
+          include: [
+            {
+              model: UnitBudidaya,
+              attributes: [],
+              required: true,
+              where: {
+                jenisBudidayaId: jenisBudidayaId,
+                isDeleted: false,
+              },
+            },
+          ],
+        },
+      ],
+      where: {
+        isDeleted: false,
+      },
+      group: ["komoditas.id"],
+      raw: true,
+    });
+
+    const formattedStatistik = statistikPanen.map((item) => ({
+      ...item,
+      totalPanen: parseFloat(item.totalPanen) || 0,
+    }));
+
+    return res.status(200).json({
+      status: true,
+      message: `Statistik jumlah panen untuk JenisBudidaya ID: ${jenisBudidayaId} berhasil diambil.`,
+      data: formattedStatistik,
+    });
+  } catch (error) {
+    console.error(
+      `Error fetching statistik panen for JenisBudidaya ID ${jenisBudidayaId}:`,
+      error
+    );
+    res.status(500).json({
+      status: false,
+      message: "Gagal mengambil statistik jumlah panen.",
+      detail:
+        process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
+  }
+};
+
+const getStatistikJumlahPanenTanaman = async (req, res) => {
+  const { jenisBudidayaId } = req.params;
+  const { startDate, endDate } = req.query;
+
+  if (!jenisBudidayaId) {
+    return res
+      .status(400)
+      .json({ message: "Path parameter 'jenisBudidayaId' is required." });
+  }
+
+  const dateWhereClause = {};
+  if (startDate && endDate) {
+    dateWhereClause.createdAt = {
+      [Op.between]: [
+        new Date(startDate + "T00:00:00.000Z"),
+        new Date(endDate + "T23:59:59.999Z"),
+      ],
+    };
+  }
+
+  try {
+    const statistikPanen = await PanenKebun.findAll({
+      attributes: [
+        [col("komoditas.nama"), "namaKomoditas"],
+        [col("komoditas->Satuan.lambang"), "lambangSatuan"],
+        [fn("SUM", col("PanenKebun.realisasiPanen")), "totalPanen"],
+      ],
+      include: [
+        {
+          model: Komoditas,
+          as: "komoditas",
+          attributes: [],
+          required: true,
+          include: [{ model: Satuan, attributes: [], required: false }],
+        },
+        {
+          model: Laporan,
+          attributes: [],
+          required: true,
+          where: {
+            isDeleted: false,
+            tipe: REPORT_TYPES.PANEN_KEBUN,
             ...dateWhereClause,
           },
           include: [
@@ -1422,6 +1577,67 @@ const getRiwayatPelaporanPanenTernak = (req, res) => {
   });
 };
 
+const getRiwayatPelaporanPanenTanaman = (req, res) => {
+  const { jenisBudidayaId } = req.params;
+  const page = parseInt(req.query.page, 10) || 1;
+  const limit = parseInt(req.query.limit, 10) || 5;
+
+  return fetchPaginatedHistory({
+    req,
+    res,
+    page,
+    limit,
+    mainModel: PanenKebun,
+    baseWhereClause: { isDeleted: false },
+    attributes: ["id", "realisasiPanen"],
+    includeItems: [
+      {
+        model: Laporan,
+        attributes: ["id", "judul", "gambar", "createdAt", "objekBudidayaId"],
+        required: true,
+        where: { isDeleted: false },
+        include: [
+          { model: User, as: "user", attributes: ["name"], required: false },
+          {
+            model: UnitBudidaya,
+            attributes: [],
+            required: true,
+            where: { jenisBudidayaId, isDeleted: false },
+          },
+        ],
+      },
+      {
+        model: Komoditas,
+        as: "komoditas",
+        attributes: ["id", "nama"],
+        required: true,
+        where: { isDeleted: false },
+        include: [
+          { model: Satuan, attributes: ["lambang", "nama"], required: false },
+        ],
+      },
+    ],
+    dataFormatter: (panen) => ({
+      laporanId: panen.Laporan ? panen.Laporan.id : null,
+      text: panen.Laporan ? panen.Laporan.judul : "Laporan panen Tanaman",
+      komoditas: panen.komoditas
+        ? `${panen.komoditas.nama} - ${panen.jumlah || ""} ${
+            panen.komoditas.Satuan ? panen.komoditas.Satuan.lambang : ""
+          }`.trim()
+        : "Komoditas Tidak Diketahui",
+      gambar: panen.Laporan ? panen.Laporan.gambar : null,
+      person:
+        panen.Laporan && panen.Laporan.user
+          ? panen.Laporan.user.name
+          : "Petugas Tidak Diketahui",
+      date: panen.Laporan ? panen.Laporan.createdAt : panen.tanggal,
+      time: panen.Laporan ? panen.Laporan.createdAt : panen.tanggal,
+    }),
+    order: [[{ model: Laporan, as: "Laporan" }, "createdAt", "DESC"]],
+    successMessage: "Riwayat pelaporan panen berhasil diambil.",
+  });
+};
+
 module.exports = {
   getStatistikLaporanHarian,
   getRiwayatPemberianNutrisiPerJenisBudidaya,
@@ -1439,6 +1655,10 @@ module.exports = {
   getStatistikPruning,
   getStatistikRepotting,
   getStatistikDisinfektan,
+  getStatistikPanenTanaman,
+  getStatistikJumlahPanenTanaman,
+  getRiwayatPelaporanPanenTanaman,
+  getRiwayatPelaporanHarianTanaman,
 
   getStatistikPemberianNutrisi,
 

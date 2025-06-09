@@ -2,7 +2,7 @@ const sequelize = require("../../model/index");
 const Op = sequelize.Sequelize.Op;
 const KategoriInventaris = sequelize.KategoriInventaris;
 const { dataValid } = require("../../validation/dataValidation");
-const { getPaginationOptions } = require('../../utils/paginationUtils');
+const { getPaginationOptions } = require("../../utils/paginationUtils");
 
 const getAllKategoriInventaris = async (req, res) => {
   try {
@@ -10,7 +10,7 @@ const getAllKategoriInventaris = async (req, res) => {
     const paginationOptions = getPaginationOptions(page, limit);
 
     const whereClause = { isDeleted: false };
-    if (nama && nama.trim() !== '') {
+    if (nama && nama.trim() !== "") {
       whereClause.nama = { [Op.like]: `%${nama}%` };
     }
 
@@ -21,7 +21,9 @@ const getAllKategoriInventaris = async (req, res) => {
     });
 
     const currentPageNum = parseInt(page, 10) || 1;
-    const totalPages = Math.ceil(count / (paginationOptions.limit || parseInt(limit, 10) || 10));
+    const totalPages = Math.ceil(
+      count / (paginationOptions.limit || parseInt(limit, 10) || 10)
+    );
 
     if (rows.length === 0) {
       return res.status(200).json({
@@ -88,14 +90,24 @@ const getKategoriInventarisSearch = async (req, res) => {
       },
       order: [["createdAt", "DESC"]],
       ...paginationOptions,
-    })
+    });
 
     const currentPageNum = parseInt(page, 10) || 1;
-    const totalPages = rows.length > 0 ? Math.ceil(await KategoriInventaris.count({ where: {nama: { [Op.like]: `%${nama}%` }, isDeleted: false} }) / (paginationOptions.limit || parseInt(limit, 10) || 10)) : 0;
+    const totalPages =
+      rows.length > 0
+        ? Math.ceil(
+            (await KategoriInventaris.count({
+              where: { nama: { [Op.like]: `%${nama}%` }, isDeleted: false },
+            })) / (paginationOptions.limit || parseInt(limit, 10) || 10)
+          )
+        : 0;
 
     if (rows.length === 0) {
-      return res.status(200).json({ 
-        message: currentPageNum > 1 ? "No more data for this name" : "Data not found for this name",
+      return res.status(200).json({
+        message:
+          currentPageNum > 1
+            ? "No more data for this name"
+            : "Data not found for this name",
         data: [],
         totalItems: totalPages,
         currentPage: currentPageNum,
@@ -122,18 +134,11 @@ const getKategoriInventarisOnly = async (req, res) => {
     const data = await KategoriInventaris.findAll({
       where: {
         isDeleted: false,
-        nama:
-          { [Op.notIn]: ["Vitamin", "Pupuk", "Disinfektan", "Vaksin"] },
+        nama: { [Op.notIn]: ["Vitamin", "Pupuk", "Disinfektan", "Vaksin"] },
       },
       attributes: ["id", "nama"],
       order: [["createdAt", "DESC"]],
     });
-
-    if (data.length === 0) {
-      return res.status(404).json({
-        message: "Data not found",
-      });
-    }
 
     return res.status(200).json({
       message: "Successfully retrieved kategori inventaris data",
@@ -169,7 +174,10 @@ const createKategoriInventaris = async (req, res) => {
     if (softDeleted) {
       softDeleted.isDeleted = 0;
       await softDeleted.save();
-      return res.status(200).json({ message: 'Data already exists before, successfully restored kategori inventaris data' });
+      return res.status(200).json({
+        message:
+          "Data already exists before, successfully restored kategori inventaris data",
+      });
     } else {
       const existing = await KategoriInventaris.findOne({
         where: {
@@ -179,7 +187,7 @@ const createKategoriInventaris = async (req, res) => {
       });
 
       if (existing) {
-        return res.status(400).json({ message: 'Data already exists.' });
+        return res.status(400).json({ message: "Data already exists." });
       }
     }
 

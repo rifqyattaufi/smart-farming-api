@@ -17,6 +17,19 @@ router.get(
   "/statistik-pemberian-disinfektan/:id",
   reportController.getStatistikDisinfektan
 );
+router.get("/statistik-panen-kebun/:id", reportController.getStatistikPanenTanaman);
+router.get(
+  "/history/panen-tanaman/jenis-budidaya/:jenisBudidayaId",
+  reportController.getRiwayatPelaporanPanenTanaman
+);
+router.get(
+  "/statistik/jumlah-panen-kebun/:jenisBudidayaId",
+  reportController.getStatistikJumlahPanenTanaman
+);
+router.get(
+  "/history/harian-tanaman/jenis-budidaya/:jenisBudidayaId",
+  reportController.getRiwayatPelaporanHarianTanaman
+);
 
 //Umum
 router.get(
