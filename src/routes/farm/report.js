@@ -13,6 +13,10 @@ router.get(
 );
 router.get("/statistik-pruning/:id", reportController.getStatistikPruning);
 router.get("/statistik-repotting/:id", reportController.getStatistikRepotting);
+router.get(
+  "/statistik-pemberian-disinfektan/:id",
+  reportController.getStatistikDisinfektan
+);
 
 //Umum
 router.get(

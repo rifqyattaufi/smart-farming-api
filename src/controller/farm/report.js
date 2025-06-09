@@ -595,12 +595,10 @@ const getStatistikKematian = async (req, res) => {
       dateColumnFormat = fn("DATE_FORMAT", col("Kematian.tanggal"), "%Y-01-01");
       break;
     default:
-      return res
-        .status(400)
-        .json({
-          message:
-            "Nilai groupBy tidak valid. Gunakan 'day', 'month', atau 'year'.",
-        });
+      return res.status(400).json({
+        message:
+          "Nilai groupBy tidak valid. Gunakan 'day', 'month', atau 'year'.",
+      });
   }
 
   try {
@@ -806,6 +804,21 @@ const getRiwayatPemberianNutrisiPerJenisBudidaya = (req, res) => {
     }),
     order: [[{ model: Laporan, as: "Laporan" }, "createdAt", "DESC"]],
     successMessage: "Riwayat pemberian nutrisi berhasil diambil.",
+  });
+};
+
+const getStatistikDisinfektan = (req, res) => {
+  fetchAggregatedStats({
+    req,
+    res,
+    countedModel: Vitamin,
+    countedModelAlias: "jumlahPemberianDisinfektan",
+    laporanTipe: REPORT_TYPES.VITAMIN,
+    countedModelWhere: {
+      tipe: { [Op.in]: [NUTRIENT_TYPES.DISINFEKTAN] },
+    },
+    successMessagePrefix:
+      "Successfully retrieved disinfektan application statistics for",
   });
 };
 
@@ -1425,6 +1438,7 @@ module.exports = {
   getStatistikPenyiraman,
   getStatistikPruning,
   getStatistikRepotting,
+  getStatistikDisinfektan,
 
   getStatistikPemberianNutrisi,
 
