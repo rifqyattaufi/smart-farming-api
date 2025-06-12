@@ -33,7 +33,8 @@
     "redis": "^4.7.0",
     "sequelize": "^6.37.5",
     "sequelize-cli": "^6.6.2",
-    "validator": "^13.15.0"
+    "validator": "^13.15.0",
+    "yargs": "^18.0.0"
   },
   "devDependencies": {
     "cross-env": "^7.0.3",
