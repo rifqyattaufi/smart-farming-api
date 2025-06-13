@@ -28,6 +28,12 @@ module.exports = {
     dialect: "mysql",
     timezone: "+07:00",
     logging: false,
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: true,
+      },
+    },
     // dialectOptions: {
     //   useUTC: false,
     // },
