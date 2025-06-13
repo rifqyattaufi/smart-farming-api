@@ -1,18 +1,26 @@
-const { Sequelize } = require('sequelize');
-const { Umzug, SequelizeStorage } = require('umzug');
-const path = to-face
-const env = process.env.NODE_ENV || 'development';
-const config = require(__dirname + '/src/config/config.js')[env];
+const { Sequelize } = require("sequelize");
+const { Umzug, SequelizeStorage } = require("umzug");
+const path = require("path"); // <-- INI PERBAIKANNYA
+
+const env = process.env.NODE_ENV || "development";
+// Menggunakan path.join agar lebih robust
+const config = require(path.join(__dirname, "src/config/config.js"))[env];
 
 // Buat instance Sequelize menggunakan konfigurasi dari config.js
-const sequelize = new Sequelize(config.database, config.username, config.password, config);
+const sequelize = new Sequelize(
+  config.database,
+  config.username,
+  config.password,
+  config
+);
 
 // Konfigurasi Umzug untuk menemukan dan menjalankan file migrasi
 const umzug = new Umzug({
   migrations: {
-    glob: 'src/migrations/*.js', // Sesuaikan path jika folder migrasi Anda berbeda
-    resolve: ({ name, path, context }) => {
-      const migration = require(path);
+    // Menggunakan path.join agar lebih robust
+    glob: path.join(__dirname, "src/migrations", "*.js"),
+    resolve: ({ name, path: migrationPath, context }) => {
+      const migration = require(migrationPath);
       return {
         name,
         up: async () => migration.up(context, Sequelize),
@@ -28,19 +36,21 @@ const umzug = new Umzug({
 // Fungsi untuk menjalankan migrasi
 const runMigrations = async () => {
   try {
-    console.log('Mengecek dan menjalankan migrasi yang tertunda...');
+    console.log("Mengecek dan menjalankan migrasi yang tertunda...");
     const migrated = await umzug.up();
     if (migrated.length > 0) {
-      console.log('Migrasi yang berhasil dijalankan:');
-      migrated.forEach(m => console.log(`- ${m.name}`));
+      console.log("Migrasi yang berhasil dijalankan:");
+      migrated.forEach((m) => console.log(`- ${m.name}`));
     } else {
-      console.log('Tidak ada migrasi yang perlu dijalankan. Database sudah terbaru.');
+      console.log(
+        "Tidak ada migrasi yang perlu dijalankan. Database sudah terbaru."
+      );
     }
-    console.log('Proses migrasi selesai.');
+    console.log("Proses migrasi selesai.");
     // Keluar dengan sukses
     process.exit(0);
   } catch (error) {
-    console.error('Migrasi GAGAL:', error);
+    console.error("Migrasi GAGAL:", error);
     // Keluar dengan error code untuk menghentikan proses startup
     process.exit(1);
   }
