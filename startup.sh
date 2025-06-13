@@ -1,17 +1,17 @@
 #!/bin/bash
 
-# Menjalankan migrasi database
-echo "Running database migrations..."
-npx sequelize-cli db:migrate
+# Script akan langsung berhenti jika ada perintah yang gagal
+set -e
 
-# Memeriksa apakah migrasi berhasil
-# Exit code 0 berarti berhasil
-if [ $? -eq 0 ]; then
-  echo "Migrations completed successfully."
-  # Menjalankan aplikasi utama
-  echo "Starting application..."
-  npm start
-else
-  echo "Migrations failed. Application will not start."
-  exit 1
-fi
+echo "--- Running startup.sh script ---"
+
+# 1. Jalankan migrasi database dengan memanggil file biner secara langsung
+echo "Running database migrations..."
+./node_modules/.bin/sequelize db:migrate
+
+# 2. Jika migrasi berhasil, skrip akan lanjut ke sini.
+echo "Migrations completed successfully."
+
+# 3. Jalankan aplikasi utama
+echo "Starting application..."
+npm start:prod
