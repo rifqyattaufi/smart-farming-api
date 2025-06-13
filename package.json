@@ -6,8 +6,7 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "start": "nodemon index.js",
-    "start:prod": "npm i && npx sequelize-cli db:migrate && node index.js"
+    "start": "nodemon index.js"
   },
   "keywords": [],
   "author": "",
