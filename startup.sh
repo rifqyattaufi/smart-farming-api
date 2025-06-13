@@ -15,4 +15,4 @@ echo "Migrations completed successfully."
 
 # 3. Jalankan aplikasi utama
 echo "Starting application..."
-npm start:prod
+npm run start:prod
