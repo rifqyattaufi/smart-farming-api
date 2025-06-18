@@ -418,7 +418,7 @@ const createLaporanPanen = async (req, res) => {
   const t = await db.transaction();
 
   try {
-    const { panen } = req.body;
+    const { panen, isDeleted } = req.body;
 
     const data = await Laporan.create(
       {
@@ -446,6 +446,38 @@ const createLaporanPanen = async (req, res) => {
     komoditas.jumlah += panen.jumlah;
 
     await komoditas.save({ transaction: t });
+
+    if (isDeleted == true) {
+      if (req.body.objekBudidayaId != null) {
+        await ObjekBudidaya.update(
+          {
+            isDeleted: true,
+          },
+          {
+            transaction: t,
+            where: {
+              id: req.body.objekBudidayaId,
+            },
+          }
+        );
+
+        await UnitBudidaya.decrement("jumlah", {
+          by: 1,
+          transaction: t,
+          where: {
+            id: req.body.unitBudidayaId,
+          },
+        });
+      } else {
+        await UnitBudidaya.decrement("jumlah", {
+          by: 1,
+          transaction: t,
+          where: {
+            id: req.body.unitBudidayaId,
+          },
+        });
+      }
+    }
 
     await t.commit();
 
