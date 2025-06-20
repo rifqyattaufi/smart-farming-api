@@ -15,7 +15,7 @@ const app = express();
 // Import routes
 const indexRouter = require("./src/routes/indexRoute");
 const storeRouter = require("./src/routes/store/storeIndex");
-// const { startScheduler } = require("./services/schedulerService");
+const { startScheduler } = require("./services/schedulerService");
 
 const apiRouter = express.Router();
 
@@ -53,4 +53,4 @@ app.use((err, req, res, next) => {
 });
 app.listen(PORT, () => console.log(`Server is running on ${BASE_URL}`));
 
-// startScheduler();
+startScheduler();
