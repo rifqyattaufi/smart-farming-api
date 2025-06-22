@@ -33,6 +33,8 @@ module.exports = {
         require: true,
         rejectUnauthorized: false,
       },
+      charset: "utf8mb4",
+      collate: "utf8mb4_unicode_ci",
     },
     // dialectOptions: {
     //   useUTC: false,
