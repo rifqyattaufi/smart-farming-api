@@ -7,8 +7,6 @@ module.exports = {
     database: process.env.DB_NAME,
     host: process.env.DB_HOST,
     dialect: "mysql",
-    charset: "utf8mb4",
-    collate: "utf8mb4_unicode_ci",
     dialectOptions: {
       charset: "utf8mb4",
       collate: "utf8mb4_unicode_ci",
@@ -36,8 +34,6 @@ module.exports = {
     dialect: "mysql",
     timezone: "+07:00",
     logging: false,
-    charset: "utf8mb4",
-    collate: "utf8mb4_unicode_ci",
     dialectOptions: {
       ssl: {
         require: true,
