@@ -7,11 +7,9 @@ module.exports = {
     database: process.env.DB_NAME,
     host: process.env.DB_HOST,
     dialect: "mysql",
-    charset: "utf8mb4",
-    collate: "utf8mb4_unicode_ci",
+    charset: "utf8mb4_unicode_ci",
     dialectOptions: {
-      charset: "utf8mb4",
-      collate: "utf8mb4_unicode_ci",
+      charset: "utf8mb4_unicode_ci",
     },
     // timezone: "+07:00",
     // logging: (...args) => console.log(...args),
@@ -34,15 +32,13 @@ module.exports = {
     dialect: "mysql",
     timezone: "+07:00",
     logging: false,
-    charset: "utf8mb4",
-    collate: "utf8mb4_unicode_ci",
+    charset: "utf8mb4_unicode_ci",
     dialectOptions: {
       ssl: {
         require: true,
         rejectUnauthorized: false,
       },
-      charset: "utf8mb4",
-      collate: "utf8mb4_unicode_ci",
+      charset: "utf8mb4_unicode_ci",
     },
     // dialectOptions: {
     //   useUTC: false,
