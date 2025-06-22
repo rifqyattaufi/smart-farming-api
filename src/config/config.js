@@ -45,31 +45,26 @@ module.exports = {
         rejectUnauthorized: false,
       },
       charset: "utf8mb4",
+      collation: "utf8mb4_unicode_ci",
       supportBigNumbers: true,
       bigNumberStrings: true,
       connectTimeout: 60000,
-      acquireTimeout: 60000,
-      timeout: 60000,
-      // Force connection init commands for Azure
-      initSql: [
-        "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci",
-        "SET character_set_client = utf8mb4",
-        "SET character_set_connection = utf8mb4",
-        "SET character_set_results = utf8mb4",
-        "SET collation_connection = utf8mb4_unicode_ci",
-      ],
     },
-    // Additional hooks for Azure MySQL
+    // Hooks for setting charset properly on Azure
     hooks: {
       afterConnect: async (connection) => {
         try {
-          await connection.query(
+          // Use promise() method for proper async handling
+          const promiseConnection = connection.promise();
+          await promiseConnection.query(
             "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci"
           );
-          await connection.query("SET character_set_client = utf8mb4");
-          await connection.query("SET character_set_connection = utf8mb4");
-          await connection.query("SET character_set_results = utf8mb4");
-          await connection.query(
+          await promiseConnection.query("SET character_set_client = utf8mb4");
+          await promiseConnection.query(
+            "SET character_set_connection = utf8mb4"
+          );
+          await promiseConnection.query("SET character_set_results = utf8mb4");
+          await promiseConnection.query(
             "SET collation_connection = utf8mb4_unicode_ci"
           );
           console.log("✅ Force set charset to utf8mb4 on Azure connection");
