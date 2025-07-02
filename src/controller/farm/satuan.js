@@ -2,7 +2,7 @@ const sequelize = require("../../model/index");
 const Op = sequelize.Sequelize.Op;
 const Satuan = sequelize.Satuan;
 const { dataValid } = require("../../validation/dataValidation");
-const { getPaginationOptions } = require('../../utils/paginationUtils');
+const { getPaginationOptions } = require("../../utils/paginationUtils");
 
 const getAllSatuan = async (req, res) => {
   try {
@@ -10,7 +10,7 @@ const getAllSatuan = async (req, res) => {
     const paginationOptions = getPaginationOptions(page, limit);
 
     const whereClause = { isDeleted: false };
-    if (nama && nama.trim() !== '') {
+    if (nama && nama.trim() !== "") {
       whereClause.nama = { [Op.like]: `%${nama}%` };
       whereClause.lambang = { [Op.like]: `%${nama}%` };
     }
@@ -22,7 +22,9 @@ const getAllSatuan = async (req, res) => {
     });
 
     const currentPageNum = parseInt(page, 10) || 1;
-    const totalPages = Math.ceil(count / (paginationOptions.limit || parseInt(limit, 10) || 10));
+    const totalPages = Math.ceil(
+      count / (paginationOptions.limit || parseInt(limit, 10) || 10)
+    );
     if (rows.length === 0) {
       return res.status(200).json({
         message: currentPageNum > 1 ? "No more data" : "Data not found",
@@ -40,8 +42,7 @@ const getAllSatuan = async (req, res) => {
       totalPages: totalPages,
       currentPage: currentPageNum,
     });
-  }
-  catch (error) {
+  } catch (error) {
     res.status(500).json({
       message: error.message,
       detail: error,
@@ -92,11 +93,27 @@ const getSatuanSearch = async (req, res) => {
     });
 
     const currentPageNum = parseInt(page, 10) || 1;
-    const totalPages = rows.length > 0 ? Math.ceil(await Satuan.count({ where: { [Op.or]: [{ nama: { [Op.like]: `%${nama}%` } }, { lambang: { [Op.like]: `%${lambang}%` } }], isDeleted: false } }) / (paginationOptions.limit || parseInt(limit, 10) || 10)) : 0;
+    const totalPages =
+      rows.length > 0
+        ? Math.ceil(
+            (await Satuan.count({
+              where: {
+                [Op.or]: [
+                  { nama: { [Op.like]: `%${nama}%` } },
+                  { lambang: { [Op.like]: `%${lambang}%` } },
+                ],
+                isDeleted: false,
+              },
+            })) / (paginationOptions.limit || parseInt(limit, 10) || 10)
+          )
+        : 0;
 
     if (rows.length === 0) {
-      return res.status(200).json({ 
-        message: currentPageNum > 1 ? "No more data for this search" : "Data not found for this search",
+      return res.status(200).json({
+        message:
+          currentPageNum > 1
+            ? "No more data for this search"
+            : "Data not found for this search",
         data: [],
         totalItems: totalPages,
         currentPage: currentPageNum,
@@ -132,41 +149,73 @@ const createSatuan = async (req, res) => {
   }
 
   try {
+    // Cek apakah ada data dengan nama yang sama yang sudah di-soft delete
     const softDeleted = await Satuan.findOne({
       where: {
         nama: req.body.nama,
-        isDeleted: 1,
+        isDeleted: true,
       },
     });
 
     if (softDeleted) {
-      softDeleted.isDeleted = 0;
-      softDeleted.lambang = req.body.lambang || softDeleted.lambang;
-      await softDeleted.save();
-      return res.status(200).json({ message: 'Data already exists before, successfully restored satuan data' });
-    } else {
-      const existing = await Satuan.findOne({
-        where: {
-          nama: req.body.nama,
-          isDeleted: 0,
+      // Restore data yang sudah di-soft delete dengan update semua field
+      await Satuan.update(
+        {
+          ...req.body,
+          isDeleted: false,
+          updatedAt: new Date(),
         },
+        {
+          where: { id: softDeleted.id },
+        }
+      );
+
+      const restoredData = await Satuan.findOne({
+        where: { id: softDeleted.id },
       });
 
-      if (existing) {
-        return res.status(400).json({ message: 'Data already exists.' });
-      }
+      res.locals.createdData = restoredData.toJSON();
+
+      return res.status(201).json({
+        status: true,
+        message:
+          "Data with this name existed before and has been restored with new information",
+        data: restoredData,
+      });
     }
-    
-    const data = await Satuan.create(req.body);
+
+    // Cek apakah ada data aktif dengan nama yang sama
+    const existing = await Satuan.findOne({
+      where: {
+        nama: req.body.nama,
+        isDeleted: false,
+      },
+    });
+
+    if (existing) {
+      return res.status(400).json({
+        status: false,
+        message:
+          "Satuan dengan nama tersebut sudah ada. Silakan gunakan nama yang berbeda.",
+      });
+    }
+
+    // Buat data baru jika tidak ada duplikasi
+    const data = await Satuan.create({
+      ...req.body,
+      isDeleted: false,
+    });
 
     res.locals.createdData = data.toJSON();
 
     return res.status(201).json({
+      status: true,
       message: "Successfully created new satuan data",
       data: data,
     });
   } catch (error) {
     res.status(500).json({
+      status: false,
       message: error.message,
       detail: error,
     });
@@ -181,8 +230,28 @@ const updateSatuan = async (req, res) => {
 
     if (!data || data.isDeleted) {
       return res.status(404).json({
+        status: false,
         message: "Data not found",
       });
+    }
+
+    // Jika nama diubah, cek apakah nama baru sudah ada
+    if (req.body.nama && req.body.nama !== data.nama) {
+      const existing = await Satuan.findOne({
+        where: {
+          nama: req.body.nama,
+          isDeleted: false,
+          id: { [Op.ne]: req.params.id }, // Exclude current record
+        },
+      });
+
+      if (existing) {
+        return res.status(400).json({
+          status: false,
+          message:
+            "Satuan dengan nama tersebut sudah ada. Silakan gunakan nama yang berbeda.",
+        });
+      }
     }
 
     await Satuan.update(req.body, {
@@ -196,14 +265,13 @@ const updateSatuan = async (req, res) => {
     res.locals.updatedData = updated.toJSON();
 
     return res.status(200).json({
+      status: true,
       message: "Successfully updated satuan data",
-      data: {
-        id: req.params.id,
-        ...req.body,
-      },
+      data: updated,
     });
   } catch (error) {
     res.status(500).json({
+      status: false,
       message: error.message,
       detail: error,
     });
@@ -218,6 +286,7 @@ const deleteSatuan = async (req, res) => {
 
     if (!data || data.isDeleted) {
       return res.status(404).json({
+        status: false,
         message: "Data not found",
       });
     }
@@ -228,10 +297,12 @@ const deleteSatuan = async (req, res) => {
     res.locals.updatedData = data;
 
     return res.status(200).json({
+      status: true,
       message: "Successfully deleted satuan data",
     });
   } catch (error) {
     res.status(500).json({
+      status: false,
       message: error.message,
       detail: error,
     });
