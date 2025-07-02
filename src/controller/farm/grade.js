@@ -1,6 +1,7 @@
 const sequelize = require("../../model/index");
 const Op = sequelize.Sequelize.Op;
 const Grade = sequelize.Grade;
+const PanenRincianGrade = sequelize.PanenRincianGrade;
 const { dataValid } = require("../../validation/dataValidation");
 const { getPaginationOptions } = require("../../utils/paginationUtils");
 
@@ -277,6 +278,21 @@ const deleteGrade = async (req, res) => {
       return res.status(404).json({
         status: false,
         message: "Data not found",
+      });
+    }
+
+    // Check if grade is being used in other tables
+    const panenRincianGradeCount = await PanenRincianGrade.count({
+      where: {
+        gradeId: req.params.id,
+        isDeleted: false,
+      },
+    });
+
+    if (panenRincianGradeCount > 0) {
+      return res.status(400).json({
+        status: false,
+        message: `Grade tidak dapat dihapus karena masih digunakan oleh ${panenRincianGradeCount} data panen. Silakan periksa terlebih dahulu.`,
       });
     }
 

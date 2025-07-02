@@ -1,6 +1,7 @@
 const sequelize = require("../../model/index");
 const Op = sequelize.Sequelize.Op;
 const KategoriInventaris = sequelize.KategoriInventaris;
+const Inventaris = sequelize.Inventaris;
 const { dataValid } = require("../../validation/dataValidation");
 const { getPaginationOptions } = require("../../utils/paginationUtils");
 
@@ -305,6 +306,21 @@ const deleteKategoriInventaris = async (req, res) => {
       return res.status(404).json({
         status: false,
         message: "Data not found",
+      });
+    }
+
+    // Check if kategori inventaris is being used in other tables
+    const inventarisCount = await Inventaris.count({
+      where: {
+        kategoriInventarisId: req.params.id,
+        isDeleted: false,
+      },
+    });
+
+    if (inventarisCount > 0) {
+      return res.status(400).json({
+        status: false,
+        message: `Kategori inventaris tidak dapat dihapus karena masih digunakan oleh ${inventarisCount} inventaris. Silakan periksa terlebih dahulu.`,
       });
     }
 

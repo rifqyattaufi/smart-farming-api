@@ -1,6 +1,8 @@
 const sequelize = require("../../model/index");
 const Op = sequelize.Sequelize.Op;
 const Satuan = sequelize.Satuan;
+const Inventaris = sequelize.Inventaris;
+const Komoditas = sequelize.Komoditas;
 const { dataValid } = require("../../validation/dataValidation");
 const { getPaginationOptions } = require("../../utils/paginationUtils");
 
@@ -288,6 +290,40 @@ const deleteSatuan = async (req, res) => {
       return res.status(404).json({
         status: false,
         message: "Data not found",
+      });
+    }
+
+    // Check if satuan is being used in other tables
+    const inventarisCount = await Inventaris.count({
+      where: {
+        satuanId: req.params.id,
+        isDeleted: false,
+      },
+    });
+
+    const komoditasCount = await Komoditas.count({
+      where: {
+        satuanId: req.params.id,
+        isDeleted: false,
+      },
+    });
+
+    const totalUsage = inventarisCount + komoditasCount;
+
+    if (totalUsage > 0) {
+      let usageDetails = [];
+      if (inventarisCount > 0) {
+        usageDetails.push(`${inventarisCount} inventaris`);
+      }
+      if (komoditasCount > 0) {
+        usageDetails.push(`${komoditasCount} komoditas`);
+      }
+
+      return res.status(400).json({
+        status: false,
+        message: `Satuan tidak dapat dihapus karena masih digunakan oleh ${usageDetails.join(
+          " dan "
+        )}. Silakan periksa terlebih dahulu.`,
       });
     }
 
