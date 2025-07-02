@@ -32,6 +32,7 @@ module.exports = {
     host: process.env.DB_HOST,
     dialect: "mysql",
     timezone: "+07:00",
+    logging: false,
     dialectOptions: {
       ssl: {
         require: true,
