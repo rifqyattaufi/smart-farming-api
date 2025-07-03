@@ -32,7 +32,7 @@ module.exports = (sequelize, DataTypes) => {
       },
       tinggiTanaman: {
         type: DataTypes.DOUBLE,
-        allowNull: false,
+        allowNull: true, // Diubah menjadi opsional
         validate: {
           isFloat: true,
           min: 0,
@@ -40,18 +40,56 @@ module.exports = (sequelize, DataTypes) => {
       },
       kondisiDaun: {
         type: DataTypes.ENUM,
-        values: ["sehat", "kering", "layu", "kuning", "keriting", "bercak", "rusak"],
-        allowNull: false,
+        values: [
+          "sehat",
+          "kering",
+          "layu",
+          "kuning",
+          "keriting",
+          "bercak",
+          "rusak",
+        ],
+        allowNull: true, // Diubah menjadi opsional
         validate: {
-          isIn: [["sehat", "kering", "layu", "kuning", "keriting", "bercak", "rusak"]],
+          isIn: [
+            [
+              "sehat",
+              "kering",
+              "layu",
+              "kuning",
+              "keriting",
+              "bercak",
+              "rusak",
+            ],
+          ],
         },
       },
       statusTumbuh: {
         type: DataTypes.ENUM,
-        values: ["bibit", "perkecambahan", "vegetatifAwal", "vegetatifLanjut", "generatifAwal", "generatifLanjut", "panen", "dormansi"],
-        allowNull: false,
+        values: [
+          "bibit",
+          "perkecambahan",
+          "vegetatifAwal",
+          "vegetatifLanjut",
+          "generatifAwal",
+          "generatifLanjut",
+          "panen",
+          "dormansi",
+        ],
+        allowNull: true, // Diubah menjadi opsional
         validate: {
-          isIn: [["bibit", "perkecambahan", "vegetatifAwal", "vegetatifLanjut", "generatifAwal", "generatifLanjut", "panen", "dormansi"]],
+          isIn: [
+            [
+              "bibit",
+              "perkecambahan",
+              "vegetatifAwal",
+              "vegetatifLanjut",
+              "generatifAwal",
+              "generatifLanjut",
+              "panen",
+              "dormansi",
+            ],
+          ],
         },
       },
       isDeleted: {
