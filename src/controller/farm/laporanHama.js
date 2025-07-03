@@ -7,7 +7,7 @@ const UnitBudidaya = sequelize.UnitBudidaya;
 const ObjekBudidaya = sequelize.ObjekBudidaya;
 const User = sequelize.User;
 
-const { getPaginationOptions } = require('../../utils/paginationUtils');
+const { getPaginationOptions } = require("../../utils/paginationUtils");
 
 const getAllLaporanHama = async (req, res) => {
   try {
@@ -34,13 +34,13 @@ const getAllLaporanHama = async (req, res) => {
           model: User,
           as: "user",
           attributes: ["id", "name", "avatarUrl"],
-        }
+        },
       ],
       order: [["createdAt", "DESC"]],
       distinct: true,
       ...paginationOptions,
     });
-    
+
     if (rows.length === 0 && (parseInt(page, 10) || 1) === 1) {
       return res.status(200).json({
         message: "Data not found",
@@ -51,13 +51,13 @@ const getAllLaporanHama = async (req, res) => {
       });
     }
     if (rows.length === 0 && (parseInt(page, 10) || 1) > 1) {
-        return res.status(200).json({
-            message: "No more data",
-            data: [],
-            totalItems: count,
-            totalPages: Math.ceil(count / paginationOptions.limit),
-            currentPage: parseInt(page, 10) || 1,
-        });
+      return res.status(200).json({
+        message: "No more data",
+        data: [],
+        totalItems: count,
+        totalPages: Math.ceil(count / paginationOptions.limit),
+        currentPage: parseInt(page, 10) || 1,
+      });
     }
 
     return res.status(200).json({
@@ -83,13 +83,13 @@ const searchLaporanHama = async (req, res) => {
     const paginationOptions = getPaginationOptions(page, limit);
 
     const searchCondition = {
-        [Op.or]: [
-            { judul: { [Op.like]: `%${query}%` } },
-            { catatan: { [Op.like]: `%${query}%` } },
-            { "$JenisHama.nama$": { [Op.like]: `%${query}%` } },
-            { "$UnitBudidaya.nama$": { [Op.like]: `%${query}%` } },
-            { "$User.name$": { [Op.like]: `%${query}%` } },
-        ],
+      [Op.or]: [
+        { judul: { [Op.like]: `%${query}%` } },
+        { catatan: { [Op.like]: `%${query}%` } },
+        { "$JenisHama.nama$": { [Op.like]: `%${query}%` } },
+        { "$UnitBudidaya.nama$": { [Op.like]: `%${query}%` } },
+        { "$User.name$": { [Op.like]: `%${query}%` } },
+      ],
     };
 
     const { count, rows } = await Laporan.findAndCountAll({
@@ -113,7 +113,7 @@ const searchLaporanHama = async (req, res) => {
           model: User,
           attributes: ["id", "name"],
           required: false,
-        }
+        },
       ],
       order: [["createdAt", "DESC"]],
       distinct: true,
@@ -129,24 +129,24 @@ const searchLaporanHama = async (req, res) => {
         currentPage: parseInt(page, 10) || 1,
       });
     }
-     if (rows.length === 0 && (parseInt(page, 10) || 1) > 1) {
-        return res.status(200).json({
-            message: "No more data for this search",
-            data: [],
-            totalItems: count,
-            totalPages: Math.ceil(count / paginationOptions.limit),
-            currentPage: parseInt(page, 10) || 1,
-        });
+    if (rows.length === 0 && (parseInt(page, 10) || 1) > 1) {
+      return res.status(200).json({
+        message: "No more data for this search",
+        data: [],
+        totalItems: count,
+        totalPages: Math.ceil(count / paginationOptions.limit),
+        currentPage: parseInt(page, 10) || 1,
+      });
     }
 
     return res.status(200).json({
-      message: "Successfully retrieved hama reports matching the search criteria",
+      message:
+        "Successfully retrieved hama reports matching the search criteria",
       data: rows,
       totalItems: count,
       totalPages: Math.ceil(count / paginationOptions.limit),
       currentPage: parseInt(page, 10) || 1,
     });
-
   } catch (error) {
     res.status(500).json({
       message: error.message,
@@ -156,34 +156,94 @@ const searchLaporanHama = async (req, res) => {
 };
 
 const getLaporanHamaById = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const data = await Laporan.findOne({
-            where: { id: id, tipe: "hama", isDeleted: false },
-            include: [
-                {
-                  model: Hama,
-                  required: true,
-                  include: [{ model: JenisHama }],
-                },
-                { model: UnitBudidaya, required: false },
-                { model: ObjekBudidaya, required: false },
-                { model: User, as: 'user', attributes: ['id', 'name'], required: false }
-            ],
-        });
+  try {
+    const { id } = req.params;
+    const data = await Laporan.findOne({
+      where: { id: id, tipe: "hama", isDeleted: false },
+      include: [
+        {
+          model: Hama,
+          required: true,
+          include: [{ model: JenisHama }],
+        },
+        { model: UnitBudidaya, required: false },
+        { model: ObjekBudidaya, required: false },
+        {
+          model: User,
+          as: "user",
+          attributes: ["id", "name"],
+          required: false,
+        },
+      ],
+    });
 
-        if (!data) {
-            return res.status(404).json({ message: "Data not found" });
-        }
-        return res.status(200).json({ message: "Successfully retrieved hama report", data: data });
-    } catch (error) {
-        res.status(500).json({ message: error.message, detail: error });
+    if (!data) {
+      return res.status(404).json({ message: "Data not found" });
     }
+    return res
+      .status(200)
+      .json({ message: "Successfully retrieved hama report", data: data });
+  } catch (error) {
+    res.status(500).json({ message: error.message, detail: error });
+  }
 };
 
+const updateStatusHama = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    // Validate input
+    if (typeof status !== "boolean") {
+      return res.status(400).json({
+        message:
+          "Status must be a boolean value (true for handled, false for not handled)",
+      });
+    }
+
+    // Find the laporan hama
+    const laporan = await Laporan.findOne({
+      where: { id: id, tipe: "hama", isDeleted: false },
+      include: [
+        {
+          model: Hama,
+          required: true,
+        },
+      ],
+    });
+
+    if (!laporan) {
+      return res.status(404).json({
+        message: "Hama report not found",
+      });
+    }
+
+    // Update the hama status
+    await Hama.update({ status: status }, { where: { id: laporan.Hama.id } });
+
+    return res.status(200).json({
+      status: true,
+      message: `Hama status successfully updated to ${
+        status ? "handled" : "not handled"
+      }`,
+      data: {
+        id: laporan.id,
+        hamaId: laporan.Hama.id,
+        newStatus: status,
+      },
+    });
+  } catch (error) {
+    console.error("Error updateStatusHama:", error);
+    res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
+  }
+};
 
 module.exports = {
   getAllLaporanHama,
   searchLaporanHama,
   getLaporanHamaById,
+  updateStatusHama,
 };
