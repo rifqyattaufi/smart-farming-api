@@ -20,6 +20,14 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.DOUBLE,
         allowNull: false,
       },
+      hapusObjek: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+      },
+      tipeKomoditas: {
+        type: DataTypes.ENUM("individu", "kolektif"),
+        allowNull: false,
+      },
       isDeleted: {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
