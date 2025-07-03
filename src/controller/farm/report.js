@@ -180,23 +180,10 @@ async function fetchAggregatedStats({
       raw: true,
     });
 
-    console.log("Query Parameters:", {
-      startDate,
-      endDate,
-      laporanTipe,
-      countedModelAlias,
-    });
-    console.log("Result:", statistik);
-
     const formattedStatistik = statistik.map((item) => ({
       ...item,
       [countedModelAlias]: parseInt(item[countedModelAlias], 10) || 0,
     }));
-
-    console.log(
-      `Formatted Statistik for ${countedModelAlias} (to be sent in response):`,
-      JSON.stringify(formattedStatistik, null, 2)
-    );
 
     return res.status(200).json({
       message: `${successMessagePrefix} JenisBudidaya ID: ${jenisBudidayaId}`,
@@ -993,51 +980,66 @@ const getStatistikHarianJenisBudidaya = async (req, res) => {
       });
     }
 
-    // Ambil semua laporan harian TERKAIT objek budidaya yang ADA,
-    // kemudian include HarianKebun jika laporan tersebut MEMILIKI HarianKebun (required: false)
-    // Namun, karena kita hanya tertarik pada laporan yang *memang* memiliki detail HarianKebun,
-    // maka `required: true` untuk HarianKebun lebih tepat.
+    // Gunakan Sequelize ORM dengan nama field yang benar: ObjekBudidayaId
     const laporanDenganDetailHarian = await Laporan.findAll({
-      where: {
-        objekBudidayaId: { [Op.in]: semuaObjekBudidayaIds },
-        isDeleted: false,
-        tipe: REPORT_TYPES.HARIAN,
-      },
+      attributes: [
+        ["id", "laporanId"],
+        "ObjekBudidayaId", // Nama field yang benar di database
+        "createdAt",
+      ],
       include: [
         {
           model: HarianKebun,
-          required: true, // Hanya laporan harian yang punya detail HarianKebun
-          where: { isDeleted: false }, // Pastikan HarianKebun tidak di-delete
+          attributes: [
+            "kondisiDaun",
+            "tinggiTanaman",
+            "statusTumbuh",
+            "penyiraman",
+            "pruning",
+            "repotting",
+          ],
+          required: true,
+          where: { isDeleted: false },
         },
       ],
+      where: {
+        ObjekBudidayaId: { [Op.in]: semuaObjekBudidayaIds }, // Nama field yang benar
+        isDeleted: false,
+        tipe: "harian",
+      },
       order: [
-        ["objekBudidayaId", "ASC"],
-        ["createdAt", "DESC"], // Laporan terbaru per objek budidaya akan pertama
+        ["ObjekBudidayaId", "ASC"], // Nama field yang benar
+        ["createdAt", "DESC"],
       ],
+      raw: false, // Gunakan ORM objects
     });
 
     const latestStatusDataMap = new Map();
     const reportCountMap = new Map();
 
-    for (const laporan of laporanDenganDetailHarian) {
-      const objekId = laporan.objekBudidayaId;
-      reportCountMap.set(objekId, (reportCountMap.get(objekId) || 0) + 1);
-      if (!latestStatusDataMap.has(objekId)) {
-        // Karena sudah di-order DESC by createdAt dan include HarianKebun required: true
-        // HarianKebun bisa berupa objek tunggal jika relasi hasOne, atau array jika hasMany.
-        // Asumsi Laporan hasOne HarianKebun jika tipenya 'harian', atau HarianKebuns[0] jika hasMany
-        let detailHarian = null;
-        if (laporan.HarianKebun) {
-          // Jika relasi hasOne: Laporan.HarianKebun
-          detailHarian = laporan.HarianKebun;
-        } else if (laporan.HarianKebuns && laporan.HarianKebuns.length > 0) {
-          // Jika relasi hasMany: Laporan.HarianKebuns
-          detailHarian = laporan.HarianKebuns[0]; // Ambil yang pertama (terbaru karena order)
-        }
+    for (const laporanInstance of laporanDenganDetailHarian) {
+      // Dengan Sequelize ORM dan nama field yang benar
+      const objekId = laporanInstance.ObjekBudidayaId;
+      const harianKebunData = laporanInstance.HarianKebun;
 
-        if (detailHarian) {
-          latestStatusDataMap.set(objekId, detailHarian);
-        }
+      if (!objekId || !harianKebunData) {
+        continue;
+      }
+
+      reportCountMap.set(objekId, (reportCountMap.get(objekId) || 0) + 1);
+
+      if (!latestStatusDataMap.has(objekId)) {
+        // Karena sudah diurutkan DESC by createdAt, data pertama adalah yang terbaru
+        const detailHarian = {
+          kondisiDaun: harianKebunData.kondisiDaun,
+          tinggiTanaman: harianKebunData.tinggiTanaman,
+          statusTumbuh: harianKebunData.statusTumbuh,
+          penyiraman: harianKebunData.penyiraman,
+          pruning: harianKebunData.pruning,
+          repotting: harianKebunData.repotting,
+        };
+
+        latestStatusDataMap.set(objekId, detailHarian);
       }
     }
 
@@ -1091,22 +1093,29 @@ const getStatistikHarianJenisBudidaya = async (req, res) => {
         let alasanDetailParts = [];
         let tempSkorKondisi; // 0: Sehat, 1-2: Perlu Perhatian, 3: Kritis
 
+        // Normalize kondisi daun - trim whitespace and convert to lowercase
+        const normalizedKondisiDaun = kondisiDaun
+          ? kondisiDaun.trim().toLowerCase()
+          : "";
+
         // Klasifikasi berdasarkan kondisi daun
-        if (kondisiDaun === "sehat") {
+        if (normalizedKondisiDaun === "sehat") {
           tempSkorKondisi = 0;
           alasanDetailParts.push(`Kondisi daun: '${kondisiDaun}'`);
         } else if (
-          ["kering", "layu", "keriting", "rusak"].includes(kondisiDaun)
+          ["kering", "layu", "keriting", "rusak"].includes(
+            normalizedKondisiDaun
+          )
         ) {
           tempSkorKondisi = 3; // Kritis
           alasanDetailParts.push(`Kondisi daun: '${kondisiDaun}'`);
           if (
             (String(pruning) === "1" || pruning === true) &&
-            kondisiDaun === "rusak"
+            normalizedKondisiDaun === "rusak"
           ) {
             alasanDetailParts.push("(kemungkinan akibat aktivitas pruning)");
           }
-        } else if (["kuning", "bercak"].includes(kondisiDaun)) {
+        } else if (["kuning", "bercak"].includes(normalizedKondisiDaun)) {
           tempSkorKondisi = 2; // Perlu Perhatian
           alasanDetailParts.push(`Kondisi daun: '${kondisiDaun}'`);
         } else {
@@ -1176,11 +1185,6 @@ const getStatistikHarianJenisBudidaya = async (req, res) => {
         tanamanPerluPerhatianTanpaDataList.push(namaTanaman);
         skorMasalah = jumlahLaporan === 0 ? 1 : jumlahLaporan; // Minimal skor 1 jika tak ada laporan
       }
-
-      console.log("Kondisi Daun:", kondisiDaunDisplay);
-      console.log("Status Klasifikasi:", statusKlasifikasi);
-      console.log("Alasan Status Klasifikasi:", alasanStatusKlasifikasi);
-      console.log("Tinggi Tanaman:", tinggiTanamanDisplay);
 
       detailTanamanList.push({
         id: objekId,

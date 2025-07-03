@@ -1,16 +1,17 @@
 const sequelize = require("../../model/index");
 const Op = sequelize.Sequelize.Op;
 const Grade = sequelize.Grade;
+const PanenRincianGrade = sequelize.PanenRincianGrade;
 const { dataValid } = require("../../validation/dataValidation");
-const { getPaginationOptions } = require('../../utils/paginationUtils');
+const { getPaginationOptions } = require("../../utils/paginationUtils");
 
 const getAllGrade = async (req, res) => {
   try {
     const { page, limit, nama } = req.query;
     const paginationOptions = getPaginationOptions(page, limit);
-    
+
     const whereClause = { isDeleted: false };
-    if (nama && nama.trim() !== '') {
+    if (nama && nama.trim() !== "") {
       whereClause.nama = { [Op.like]: `%${nama}%` };
     }
 
@@ -21,7 +22,9 @@ const getAllGrade = async (req, res) => {
     });
 
     const currentPageNum = parseInt(page, 10) || 1;
-    const totalPages = Math.ceil(count / (paginationOptions.limit || parseInt(limit, 10) || 10));
+    const totalPages = Math.ceil(
+      count / (paginationOptions.limit || parseInt(limit, 10) || 10)
+    );
 
     if (rows.length === 0) {
       return res.status(200).json({
@@ -86,14 +89,23 @@ const getGradeBySearch = async (req, res) => {
       order: [["createdAt", "DESC"]],
       ...paginationOptions,
     });
-    
-    const currentPageNum = parseInt(page, 10) || 1;
-    const totalPages = rows.length > 0 ? Math.ceil(await Grade.count({ where: {nama: { [Op.like]: `%${nama}%` }, isDeleted: false} }) / (paginationOptions.limit || parseInt(limit, 10) || 10)) : 0;
 
+    const currentPageNum = parseInt(page, 10) || 1;
+    const totalPages =
+      rows.length > 0
+        ? Math.ceil(
+            (await Grade.count({
+              where: { nama: { [Op.like]: `%${nama}%` }, isDeleted: false },
+            })) / (paginationOptions.limit || parseInt(limit, 10) || 10)
+          )
+        : 0;
 
     if (rows.length === 0) {
-      return res.status(200).json({ 
-        message: currentPageNum > 1 ? "No more data for this name" : "Data not found for this name",
+      return res.status(200).json({
+        message:
+          currentPageNum > 1
+            ? "No more data for this name"
+            : "Data not found for this name",
         data: [],
         totalItems: totalPages,
         currentPage: currentPageNum,
@@ -128,40 +140,72 @@ const createGrade = async (req, res) => {
   }
 
   try {
-    // const softDeleted = await Grade.findOne({
-    //   where: {
-    //     nama: req.body.nama,
-    //     isDeleted: 1,
-    //   },
-    // });
+    // Cek apakah ada data dengan nama yang sama yang sudah di-soft delete
+    const softDeleted = await Grade.findOne({
+      where: {
+        nama: req.body.nama,
+        isDeleted: true,
+      },
+    });
 
-    // if (softDeleted) {
-    //   softDeleted.isDeleted = 0;
-    //   await softDeleted.save();
-    //   return res.status(200).json({ message: 'Data already exists before, successfully restored grade data' });
-    // } else {
-    //   const existing = await Grade.findOne({
-    //     where: {
-    //       nama: req.body.nama,
-    //       isDeleted: 0,
-    //     },
-    //   });
+    if (softDeleted) {
+      // Restore data yang sudah di-soft delete dengan update semua field
+      await Grade.update(
+        {
+          ...req.body,
+          isDeleted: false,
+          updatedAt: new Date(),
+        },
+        {
+          where: { id: softDeleted.id },
+        }
+      );
 
-    //   if (existing) {
-    //     return res.status(400).json({ message: 'Data already exists.' });
-    //   }
-    // }
-    
-    const data = await Grade.create(req.body);
+      const restoredData = await Grade.findOne({
+        where: { id: softDeleted.id },
+      });
+
+      res.locals.createdData = restoredData.toJSON();
+
+      return res.status(201).json({
+        message:
+          "Data with this name existed before and has been restored with new information",
+        data: restoredData,
+      });
+    }
+
+    // Cek apakah ada data aktif dengan nama yang sama
+    const existing = await Grade.findOne({
+      where: {
+        nama: req.body.nama,
+        isDeleted: false,
+      },
+    });
+
+    if (existing) {
+      return res.status(400).json({
+        status: false,
+        message:
+          "Grade dengan nama tersebut sudah ada. Silakan gunakan nama yang berbeda.",
+      });
+    }
+
+    // Buat data baru jika tidak ada duplikasi
+    const data = await Grade.create({
+      ...req.body,
+      isDeleted: false,
+    });
 
     res.locals.createdData = data.toJSON();
 
     return res.status(201).json({
+      status: true,
       message: "Successfully created new grade data",
       data: data,
     });
   } catch (error) {
     res.status(500).json({
+      status: false,
       message: error.message,
       detail: error,
     });
@@ -176,8 +220,28 @@ const updateGrade = async (req, res) => {
 
     if (!data || data.isDeleted) {
       return res.status(404).json({
+        status: false,
         message: "Data not found",
       });
+    }
+
+    // Jika nama diubah, cek apakah nama baru sudah ada
+    if (req.body.nama && req.body.nama !== data.nama) {
+      const existing = await Grade.findOne({
+        where: {
+          nama: req.body.nama,
+          isDeleted: false,
+          id: { [Op.ne]: req.params.id }, // Exclude current record
+        },
+      });
+
+      if (existing) {
+        return res.status(400).json({
+          status: false,
+          message:
+            "Grade dengan nama tersebut sudah ada. Silakan gunakan nama yang berbeda.",
+        });
+      }
     }
 
     await Grade.update(req.body, {
@@ -191,14 +255,13 @@ const updateGrade = async (req, res) => {
     res.locals.updatedData = updated.toJSON();
 
     return res.status(200).json({
+      status: true,
       message: "Successfully updated grade data",
-      data: {
-        id: req.params.id,
-        ...req.body,
-      },
+      data: updated,
     });
   } catch (error) {
     res.status(500).json({
+      status: false,
       message: error.message,
       detail: error,
     });
@@ -213,7 +276,23 @@ const deleteGrade = async (req, res) => {
 
     if (!data || data.isDeleted) {
       return res.status(404).json({
+        status: false,
         message: "Data not found",
+      });
+    }
+
+    // Check if grade is being used in other tables
+    const panenRincianGradeCount = await PanenRincianGrade.count({
+      where: {
+        gradeId: req.params.id,
+        isDeleted: false,
+      },
+    });
+
+    if (panenRincianGradeCount > 0) {
+      return res.status(400).json({
+        status: false,
+        message: `Grade tidak dapat dihapus karena masih digunakan oleh ${panenRincianGradeCount} data panen. Silakan periksa terlebih dahulu.`,
       });
     }
 
@@ -223,10 +302,12 @@ const deleteGrade = async (req, res) => {
     res.locals.updatedData = data;
 
     return res.status(200).json({
+      status: true,
       message: "Successfully deleted grade data",
     });
   } catch (error) {
     res.status(500).json({
+      status: false,
       message: error.message,
       detail: error,
     });

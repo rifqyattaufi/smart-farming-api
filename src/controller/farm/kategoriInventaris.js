@@ -1,6 +1,7 @@
 const sequelize = require("../../model/index");
 const Op = sequelize.Sequelize.Op;
 const KategoriInventaris = sequelize.KategoriInventaris;
+const Inventaris = sequelize.Inventaris;
 const { dataValid } = require("../../validation/dataValidation");
 const { getPaginationOptions } = require("../../utils/paginationUtils");
 
@@ -164,43 +165,73 @@ const createKategoriInventaris = async (req, res) => {
     });
   }
   try {
+    // Cek apakah ada data dengan nama yang sama yang sudah di-soft delete
     const softDeleted = await KategoriInventaris.findOne({
       where: {
         nama: req.body.nama,
-        isDeleted: 1,
+        isDeleted: true,
       },
     });
 
     if (softDeleted) {
-      softDeleted.isDeleted = 0;
-      await softDeleted.save();
-      return res.status(200).json({
-        message:
-          "Data already exists before, successfully restored kategori inventaris data",
-      });
-    } else {
-      const existing = await KategoriInventaris.findOne({
-        where: {
-          nama: req.body.nama,
-          isDeleted: 0,
+      // Restore data yang sudah di-soft delete dengan update semua field
+      await KategoriInventaris.update(
+        {
+          ...req.body,
+          isDeleted: false,
+          updatedAt: new Date(),
         },
+        {
+          where: { id: softDeleted.id },
+        }
+      );
+
+      const restoredData = await KategoriInventaris.findOne({
+        where: { id: softDeleted.id },
       });
 
-      if (existing) {
-        return res.status(400).json({ message: "Data already exists." });
-      }
+      res.locals.createdData = restoredData.toJSON();
+
+      return res.status(201).json({
+        status: true,
+        message:
+          "Data with this name existed before and has been restored with new information",
+        data: restoredData,
+      });
     }
 
-    const data = await KategoriInventaris.create(req.body);
+    // Cek apakah ada data aktif dengan nama yang sama
+    const existing = await KategoriInventaris.findOne({
+      where: {
+        nama: req.body.nama,
+        isDeleted: false,
+      },
+    });
+
+    if (existing) {
+      return res.status(400).json({
+        status: false,
+        message:
+          "Kategori inventaris dengan nama tersebut sudah ada. Silakan gunakan nama yang berbeda.",
+      });
+    }
+
+    // Buat data baru jika tidak ada duplikasi
+    const data = await KategoriInventaris.create({
+      ...req.body,
+      isDeleted: false,
+    });
 
     res.locals.createdData = data.toJSON();
 
     return res.status(201).json({
+      status: true,
       message: "Successfully created new kategori inventaris data",
       data: data,
     });
   } catch (error) {
     res.status(500).json({
+      status: false,
       message: error.message,
       detail: error,
     });
@@ -215,8 +246,28 @@ const updateKategoriInventaris = async (req, res) => {
 
     if (!data || data.isDeleted) {
       return res.status(404).json({
+        status: false,
         message: "Data not found",
       });
+    }
+
+    // Jika nama diubah, cek apakah nama baru sudah ada
+    if (req.body.nama && req.body.nama !== data.nama) {
+      const existing = await KategoriInventaris.findOne({
+        where: {
+          nama: req.body.nama,
+          isDeleted: false,
+          id: { [Op.ne]: req.params.id }, // Exclude current record
+        },
+      });
+
+      if (existing) {
+        return res.status(400).json({
+          status: false,
+          message:
+            "Kategori inventaris dengan nama tersebut sudah ada. Silakan gunakan nama yang berbeda.",
+        });
+      }
     }
 
     await KategoriInventaris.update(req.body, {
@@ -232,14 +283,13 @@ const updateKategoriInventaris = async (req, res) => {
     res.locals.updatedData = updated.toJSON();
 
     return res.status(200).json({
+      status: true,
       message: "Successfully updated kategori inventaris data",
-      data: {
-        id: req.params.id,
-        ...req.body,
-      },
+      data: updated,
     });
   } catch (error) {
     res.status(500).json({
+      status: false,
       message: error.message,
       detail: error,
     });
@@ -254,7 +304,23 @@ const deleteKategoriInventaris = async (req, res) => {
 
     if (!data || data.isDeleted) {
       return res.status(404).json({
+        status: false,
         message: "Data not found",
+      });
+    }
+
+    // Check if kategori inventaris is being used in other tables
+    const inventarisCount = await Inventaris.count({
+      where: {
+        kategoriInventarisId: req.params.id,
+        isDeleted: false,
+      },
+    });
+
+    if (inventarisCount > 0) {
+      return res.status(400).json({
+        status: false,
+        message: `Kategori inventaris tidak dapat dihapus karena masih digunakan oleh ${inventarisCount} inventaris. Silakan periksa terlebih dahulu.`,
       });
     }
 
@@ -264,10 +330,12 @@ const deleteKategoriInventaris = async (req, res) => {
     res.locals.updatedData = data;
 
     return res.status(200).json({
+      status: true,
       message: "Successfully deleted kategori inventaris data",
     });
   } catch (error) {
     res.status(500).json({
+      status: false,
       message: error.message,
       detail: error,
     });
