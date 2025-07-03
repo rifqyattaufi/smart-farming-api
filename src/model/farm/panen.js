@@ -26,6 +26,7 @@ module.exports = (sequelize, DataTypes) => {
   Panen.associate = (models) => {
     Panen.belongsTo(models.Komoditas, {
       foreignKey: "komoditasId",
+      as: "komoditas",
     });
     Panen.belongsTo(models.Laporan);
   };

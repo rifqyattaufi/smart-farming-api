@@ -7,6 +7,11 @@ module.exports = {
     database: process.env.DB_NAME,
     host: process.env.DB_HOST,
     dialect: "mysql",
+    dialectOptions: {
+      charset: "utf8mb4",
+      supportBigNumbers: true,
+      bigNumberStrings: true,
+    },
     // timezone: "+07:00",
     // logging: (...args) => console.log(...args),
     // dialectOptions: {
@@ -28,6 +33,17 @@ module.exports = {
     dialect: "mysql",
     timezone: "+07:00",
     logging: false,
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false,
+      },
+      charset: "utf8mb4",
+      collation: "utf8mb4_unicode_ci",
+      supportBigNumbers: true,
+      bigNumberStrings: true,
+    },
+
     // dialectOptions: {
     //   useUTC: false,
     // },

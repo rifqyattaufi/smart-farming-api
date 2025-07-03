@@ -27,7 +27,8 @@ module.exports = (sequelize, DataTypes) => {
           isInt: true,
           min: 0,
         },
-        comment: "Total dari semua grade yang dipanen + yang tidak ter-grade jika ada",
+        comment:
+          "Total dari semua grade yang dipanen + yang tidak ter-grade jika ada",
       },
       gagalPanen: {
         type: DataTypes.INTEGER,
@@ -58,6 +59,7 @@ module.exports = (sequelize, DataTypes) => {
   PanenKebun.associate = (models) => {
     PanenKebun.belongsTo(models.Komoditas, {
       foreignKey: "komoditasId",
+      as: "komoditas",
     });
     PanenKebun.belongsTo(models.Laporan);
     PanenKebun.hasMany(models.PanenRincianGrade);

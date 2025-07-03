@@ -6,120 +6,16 @@ const ObjekBudidaya = sequelize.ObjekBudidaya;
 const jenisBudidaya = sequelize.JenisBudidaya;
 const Kematian = sequelize.Kematian;
 const Panen = sequelize.Panen;
+const PanenKebun = sequelize.PanenKebun;
 const UnitBudidaya = sequelize.UnitBudidaya;
 const JenisBudidaya = sequelize.JenisBudidaya;
 const Komoditas = sequelize.Komoditas;
 const Laporan = sequelize.Laporan;
 const HarianKebun = sequelize.HarianKebun;
 const Sakit = sequelize.Sakit;
+const Satuan = sequelize.Satuan;
 
 const { getPaginationOptions } = require("../../utils/paginationUtils");
-
-async function hitungSemuaTanamanSehatTumbuhan() {
-  const semuaObjekBudidayaTumbuhan = await ObjekBudidaya.findAll({
-    include: [
-      {
-        model: UnitBudidaya,
-        required: true,
-        include: [
-          {
-            model: JenisBudidaya,
-            required: true,
-            where: { tipe: "tumbuhan", isDeleted: false },
-          },
-        ],
-        where: { isDeleted: false },
-      },
-    ],
-    where: { isDeleted: false },
-    attributes: ["id"],
-  });
-
-  if (!semuaObjekBudidayaTumbuhan.length) {
-    console.log("Tidak ada ObjekBudidaya tumbuhan ditemukan.");
-
-    return 0;
-  }
-  const semuaObjekBudidayaIds = semuaObjekBudidayaTumbuhan.map((ob) => ob.id);
-
-  const semuaLaporanHarian = await Laporan.findAll({
-    where: {
-      objekBudidayaId: { [sequelize.Sequelize.Op.in]: semuaObjekBudidayaIds },
-      isDeleted: false,
-      tipe: "harian",
-    },
-    include: [
-      {
-        model: HarianKebun,
-        required: true,
-      },
-    ],
-    order: [
-      ["objekBudidayaId", "ASC"],
-      ["createdAt", "DESC"],
-    ],
-  });
-
-  const latestSehatHarianReportDateMap = new Map();
-  for (const laporan of semuaLaporanHarian) {
-    if (!latestSehatHarianReportDateMap.has(laporan.objekBudidayaId)) {
-      if (laporan.HarianKebun && laporan.HarianKebun.kondisiDaun === "sehat") {
-        latestSehatHarianReportDateMap.set(
-          laporan.objekBudidayaId,
-          new Date(laporan.createdAt)
-        );
-      }
-    }
-  }
-
-  const semuaLaporanSakitDenganDetail = await Laporan.findAll({
-    where: {
-      objekBudidayaId: { [sequelize.Sequelize.Op.in]: semuaObjekBudidayaIds },
-      isDeleted: false,
-      tipe: "sakit",
-    },
-    include: [
-      {
-        model: Sakit,
-        required: true,
-      },
-    ],
-    attributes: ["objekBudidayaId", "createdAt"],
-    order: [
-      ["objekBudidayaId", "ASC"],
-      ["createdAt", "DESC"],
-    ],
-  });
-
-  const latestSakitReportDateMap = new Map();
-  for (const laporanSakit of semuaLaporanSakitDenganDetail) {
-    if (!latestSakitReportDateMap.has(laporanSakit.objekBudidayaId)) {
-      latestSakitReportDateMap.set(
-        laporanSakit.objekBudidayaId,
-        new Date(laporanSakit.createdAt)
-      );
-    }
-  }
-
-  let tanamanSehatCount = 0;
-  for (const objekId of semuaObjekBudidayaIds) {
-    const tanggalLaporanHarianSehat =
-      latestSehatHarianReportDateMap.get(objekId);
-
-    if (tanggalLaporanHarianSehat) {
-      const tanggalLaporanSakitTerbaru = latestSakitReportDateMap.get(objekId);
-
-      if (!tanggalLaporanSakitTerbaru) {
-        tanamanSehatCount++;
-      } else {
-        if (tanggalLaporanHarianSehat > tanggalLaporanSakitTerbaru) {
-          tanamanSehatCount++;
-        }
-      }
-    }
-  }
-  return tanamanSehatCount;
-}
 
 const dashboardPerkebunan = async (req, res) => {
   const openWeatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=-7.249&lon=112.751&units=metric&appid=${process.env.OPEN_WEATHER_API_KEY}`;
@@ -134,9 +30,26 @@ const dashboardPerkebunan = async (req, res) => {
       },
     });
 
-    const jumlahSehat = hitungSemuaTanamanSehatTumbuhan();
-    // const jumlahSehatCount = await jumlahSehat;
-    const jumlahSehatCount = 9;
+    const jumlahTanaman = await ObjekBudidaya.count({
+      include: [
+        {
+          model: sequelize.UnitBudidaya,
+          required: true,
+          include: [
+            {
+              model: sequelize.JenisBudidaya,
+              required: true,
+              where: {
+                tipe: "tumbuhan",
+              },
+            },
+          ],
+        },
+      ],
+      where: {
+        isDeleted: false,
+      },
+    });
 
     const jumlahSakit = await Sakit.count({
       include: [
@@ -216,13 +129,15 @@ const dashboardPerkebunan = async (req, res) => {
       },
     });
 
-    const jumlahPanen = await Panen.count({
+    const jumlahPanen = await PanenKebun.count({
+      //hitung jumlah panenkebun dalam 30 hari terakhir
       include: [
         {
           model: sequelize.Laporan,
           required: true,
           where: {
             isDeleted: false,
+            tipe: "panen",
           },
           include: [
             {
@@ -280,27 +195,6 @@ const dashboardPerkebunan = async (req, res) => {
       { type: QueryTypes.SELECT }
     );
 
-    const aktivitasTerbaruFormatted = aktivitasTerbaru.map((aktivitas) => {
-      const userName = aktivitas.userName || "Pengguna";
-      let judul;
-
-      switch (aktivitas.tipe) {
-        case "inventaris":
-          judul = `${userName} telah melaporkan penggunaan ${aktivitas.inventarisNama}`;
-          break;
-        case "vitamin":
-          judul = `${userName} telah melaporkan penggunaan ${aktivitas.vitaminNama}`;
-          break;
-        default:
-          judul = `${userName} telah melaporkan ${aktivitas.tipe} ${aktivitas.jenisBudidayaTipe}`;
-      }
-
-      return {
-        ...aktivitas,
-        judul: judul,
-      };
-    });
-
     const daftarKebun = await UnitBudidaya.findAll({
       include: [
         {
@@ -316,7 +210,6 @@ const dashboardPerkebunan = async (req, res) => {
         isDeleted: false,
       },
       order: [["createdAt", "DESC"]],
-      limit: 2,
     });
 
     const daftarTanaman = await JenisBudidaya.findAll({
@@ -325,7 +218,6 @@ const dashboardPerkebunan = async (req, res) => {
         isDeleted: false,
       },
       order: [["createdAt", "DESC"]],
-      limit: 2,
     });
 
     const daftarKomoditas = await Komoditas.findAll({
@@ -337,12 +229,18 @@ const dashboardPerkebunan = async (req, res) => {
             tipe: "tumbuhan",
           },
         },
+        {
+          model: Satuan,
+          required: true,
+          where: {
+            isDeleted: false,
+          },
+        },
       ],
       where: {
         isDeleted: false,
       },
       order: [["createdAt", "DESC"]],
-      limit: 2,
     });
 
     res.status(200).json({
@@ -351,11 +249,11 @@ const dashboardPerkebunan = async (req, res) => {
       data: {
         suhu: Math.round(suhu.data.main.temp),
         jenisTanaman: jenisTanaman,
-        jumlahSehat: jumlahSehatCount,
+        jumlahTanaman: jumlahTanaman,
         jumlahKematian: jumlahKematian,
         jumlahSakit: jumlahSakit,
         jumlahPanen: jumlahPanen,
-        aktivitasTerbaru: aktivitasTerbaruFormatted,
+        aktivitasTerbaru: aktivitasTerbaru,
         daftarKebun: daftarKebun,
         daftarTanaman: daftarTanaman,
         daftarKomoditas: daftarKomoditas,
@@ -413,38 +311,11 @@ const riwayatAktivitasAll = async (req, res) => {
     const totalItems = parseInt(totalItemsResult[0].totalItems, 10);
     const totalPages = Math.ceil(totalItems / limit);
 
-    const aktivitasTerbaruFormatted = aktivitasTerbaru.map((aktivitas) => {
-      const userName = aktivitas.userName || "Pengguna";
-      let judul;
-
-      switch (aktivitas.tipe) {
-        case "inventaris":
-          judul = `${userName} telah melaporkan penggunaan ${
-            aktivitas.inventarisNama || "Inventaris tidak diketahui"
-          }`;
-          break;
-        case "vitamin":
-          judul = `${userName} telah melaporkan penggunaan ${
-            aktivitas.vitaminNama || "Vitamin tidak diketahui"
-          }`;
-          break;
-        default:
-          judul = `${userName} telah melaporkan ${
-            aktivitas.tipe || "aktivitas"
-          } ${aktivitas.jenisBudidayaTipe || ""}`;
-      }
-
-      return {
-        ...aktivitas,
-        judul: judul,
-      };
-    });
-
     res.status(200).json({
       status: "success",
       message: "Riwayat aktivitas retrieved successfully",
       data: {
-        aktivitasTerbaru: aktivitasTerbaruFormatted,
+        aktivitasTerbaru: aktivitasTerbaru,
       },
       pagination: {
         currentPage: currentPage,
@@ -606,27 +477,6 @@ const dashboardPeternakan = async (req, res) => {
       { type: QueryTypes.SELECT }
     );
 
-    const aktivitasTerbaruFormatted = aktivitasTerbaru.map((aktivitas) => {
-      const userName = aktivitas.userName || "Pengguna";
-      let judul;
-
-      switch (aktivitas.tipe) {
-        case "inventaris":
-          judul = `${userName} telah melaporkan penggunaan ${aktivitas.inventarisNama}`;
-          break;
-        case "vitamin":
-          judul = `${userName} telah melaporkan penggunaan ${aktivitas.vitaminNama}`;
-          break;
-        default:
-          judul = `${userName} telah melaporkan ${aktivitas.tipe} ${aktivitas.jenisBudidayaTipe}`;
-      }
-
-      return {
-        ...aktivitas,
-        judul: judul,
-      };
-    });
-
     const daftarKandang = await UnitBudidaya.findAll({
       include: [
         {
@@ -645,7 +495,6 @@ const dashboardPeternakan = async (req, res) => {
         isDeleted: false,
       },
       order: [["createdAt", "DESC"]],
-      limit: 2,
     });
 
     const daftarTernak = await JenisBudidaya.findAll({
@@ -654,7 +503,6 @@ const dashboardPeternakan = async (req, res) => {
         isDeleted: false,
       },
       order: [["createdAt", "DESC"]],
-      limit: 2,
     });
 
     const daftarKomoditas = await Komoditas.findAll({
@@ -667,12 +515,18 @@ const dashboardPeternakan = async (req, res) => {
             isDeleted: false,
           },
         },
+        {
+          model: Satuan,
+          required: true,
+          where: {
+            isDeleted: false,
+          },
+        },
       ],
       where: {
         isDeleted: false,
       },
       order: [["createdAt", "DESC"]],
-      limit: 2,
     });
 
     res.status(200).json({
@@ -683,7 +537,7 @@ const dashboardPeternakan = async (req, res) => {
         jenisTernak: jenisTernak,
         jumlahKematian: jumlahKematian,
         jumlahPanen: jumlahPanen,
-        aktivitasTerbaru: aktivitasTerbaruFormatted,
+        aktivitasTerbaru: aktivitasTerbaru,
         daftarKandang: daftarKandang,
         daftarTernak: daftarTernak,
         daftarKomoditas: daftarKomoditas,

@@ -46,6 +46,7 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: "userId",
       as: "user",
     });
+    // Laporan.belongsTo(models.User);
     Laporan.belongsTo(models.UnitBudidaya);
     Laporan.belongsTo(models.ObjekBudidaya);
 
@@ -57,6 +58,7 @@ module.exports = (sequelize, DataTypes) => {
     Laporan.hasOne(models.Panen);
     Laporan.hasOne(models.Sakit);
     Laporan.hasOne(models.Hama);
+    Laporan.hasOne(models.PanenKebun);
   };
 
   return Laporan;
