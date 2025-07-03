@@ -22,6 +22,7 @@ const Vitamin = sequelize.Vitamin;
 const PanenKebun = sequelize.PanenKebun;
 const PanenRincianGrade = sequelize.PanenRincianGrade;
 const Panen = sequelize.Panen;
+const DetailPanen = sequelize.DetailPanen;
 const Hama = sequelize.Hama;
 
 const PenggunaanInventaris = sequelize.PenggunaanInventaris;
@@ -48,18 +49,98 @@ const createLaporanHarianKebun = async (req, res) => {
       { transaction: t }
     );
 
-    const harian = await HarianKebun.create(
-      {
-        LaporanId: data.id,
-        penyiraman: harianKebun.penyiraman,
-        pruning: harianKebun.pruning,
-        repotting: harianKebun.repotting,
-        tinggiTanaman: harianKebun.tinggiTanaman,
-        kondisiDaun: harianKebun.kondisiDaun,
-        statusTumbuh: harianKebun.statusTumbuh,
-      },
-      { transaction: t }
-    );
+    // Inisialisasi data harian dengan nilai dari request
+    let finalHarianData = {
+      LaporanId: data.id,
+      // Tindakan massal tetap dipertahankan
+      penyiraman: harianKebun.penyiraman || false,
+      pruning: harianKebun.pruning || false,
+      repotting: harianKebun.repotting || false,
+      // Data individual
+      tinggiTanaman:
+        harianKebun.tinggiTanaman === undefined
+          ? null
+          : harianKebun.tinggiTanaman,
+      kondisiDaun:
+        harianKebun.kondisiDaun === undefined || harianKebun.kondisiDaun === ""
+          ? null
+          : harianKebun.kondisiDaun,
+      statusTumbuh:
+        harianKebun.statusTumbuh === undefined ||
+        harianKebun.statusTumbuh === ""
+          ? null
+          : harianKebun.statusTumbuh,
+    };
+
+    // Jika ada field individual yang null, coba ambil dari laporan terakhir
+    if (
+      finalHarianData.tinggiTanaman === null ||
+      finalHarianData.kondisiDaun === null ||
+      finalHarianData.statusTumbuh === null
+    ) {
+      try {
+        const lastReport = await Laporan.findOne({
+          where: {
+            objekBudidayaId: req.body.objekBudidayaId,
+            isDeleted: false,
+            tipe: "harian",
+          },
+          order: [["createdAt", "DESC"]],
+          include: [
+            {
+              model: HarianKebun,
+            },
+          ],
+          transaction: t,
+        });
+
+        if (lastReport && lastReport.HarianKebun) {
+          const lastHarian = lastReport.HarianKebun;
+
+          // Gunakan data terakhir jika data baru null
+          if (
+            finalHarianData.tinggiTanaman === null &&
+            lastHarian.tinggiTanaman !== null
+          ) {
+            finalHarianData.tinggiTanaman = lastHarian.tinggiTanaman;
+          }
+          if (
+            finalHarianData.kondisiDaun === null &&
+            lastHarian.kondisiDaun !== null
+          ) {
+            finalHarianData.kondisiDaun = lastHarian.kondisiDaun;
+          }
+          if (
+            finalHarianData.statusTumbuh === null &&
+            lastHarian.statusTumbuh !== null
+          ) {
+            finalHarianData.statusTumbuh = lastHarian.statusTumbuh;
+          }
+        }
+      } catch (lastReportError) {
+        // Jika gagal mengambil laporan terakhir, lanjutkan dengan data yang ada
+        console.log(
+          "Gagal mengambil laporan terakhir:",
+          lastReportError.message
+        );
+      }
+    }
+
+    // Jika masih ada field yang null setelah mencoba mengambil dari laporan terakhir,
+    // berikan nilai default untuk tanaman baru
+    if (finalHarianData.tinggiTanaman === null) {
+      finalHarianData.tinggiTanaman = 0.0;
+    }
+    if (finalHarianData.kondisiDaun === null) {
+      finalHarianData.kondisiDaun = "sehat";
+    }
+    if (finalHarianData.statusTumbuh === null) {
+      finalHarianData.statusTumbuh = "bibit";
+    }
+
+    const harian = await HarianKebun.create(finalHarianData, {
+      transaction: t,
+    });
 
     await t.commit();
 
@@ -418,7 +499,11 @@ const createLaporanPanen = async (req, res) => {
   const t = await db.transaction();
 
   try {
-    const { panen, isDeleted } = req.body;
+    const { panen, detailPanen } = req.body;
+
+    const komoditas = await Komoditas.findOne({
+      where: { id: panen.komoditasId },
+    });
 
     const data = await Laporan.create(
       {
@@ -439,60 +524,93 @@ const createLaporanPanen = async (req, res) => {
       { transaction: t }
     );
 
-    const komoditas = await Komoditas.findOne({
-      where: { id: panen.komoditasId },
-    });
-
     komoditas.jumlah += panen.jumlah;
-
     await komoditas.save({ transaction: t });
 
-    if (isDeleted == true) {
-      if (req.body.objekBudidayaId != null) {
-        await ObjekBudidaya.update(
-          {
-            isDeleted: true,
-          },
-          {
+    if (komoditas.tipeKomoditas == "individu") {
+      if (komoditas.hapusObjek == true) {
+        if (req.body.objekBudidayaId != null) {
+          await ObjekBudidaya.update(
+            {
+              isDeleted: true,
+            },
+            {
+              transaction: t,
+              where: {
+                id: req.body.objekBudidayaId,
+              },
+            }
+          );
+
+          await UnitBudidaya.decrement("jumlah", {
+            by: 1,
             transaction: t,
             where: {
-              id: req.body.objekBudidayaId,
+              id: req.body.unitBudidayaId,
             },
-          }
-        );
+          });
+        } else {
+          await UnitBudidaya.decrement("jumlah", {
+            by: 1,
+            transaction: t,
+            where: {
+              id: req.body.unitBudidayaId,
+            },
+          });
+        }
+      }
+    } else {
+      const unitBudidaya = await UnitBudidaya.findOne({
+        where: { id: req.body.unitBudidayaId },
+      });
 
-        await UnitBudidaya.decrement("jumlah", {
-          by: 1,
-          transaction: t,
-          where: {
-            id: req.body.unitBudidayaId,
-          },
-        });
+      if (unitBudidaya.tipe == "individu") {
+        for (const item of detailPanen) {
+          await DetailPanen.create(
+            {
+              PanenId: laporanPanen.id,
+              ObjekBudidayaId: item,
+            },
+            { transaction: t }
+          );
+
+          if (komoditas.hapusObjek == true) {
+            await ObjekBudidaya.update(
+              {
+                isDeleted: true,
+              },
+              {
+                transaction: t,
+                where: {
+                  id: item,
+                },
+              }
+            );
+
+            await UnitBudidaya.decrement("jumlah", {
+              by: 1,
+              transaction: t,
+              where: {
+                id: req.body.unitBudidayaId,
+              },
+            });
+          }
+        }
       } else {
-        await UnitBudidaya.decrement("jumlah", {
-          by: 1,
-          transaction: t,
-          where: {
-            id: req.body.unitBudidayaId,
-          },
-        });
+        unitBudidaya.jumlah -= panen.jumlahHewan;
+
+        await unitBudidaya.save({ transaction: t });
       }
     }
 
     await t.commit();
 
-    res.locals.createdData = { data, laporanPanen };
-
     return res.status(201).json({
       message: "Successfully created new laporan data",
-      data: {
-        data,
-        laporanPanen,
-      },
     });
   } catch (error) {
     await t.rollback();
-    res.status(500).json({
+    return res.status(500).json({
       message: error.message,
       detail: error,
     });

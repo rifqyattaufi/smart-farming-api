@@ -33,7 +33,10 @@ module.exports = (sequelize, DataTypes) => {
 
   ObjekBudidaya.associate = (models) => {
     ObjekBudidaya.hasMany(models.Laporan);
-
+    ObjekBudidaya.hasMany(models.DetailPanen, {
+      foreignKey: "objekBudidayaId",
+      as: "DetailPanen",
+    });
     ObjekBudidaya.belongsTo(models.UnitBudidaya);
   };
 

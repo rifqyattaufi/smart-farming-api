@@ -33,6 +33,11 @@ module.exports = (sequelize, DataTypes) => {
       gambar: {
         type: DataTypes.STRING,
       },
+      periodePanen: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        defaultValue: null,
+      },
       isDeleted: {
         type: DataTypes.BOOLEAN,
         defaultValue: false,

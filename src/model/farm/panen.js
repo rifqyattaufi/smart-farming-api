@@ -29,6 +29,8 @@ module.exports = (sequelize, DataTypes) => {
       as: "komoditas",
     });
     Panen.belongsTo(models.Laporan);
+
+    Panen.hasMany(models.DetailPanen);
   };
 
   return Panen;

@@ -2,6 +2,8 @@ const { QueryTypes, Op, fn, col, where } = require("sequelize");
 const sequelize = require("../../model/index");
 const { getPaginationOptions } = require("../../utils/paginationUtils");
 const komoditas = require("../../model/farm/komoditas");
+const model = require("../../model/index");
+const { required } = require("yargs");
 
 const db = sequelize.sequelize;
 
@@ -15,6 +17,7 @@ const Kematian = sequelize.Kematian;
 
 const JenisBudidaya = sequelize.JenisBudidaya;
 const ObjekBudidaya = sequelize.ObjekBudidaya;
+const DetailPanen = sequelize.DetailPanen;
 const HarianKebun = sequelize.HarianKebun;
 const Vitamin = sequelize.Vitamin;
 const Grade = sequelize.Grade;
@@ -1642,6 +1645,88 @@ const getRiwayatPelaporanPanenTanaman = (req, res) => {
   });
 };
 
+// Function to get objekBudidaya that haven't been harvested for X days
+const getObjekBudidayaBelumPanen = async (req, res) => {
+  try {
+    const { jenisBudidayaId } = req.params;
+
+    if (!jenisBudidayaId) {
+      return res.status(400).json({
+        message: "Path parameter 'jenisBudidayaId' is required.",
+      });
+    }
+
+    const jenisBudidaya = await JenisBudidaya.findOne({
+      where: { id: jenisBudidayaId, isDeleted: false },
+    });
+
+    const harvestIntervalDays = jenisBudidaya.periodePanen;
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - harvestIntervalDays);
+
+    const objekBudidaya = await ObjekBudidaya.findAll({
+      where: {
+        isDeleted: false,
+        "$DetailPanen.id$": null,
+      },
+      order: [
+        [db.fn("length", db.col("namaId")), "ASC"],
+        ["namaId", "ASC"],
+      ],
+      include: [
+        {
+          model: UnitBudidaya,
+          required: true,
+          attributes: ["id", "nama"],
+          where: {
+            jenisBudidayaId: jenisBudidayaId,
+            isDeleted: false,
+          },
+        },
+        {
+          model: DetailPanen,
+          as: "DetailPanen",
+          attributes: ["id"],
+          required: false,
+          where: {
+            isDeleted: false,
+            createdAt: {
+              [Op.gte]: cutoffDate,
+            },
+          },
+        },
+      ],
+    });
+
+    // return res.status(200).json({
+    //   length: objekBudidaya.length,
+    //   data: objekBudidaya,
+    // });
+
+    return res.status(200).json({
+      message: `Successfully retrieved objects that need harvesting for ${jenisBudidaya.nama}.`,
+      data: {
+        cutoffDate: cutoffDate,
+        totalObjects: objekBudidaya.length,
+        objects: objekBudidaya.map((obj) => ({
+          id: obj.id,
+          namaId: obj.namaId,
+          unitBudidaya: {
+            id: obj.UnitBudidaya.id,
+            nama: obj.UnitBudidaya.nama,
+          },
+        })),
+      },
+    });
+  } catch (error) {
+    console.error("Error in getObjekBudidayaBelumPanen:", error);
+    return res.status(500).json({
+      message: "An error occurred while fetching objects that need harvesting.",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   getStatistikLaporanHarian,
   getRiwayatPemberianNutrisiPerJenisBudidaya,
@@ -1676,4 +1761,7 @@ module.exports = {
   getStatistikPanenTernak,
   getStatistikJumlahPanenTernak,
   getRiwayatPelaporanPanenTernak,
+
+  // Objek Budidaya Belum Panen
+  getObjekBudidayaBelumPanen,
 };
