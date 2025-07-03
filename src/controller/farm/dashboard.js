@@ -6,6 +6,7 @@ const ObjekBudidaya = sequelize.ObjekBudidaya;
 const jenisBudidaya = sequelize.JenisBudidaya;
 const Kematian = sequelize.Kematian;
 const Panen = sequelize.Panen;
+const PanenKebun = sequelize.PanenKebun;
 const UnitBudidaya = sequelize.UnitBudidaya;
 const JenisBudidaya = sequelize.JenisBudidaya;
 const Komoditas = sequelize.Komoditas;
@@ -128,13 +129,15 @@ const dashboardPerkebunan = async (req, res) => {
       },
     });
 
-    const jumlahPanen = await Panen.count({
+    const jumlahPanen = await PanenKebun.count({
+      //hitung jumlah panenkebun dalam 30 hari terakhir
       include: [
         {
           model: sequelize.Laporan,
           required: true,
           where: {
             isDeleted: false,
+            tipe: "panen",
           },
           include: [
             {
@@ -207,7 +210,6 @@ const dashboardPerkebunan = async (req, res) => {
         isDeleted: false,
       },
       order: [["createdAt", "DESC"]],
-      limit: 2,
     });
 
     const daftarTanaman = await JenisBudidaya.findAll({
@@ -216,7 +218,6 @@ const dashboardPerkebunan = async (req, res) => {
         isDeleted: false,
       },
       order: [["createdAt", "DESC"]],
-      limit: 2,
     });
 
     const daftarKomoditas = await Komoditas.findAll({
@@ -240,9 +241,8 @@ const dashboardPerkebunan = async (req, res) => {
         isDeleted: false,
       },
       order: [["createdAt", "DESC"]],
-      limit: 2,
     });
-    
+
     res.status(200).json({
       status: "success",
       message: "Dashboard data retrieved successfully",
@@ -495,7 +495,6 @@ const dashboardPeternakan = async (req, res) => {
         isDeleted: false,
       },
       order: [["createdAt", "DESC"]],
-      limit: 2,
     });
 
     const daftarTernak = await JenisBudidaya.findAll({
@@ -504,7 +503,6 @@ const dashboardPeternakan = async (req, res) => {
         isDeleted: false,
       },
       order: [["createdAt", "DESC"]],
-      limit: 2,
     });
 
     const daftarKomoditas = await Komoditas.findAll({
@@ -529,7 +527,6 @@ const dashboardPeternakan = async (req, res) => {
         isDeleted: false,
       },
       order: [["createdAt", "DESC"]],
-      limit: 5,
     });
 
     res.status(200).json({

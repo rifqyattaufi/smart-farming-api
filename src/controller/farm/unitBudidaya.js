@@ -227,7 +227,6 @@ const createUnitBudidaya = async (req, res) => {
         });
       }
     }
-
     if (notifikasi.panen != null) {
       await ScheduledUnitNotification.create(
         {
@@ -478,7 +477,6 @@ const updateUnitBudidaya = async (req, res) => {
         }
       );
     }
-
     if (notifikasi.vitamin != null) {
       const vitaminNotifData = {
         unitBudidayaId: updated.id,
