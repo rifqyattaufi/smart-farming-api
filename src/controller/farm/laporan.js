@@ -564,7 +564,7 @@ const createLaporanPanen = async (req, res) => {
         where: { id: req.body.unitBudidayaId },
       });
 
-      if ((unitBudidaya.tipe = "individu")) {
+      if (unitBudidaya.tipe == "individu") {
         for (const item of detailPanen) {
           await DetailPanen.create(
             {
