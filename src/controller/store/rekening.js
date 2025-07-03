@@ -92,7 +92,6 @@ const updateRekening = async (req, res) => {
 
 const getRekeningByUserId = async (req, res) => {
   try {
-    const { userId } = req.params;
 
     const rekening = await Rekening.findOne({
       where: {
@@ -101,7 +100,7 @@ const getRekeningByUserId = async (req, res) => {
       },
     });
 
-    if (rekening.length === 0) {
+    if (rekening === null) {
       return res.status(404).json({
         message: "Rekening not found for this user",
       });
