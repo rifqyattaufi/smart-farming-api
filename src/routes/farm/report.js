@@ -17,7 +17,10 @@ router.get(
   "/statistik-pemberian-disinfektan/:id",
   reportController.getStatistikDisinfektan
 );
-router.get("/statistik-panen-kebun/:id", reportController.getStatistikPanenTanaman);
+router.get(
+  "/statistik-panen-kebun/:id",
+  reportController.getStatistikPanenTanaman
+);
 router.get(
   "/history/panen-tanaman/jenis-budidaya/:jenisBudidayaId",
   reportController.getRiwayatPelaporanPanenTanaman
@@ -96,6 +99,11 @@ router.get(
 router.get(
   "/history/kematian/jenis-budidaya/:jenisBudidayaId",
   reportController.getRiwayatPelaporanKematianPerJenisBudidaya
+);
+
+router.get(
+  "/belum-panen/:jenisBudidayaId",
+  reportController.getObjekBudidayaBelumPanen
 );
 
 module.exports = router;
