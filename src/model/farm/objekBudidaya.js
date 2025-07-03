@@ -33,6 +33,7 @@ module.exports = (sequelize, DataTypes) => {
 
   ObjekBudidaya.associate = (models) => {
     ObjekBudidaya.hasMany(models.Laporan);
+    ObjekBudidaya.hasMany(models.DetailPanen);
 
     ObjekBudidaya.belongsTo(models.UnitBudidaya);
   };

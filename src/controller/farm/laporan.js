@@ -22,6 +22,7 @@ const Vitamin = sequelize.Vitamin;
 const PanenKebun = sequelize.PanenKebun;
 const PanenRincianGrade = sequelize.PanenRincianGrade;
 const Panen = sequelize.Panen;
+const DetailPanen = sequelize.DetailPanen;
 const Hama = sequelize.Hama;
 
 const PenggunaanInventaris = sequelize.PenggunaanInventaris;
@@ -418,7 +419,11 @@ const createLaporanPanen = async (req, res) => {
   const t = await db.transaction();
 
   try {
-    const { panen, isDeleted } = req.body;
+    const { panen, detailPanen } = req.body;
+
+    const komoditas = await Komoditas.findOne({
+      where: { id: panen.komoditasId },
+    });
 
     const data = await Laporan.create(
       {
@@ -439,64 +444,178 @@ const createLaporanPanen = async (req, res) => {
       { transaction: t }
     );
 
-    const komoditas = await Komoditas.findOne({
-      where: { id: panen.komoditasId },
-    });
-
     komoditas.jumlah += panen.jumlah;
-
     await komoditas.save({ transaction: t });
 
-    if (isDeleted == true) {
-      if (req.body.objekBudidayaId != null) {
-        await ObjekBudidaya.update(
-          {
-            isDeleted: true,
-          },
-          {
+    if (komoditas.tipeKomoditas == "individu") {
+      if (komoditas.hapusObjek == true) {
+        if (req.body.objekBudidayaId != null) {
+          await ObjekBudidaya.update(
+            {
+              isDeleted: true,
+            },
+            {
+              transaction: t,
+              where: {
+                id: req.body.objekBudidayaId,
+              },
+            }
+          );
+
+          await UnitBudidaya.decrement("jumlah", {
+            by: 1,
             transaction: t,
             where: {
-              id: req.body.objekBudidayaId,
+              id: req.body.unitBudidayaId,
             },
-          }
-        );
+          });
+        } else {
+          await UnitBudidaya.decrement("jumlah", {
+            by: 1,
+            transaction: t,
+            where: {
+              id: req.body.unitBudidayaId,
+            },
+          });
+        }
+      }
+    } else {
+      const unitBudidaya = await UnitBudidaya.findOne({
+        where: { id: req.body.unitBudidayaId },
+      });
 
-        await UnitBudidaya.decrement("jumlah", {
-          by: 1,
-          transaction: t,
-          where: {
-            id: req.body.unitBudidayaId,
-          },
-        });
+      if ((unitBudidaya.tipe = "individu")) {
+        for (const item of detailPanen) {
+          await DetailPanen.create(
+            {
+              PanenId: laporanPanen.id,
+              ObjekBudidayaId: item,
+            },
+            { transaction: t }
+          );
+
+          if (komoditas.hapusObjek == true) {
+            await ObjekBudidaya.update(
+              {
+                isDeleted: true,
+              },
+              {
+                transaction: t,
+                where: {
+                  id: item,
+                },
+              }
+            );
+
+            await UnitBudidaya.decrement("jumlah", {
+              by: 1,
+              transaction: t,
+              where: {
+                id: req.body.unitBudidayaId,
+              },
+            });
+          }
+        }
       } else {
-        await UnitBudidaya.decrement("jumlah", {
-          by: 1,
-          transaction: t,
-          where: {
-            id: req.body.unitBudidayaId,
-          },
-        });
+        unitBudidaya.jumlah -= panen.jumlahHewan;
+
+        await unitBudidaya.save({ transaction: t });
       }
     }
 
     await t.commit();
 
-    res.locals.createdData = { data, laporanPanen };
-
     return res.status(201).json({
       message: "Successfully created new laporan data",
-      data: {
-        data,
-        laporanPanen,
-      },
     });
   } catch (error) {
     await t.rollback();
-    res.status(500).json({
+    return res.status(500).json({
       message: error.message,
       detail: error,
     });
   }
+
+  // try {
+  //   const { panen, isDeleted } = req.body;
+
+  //   const data = await Laporan.create(
+  //     {
+  //       ...req.body,
+  //       UnitBudidayaId: req.body.unitBudidayaId,
+  //       ObjekBudidayaId: req.body.objekBudidayaId,
+  //       UserId: req.user.id,
+  //     },
+  //     { transaction: t }
+  //   );
+
+  //   const laporanPanen = await Panen.create(
+  //     {
+  //       LaporanId: data.id,
+  //       komoditasId: panen.komoditasId,
+  //       jumlah: panen.jumlah,
+  //     },
+  //     { transaction: t }
+  //   );
+
+  //   const komoditas = await Komoditas.findOne({
+  //     where: { id: panen.komoditasId },
+  //   });
+
+  //   komoditas.jumlah += panen.jumlah;
+
+  //   await komoditas.save({ transaction: t });
+
+  //   if (isDeleted == true) {
+  //     if (req.body.objekBudidayaId != null) {
+  //       await ObjekBudidaya.update(
+  //         {
+  //           isDeleted: true,
+  //         },
+  //         {
+  //           transaction: t,
+  //           where: {
+  //             id: req.body.objekBudidayaId,
+  //           },
+  //         }
+  //       );
+
+  //       await UnitBudidaya.decrement("jumlah", {
+  //         by: 1,
+  //         transaction: t,
+  //         where: {
+  //           id: req.body.unitBudidayaId,
+  //         },
+  //       });
+  //     } else {
+  //       await UnitBudidaya.decrement("jumlah", {
+  //         by: 1,
+  //         transaction: t,
+  //         where: {
+  //           id: req.body.unitBudidayaId,
+  //         },
+  //       });
+  //     }
+  //   }
+
+  //   await t.commit();
+
+  //   res.locals.createdData = { data, laporanPanen };
+
+  //   return res.status(201).json({
+  //     message: "Successfully created new laporan data",
+  //     data: {
+  //       data,
+  //       laporanPanen,
+  //     },
+  //   });
+  // } catch (error) {
+  //   await t.rollback();
+  //   res.status(500).json({
+  //     message: error.message,
+  //     detail: error,
+  //   });
+  // }
 };
 
 const createLaporanPanenKebun = async (req, res) => {
