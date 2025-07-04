@@ -29,7 +29,7 @@ const getAllToko = async (req, res) => {
   }
 };
 
-const getTokoById = async (req, res) => {
+const   getTokoById = async (req, res) => {
   try {
     const data = await Toko.findOne({
       where: {

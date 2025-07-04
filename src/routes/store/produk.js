@@ -18,6 +18,7 @@ router.get('/stok/:id', produkController.getStokByProdukId);
 router.get('/all/', produkController.getAll);
 router.delete('/:id', produkController.deleteProdukById);
 router.post('/', auditMiddleware({ model: Produk, tableName: "Produk" }), produkController.createProduk);
+router.post('/komoditas', auditMiddleware({ model: Produk, tableName: "Produk" }), produkController.createProdukByKomoditas);
 
 router.put('/id/:id', auditMiddleware({ model: Produk, tableName: "Produk" }), produkController.updateProduk);
 

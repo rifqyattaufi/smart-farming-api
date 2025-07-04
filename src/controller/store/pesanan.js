@@ -22,6 +22,7 @@ const createPesanan = async (req, res) => {
 
         let tokoId = null;
         let totalHarga = 0;
+         const produkList = [];
         for (const item of items) {
             if (!item.produkId || !item.jumlah || item.jumlah < 1) {
                 return res.status(400).json({
@@ -38,8 +39,15 @@ const createPesanan = async (req, res) => {
                     message: `Produk dengan ID ${item.produkId} tidak ditemukan`,
                 });
             }
+            if (typeof produk.stok === 'number' && produk.stok < item.jumlah) {
+                await t.rollback();
+                return res.status(400).json({
+                    message: `Stok produk ${produk.nama} tidak mencukupi`,
+                });
+            }
             if (!tokoId) tokoId = produk.TokoId;
             totalHarga += produk.harga * item.jumlah;
+            produkList.push({ produk, jumlah: item.jumlah });
         }
         await midtransOrder.findOrCreate({
             where: { id: orderId },
@@ -60,12 +68,19 @@ const createPesanan = async (req, res) => {
         }, { transaction: t, logging: console.log, });
 
 
-        for (const item of items) {
+        for (const { produk, jumlah } of produkList) {
             await PesananDetail.create({
-                ProdukId: item.produkId,
-                jumlah: item.jumlah,
+                ProdukId: produk.id,
+                jumlah,
                 PesananId: pesanan.id
             }, { transaction: t });
+            
+            if (typeof produk.stok === 'number') {
+                await Produk.update(
+                    { stok: produk.stok - jumlah },
+                    { where: { id: produk.id }, transaction: t }
+                );
+            }
         }
 
         await t.commit();
@@ -199,7 +214,7 @@ const updatePesananStatus = async (req, res) => {
             });
         }
 
-        const validStatuses = ['menunggu', 'diterima', 'selesai', 'ditolak'];
+        const validStatuses = ['menunggu', 'diterima', 'selesai', 'ditolak', 'expired'];
         if (!status || !validStatuses.includes(status)) {
             await t.rollback();
             return res.status(400).json({
@@ -288,7 +303,7 @@ const updatePesananStatusandNotif = async (req, res) => {
             });
         }
 
-        const validStatuses = ['menunggu', 'diterima', 'selesai', 'ditolak'];
+       const validStatuses = ['menunggu', 'diterima', 'selesai', 'ditolak', 'expired'];
         if (!status || !validStatuses.includes(status)) {
             return res.status(400).json({
                 message: `Status tidak valid. Status harus salah satu dari: ${validStatuses.join(', ')}`

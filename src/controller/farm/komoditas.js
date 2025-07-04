@@ -2,6 +2,7 @@ const sequelize = require("../../model/index");
 const Komoditas = sequelize.Komoditas;
 const JenisBudidaya = sequelize.JenisBudidaya;
 const Satuan = sequelize.Satuan;
+const Produk = sequelize.Produk;
 const Op = sequelize.Sequelize.Op;
 
 const { getPaginationOptions } = require('../../utils/paginationUtils');
@@ -101,7 +102,7 @@ const getKomoditasSearch = async (req, res) => {
         [Op.like]: `%${nama}%`,
       };
     }
-    
+
     const includeClause = [
       {
         model: JenisBudidaya,
@@ -109,7 +110,7 @@ const getKomoditasSearch = async (req, res) => {
       },
     ];
     if (tipe && tipe.toLowerCase() !== 'all' && tipe.trim() !== '') {
-         includeClause[0].where = { tipe: tipe };
+      includeClause[0].where = { tipe: tipe };
     }
 
 
@@ -173,7 +174,7 @@ const getKomoditasByTipe = async (req, res) => {
       ...paginationOptions,
     });
 
-    if (rows.length === 0 && parseInt(page,10) === 1) {
+    if (rows.length === 0 && parseInt(page, 10) === 1) {
       return res.status(200).json({
         message: "Data not found for this type",
         data: [],
@@ -182,14 +183,14 @@ const getKomoditasByTipe = async (req, res) => {
         currentPage: parseInt(page, 10) || 1,
       });
     }
-     if (rows.length === 0 && parseInt(page,10) > 1) {
-        return res.status(200).json({
-            message: "No more data for this type",
-            data: [],
-            totalItems: count,
-            totalPages: Math.ceil(count / paginationOptions.limit),
-            currentPage: parseInt(page, 10) || 1,
-        });
+    if (rows.length === 0 && parseInt(page, 10) > 1) {
+      return res.status(200).json({
+        message: "No more data for this type",
+        data: [],
+        totalItems: count,
+        totalPages: Math.ceil(count / paginationOptions.limit),
+        currentPage: parseInt(page, 10) || 1,
+      });
     }
 
 
@@ -217,8 +218,8 @@ const createKomoditas = async (req, res) => {
     });
 
     const createdDataWithIncludes = await Komoditas.findOne({
-        where: { id: data.id },
-        include: [{ model: JenisBudidaya }, {model: Satuan}]
+      where: { id: data.id },
+      include: [{ model: JenisBudidaya }, { model: Satuan }]
     });
 
 
@@ -249,10 +250,10 @@ const updateKomoditas = async (req, res) => {
     }
 
     await komoditasInstance.update(req.body);
-    
+
     const updatedDataWithIncludes = await Komoditas.findOne({
-        where: { id: req.params.id },
-        include: [{ model: JenisBudidaya }, {model: Satuan}]
+      where: { id: req.params.id },
+      include: [{ model: JenisBudidaya }, { model: Satuan }]
     });
 
     res.locals.updatedData = updatedDataWithIncludes.toJSON();
@@ -275,7 +276,7 @@ const deleteKomoditas = async (req, res) => {
       where: { id: req.params.id, isDeleted: false },
     });
 
-    if (!data) { 
+    if (!data) {
       return res.status(404).json({
         message: "Data not found",
       });
@@ -298,6 +299,58 @@ const deleteKomoditas = async (req, res) => {
   }
 };
 
+const getAllKomoditasWithoutProduk = async (req, res) => {
+  try {
+    const { page, limit } = req.query;
+    const paginationOptions = getPaginationOptions(page, limit);
+
+    const { count, rows } = await Komoditas.findAndCountAll({
+      where: {
+        isDeleted: false,
+        produkId: {
+          [Op.is]: null
+        }
+      },
+      include: [
+        {
+          model: JenisBudidaya,
+          required: true,
+        },
+        {
+          model: Satuan,
+          required: false,
+        }
+      ],
+      order: [["createdAt", "DESC"]],
+      ...paginationOptions,
+    });
+
+    if (rows.length === 0) {
+      return res.status(200).json({
+        message: "Data not found",
+        data: [],
+        totalItems: 0,
+        totalPages: 0,
+        currentPage: parseInt(page, 10) || 1,
+      });
+    }
+
+    return res.status(200).json({
+      message: "Successfully retrieved komoditas data without produk",
+      data: rows,
+      totalItems: count,
+      totalPages: Math.ceil(count / paginationOptions.limit),
+      currentPage: parseInt(page, 10) || 1,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
+  }
+};
+
+
 module.exports = {
   getAllKomoditas,
   getKomoditasById,
@@ -306,4 +359,5 @@ module.exports = {
   updateKomoditas,
   deleteKomoditas,
   getKomoditasByTipe,
+  getAllKomoditasWithoutProduk,
 };

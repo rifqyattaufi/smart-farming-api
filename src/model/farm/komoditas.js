@@ -32,6 +32,16 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.BOOLEAN,
         defaultValue: false,
       },
+      produkId: {
+        type: DataTypes.UUID,
+        allowNull: true,
+        references: {
+          model: "produk",
+          key: "id",
+        },
+        onUpdate: "CASCADE",
+        onDelete: "SET NULL",
+      },
     },
     {
       tableName: "komoditas",
