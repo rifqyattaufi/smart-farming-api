@@ -293,17 +293,22 @@ const resendOtp = async (req, res, next) => {
         },
       });
     } else {
-      await User.findOne({
+      user = await User.findOne({
         where: {
           phone: phone,
         },
       });
     }
 
-    if (!user) {
+    if (!user && phone) {
       return res.status(400).json({
         status: false,
         message: "Nomor telepon tidak terdaftar",
+      });
+    } else if (!user && email) {
+      return res.status(400).json({
+        status: false,
+        message: "Email tidak terdaftar",
       });
     }
 

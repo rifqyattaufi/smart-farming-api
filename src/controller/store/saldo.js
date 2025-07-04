@@ -303,7 +303,7 @@ const getAllPenarikanSaldoRequests = async (req, res) => {
 
 const prosesPenarikanSaldo = async (req, res) => {
     const { id } = req.params;
-    const { status, catatanAdmin, buktiTransfer, referensiBank } = req.body; 
+    const { status, catatanAdmin, buktiTransfer, referensiBank } = req.body;
     if (req.user.role !== 'pjawab') {
         return res.status(403).json({ message: "Forbidden: Admin access required" });
     }
@@ -385,6 +385,11 @@ const prosesPenarikanSaldo = async (req, res) => {
                 keterangan: `Penarikan dana ditolak, dana dikembalikan. ID: ${penarikan.id}. Alasan: ${penarikan.catatanAdmin}`,
             }, { transaction: t });
             penarikan.status = 'rejected';
+            penarikan.catatanAdmin = catatanAdmin;
+            penarikan.buktiTransfer = buktiTransfer;
+            penarikan.referensiBank = referensiBank;
+            penarikan.tanggalProses = new Date();
+            await penarikan.save({ transaction: t });
         }
 
         await t.commit();

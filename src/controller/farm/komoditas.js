@@ -213,8 +213,8 @@ const createKomoditas = async (req, res) => {
   try {
     const data = await Komoditas.create({
       ...req.body,
-      SatuanId: req.body.satuanId,
-      JenisBudidayaId: req.body.jenisBudidayaId,
+      SatuanId: req.body.SatuanId,
+      JenisBudidayaId: req.body.JenisBudidayaId,
     });
 
     const createdDataWithIncludes = await Komoditas.findOne({
