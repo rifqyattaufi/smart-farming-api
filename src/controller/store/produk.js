@@ -30,7 +30,37 @@ const createProduk = async (req, res) => {
     }
 }
 
+const   createProdukByKomoditas = async (req, res) => {
+    const idToko = await User.findOne({
+        include: [{
+            model: sequelize.Toko,
+            attributes: ['id'],
+        }],
+        where: { id: req.user.id },
+    })
+    try {
+        const produk = await Produk.create({
+            ...req.body,
+            TokoId: idToko.Toko.id,
+        })
+        const produkId = produk.id;
+        await sequelize.Komoditas.update(
+            { produkId: produkId },
+            { where: { id: req.body.komoditasId } }
+        );
+        return res.status(201).json({
+            message: "Berhasil menambahkan produk",
+            data: req.body,
+        })
+    }
 
+    catch (error) {
+        return res.status(500).json({
+            message: error.message,
+            detail: error,
+        })
+    }
+}
 const getAll = async (req, res) => {
     try {
         const data = await Produk.findAll({
@@ -306,4 +336,5 @@ module.exports = {
     getProdukByToken,
     getProdukbyTokoId,
     getStokByProdukId,
+    createProdukByKomoditas,
 };

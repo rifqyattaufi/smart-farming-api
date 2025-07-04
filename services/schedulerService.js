@@ -6,6 +6,10 @@ const GlobalNotificationSetting = sequelize.GlobalNotificationSetting;
 const ScheduledUnitNotification = sequelize.ScheduledUnitNotification;
 const UnitBudidaya = sequelize.UnitBudidaya;
 const { sendNotificationToUser } = require("./notificationService");
+const Pesanan = sequelize.Pesanan;
+const PesananDetail = sequelize.PesananDetail;
+const Produk = sequelize.Produk;
+const MidtransOrder = sequelize.MidtransOrder;
 
 async function checkAndSendScheduledNotifications() {
   const now = moment();
@@ -150,11 +154,58 @@ async function checkAndSendScheduledNotifications() {
     );
   }
 }
+async function expireUnpaidOrders() {
+  const cutoff = moment().subtract(1, "hours").toDate();
+  try {
+    const orders = await Pesanan.findAll({
+      where: {
+        status: "menunggu",
+        createdAt: { [Op.lt]: cutoff },
+        isDeleted: false,
+      },
+      include: [
+        { model: PesananDetail, include: [Produk] },
+        { model: MidtransOrder, attributes: ["transaction_status"] },
+      ],
+    });
+
+    for (const order of orders) {
+      if (!order.MidtransOrder || order.MidtransOrder.transaction_status === "pending") {
+        const t = await sequelize.sequelize.transaction();
+        try {
+          await order.update({ status: "expired" }, { transaction: t });
+          for (const detail of order.PesananDetails) {
+            const prod = detail.Produk;
+            if (prod && typeof prod.stok === "number") {
+              await Produk.update(
+                { stok: prod.stok + detail.jumlah },
+                { where: { id: prod.id }, transaction: t }
+              );
+            }
+          }
+          await t.commit();
+        } catch (err) {
+          await t.rollback();
+          console.error(
+            `[${moment().format()}] Scheduler Error (expireUnpaidOrders transaction):`,
+            err
+          );
+        }
+      }
+    }
+  } catch (err) {
+    console.error(
+      `[${moment().format()}] Scheduler Error (expireUnpaidOrders fetch):`,
+      err
+    );
+  }
+}
 
 function startScheduler() {
   cron.schedule("* * * * *", checkAndSendScheduledNotifications, {
     scheduled: true,
   });
+  cron.schedule("* * * * *", expireUnpaidOrders, { scheduled: true });
   console.log(
     `Notification scheduler started. Running every minute. App Timezone: Asia/Jakarta. Current Time for Scheduler: ${moment().format(
       "YYYY-MM-DD HH:mm:ss Z"

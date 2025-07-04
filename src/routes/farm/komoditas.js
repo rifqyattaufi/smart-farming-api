@@ -9,6 +9,8 @@ const Komoditas = sequelize.Komoditas;
 
 router.get('/', komoditasController.getAllKomoditas);
 
+router.get('/unproduct', komoditasController.getAllKomoditasWithoutProduk);
+
 router.get('/:id', komoditasController.getKomoditasById);
 
 router.get('/search/:nama/:tipe', komoditasController.getKomoditasSearch);

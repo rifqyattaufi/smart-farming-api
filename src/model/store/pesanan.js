@@ -11,7 +11,7 @@ module.exports = (sequelize, DataTypes) => {
       },
       status: {
         type: DataTypes.ENUM,
-        values: ["menunggu", "diterima", "selesai", "ditolak"],
+        values: ["menunggu", "diterima", "selesai", "ditolak", "expired"],
       },
       totalHarga: {
         type: DataTypes.INTEGER,

@@ -13,7 +13,7 @@ router.use("/user", userRouter);
 router.use("/auth", authRouter);
 router.use("/midtrans", webhookRouter);
 
-router.use("/farm", authenticate(["pjawab", "inventor", "petugas"]), farmRouter);
+router.use("/farm", authenticate(["pjawab", "inventor", "petugas", "penjual"]), farmRouter);
 router.use("/store", authenticate(["pjawab", "penjual", "user"]), storeRouter);
 
 
