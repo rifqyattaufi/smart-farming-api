@@ -646,6 +646,62 @@ const getPemakaianInventarisById = async (req, res) => {
   }
 };
 
+const getPemakaianInventarisByLaporanId = async (req, res) => {
+  try {
+    const { laporanId } = req.params;
+
+    const pemakaianData = await PenggunaanInventaris.findOne({
+      where: { laporanId: laporanId, isDeleted: false },
+      include: [
+        {
+          model: Inventaris,
+          as: "inventaris",
+          attributes: ["id", "nama", "gambar"],
+          include: [
+            {
+              model: Satuan,
+              attributes: ["id", "nama", "lambang"],
+            },
+            {
+              model: Kategori,
+              as: "kategoriInventaris",
+              attributes: ["id", "nama"],
+            },
+          ],
+        },
+        {
+          model: Laporan,
+          as: "laporan",
+          attributes: ["id", "gambar", "createdAt", "userId", "catatan"],
+          include: [
+            {
+              model: User,
+              as: "user",
+              attributes: ["name"],
+            },
+          ],
+        },
+      ],
+    });
+
+    if (!pemakaianData || pemakaianData.isDeleted) {
+      return res.status(404).json({
+        message: "Data pemakaian inventaris tidak ditemukan untuk laporan ini",
+        status: false,
+      });
+    }
+
+    return res.status(200).json({
+      message: "Successfully retrieved pemakaian data by laporan",
+      status: true,
+      data: pemakaianData,
+    });
+  } catch (error) {
+    console.error("Error getPemakaianInventarisByLaporanId:", error);
+    res.status(500).json({ message: error.message, detail: error });
+  }
+};
+
 module.exports = {
   getAllInventaris,
   getInventarisById,
@@ -659,4 +715,5 @@ module.exports = {
   getStatistikPemakaianInventaris,
   getRiwayatPemakaianInventarisPaginated,
   getPemakaianInventarisById,
+  getPemakaianInventarisByLaporanId,
 };

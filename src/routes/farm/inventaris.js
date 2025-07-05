@@ -21,9 +21,15 @@ router.get(
   inventarisController.getPemakaianInventarisById
 );
 
-router.get("/:id/riwayat-pemakaian", inventarisController.getRiwayatPemakaianInventarisPaginated);
+router.get(
+  "/:id/riwayat-pemakaian",
+  inventarisController.getRiwayatPemakaianInventarisPaginated
+);
 
-router.get("/:id/statistik-pemakaian", inventarisController.getStatistikPemakaianInventaris);
+router.get(
+  "/:id/statistik-pemakaian",
+  inventarisController.getStatistikPemakaianInventaris
+);
 
 router.get("/search/:nama", inventarisController.getInventarisByName);
 
@@ -53,6 +59,11 @@ router.delete(
   "/:id",
   auditMiddleware({ model: Inventaris, tableName: "Inventaris" }),
   inventarisController.deleteInventaris
+);
+
+router.get(
+  "/laporan/:laporanId/pemakaian",
+  inventarisController.getPemakaianInventarisByLaporanId
 );
 
 module.exports = router;
