@@ -233,10 +233,12 @@ const createUnitBudidaya = async (req, res) => {
           ...notifikasi.panen,
           unitBudidayaId: data.id,
           title: `Pengingat Laporan Panen ${data.nama}`,
-          messageTemplate: `Hai!
-          Sudah waktunya panen nih! 🌾
-          Jangan lupa lapor panen untuk kandang ${data.nama}, ya. Biar semua tetap tercatat dan nggak ada yang kelewat.
-          Klik di sini buat lapor sekarang! 🌾`,
+          messageTemplate: `Hai! 👋
+
+Sudah waktunya panen nih! 🌾
+Jangan lupa lapor panen untuk ${data.nama}, ya. Biar semua tetap tercatat dan nggak ada yang kelewat.
+
+Klik di sini buat lapor sekarang! 🌾`,
           tipeLaporan: "panen",
           isDeleted: false,
         },
@@ -249,10 +251,12 @@ const createUnitBudidaya = async (req, res) => {
         {
           unitBudidayaId: data.id,
           title: `Pengingat Pemberian Vitamin ${data.nama}`,
-          messageTemplate: `Hai!
-          Sudah waktunya memberikan nutrisi nih!💊
-          Jangan lupa lapor pemberian nutrisi untuk kandang ${data.nama}, ya. Biar semua tetap tercatat dan nggak ada yang kelewat.
-          Klik di sini buat lapor sekarang! 💊`,
+          messageTemplate: `Hai! 👋
+
+Sudah waktunya memberikan nutrisi nih! 💊
+Jangan lupa lapor pemberian nutrisi untuk ${data.nama}, ya. Biar semua tetap tercatat dan nggak ada yang kelewat.
+
+Klik di sini buat lapor sekarang! 💊`,
           notificationType: notifikasi.vitamin.notificationType,
           tipeLaporan: "vitamin",
           dayOfWeek: notifikasi.vitamin.dayOfWeek ?? null,
@@ -444,10 +448,14 @@ const updateUnitBudidaya = async (req, res) => {
       const panenNotifData = {
         unitBudidayaId: updated.id,
         title: `Pengingat Laporan Panen ${updated.nama ?? data.nama}`,
-        messageTemplate: `Hai!
-        Sudah waktunya panen nih! 🌾
-        Jangan lupa lapor panen untuk kandang ${updated.nama}, ya. Biar semua tetap tercatat dan nggak ada yang kelewat.
-        Klik di sini buat lapor sekarang! 🌾`,
+        messageTemplate: `Hai! 👋
+
+Sudah waktunya panen nih! 🌾
+Jangan lupa lapor panen untuk ${
+          updated.nama ?? data.nama
+        }, ya. Biar semua tetap tercatat dan nggak ada yang kelewat.
+
+Klik di sini buat lapor sekarang! 🌾`,
         notificationType: notifikasi.panen.notificationType,
         tipeLaporan: "panen",
         dayOfWeek: notifikasi.panen.dayOfWeek ?? null,
@@ -481,10 +489,14 @@ const updateUnitBudidaya = async (req, res) => {
       const vitaminNotifData = {
         unitBudidayaId: updated.id,
         title: `Pengingat Pemberian Vitamin ${updated.nama ?? data.nama}`,
-        messageTemplate: `Hai!
-        Sudah waktunya memberikan nutrisi nih!💊
-        Jangan lupa lapor pemberian nutrisi untuk kandang ${updated.nama}, ya. Biar semua tetap tercatat dan nggak ada yang kelewat.
-        Klik di sini buat lapor sekarang! 💊`,
+        messageTemplate: `Hai! 👋
+
+Sudah waktunya memberikan nutrisi nih! 💊
+Jangan lupa lapor pemberian nutrisi untuk ${
+          updated.nama ?? data.nama
+        }, ya. Biar semua tetap tercatat dan nggak ada yang kelewat.
+
+Klik di sini buat lapor sekarang! 💊`,
         notificationType: notifikasi.vitamin.notificationType,
         tipeLaporan: "vitamin",
         dayOfWeek: notifikasi.vitamin.dayOfWeek ?? null,
