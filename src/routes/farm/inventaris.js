@@ -16,10 +16,7 @@ router.get(
 
 router.get("/:id", inventarisController.getInventarisById);
 
-router.get(
-  "/:id/detail-pemakaian-inventaris",
-  inventarisController.getPemakaianInventarisById
-);
+router.get("/pemakaian/:id", inventarisController.getPemakaianInventarisById);
 
 router.get(
   "/:id/riwayat-pemakaian",
