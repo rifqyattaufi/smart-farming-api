@@ -11,19 +11,47 @@ const { getPaginationOptions } = require("../../utils/paginationUtils");
 
 const getAllLaporanHama = async (req, res) => {
   try {
-    const { page, limit } = req.query;
+    const { page, limit, search } = req.query;
     const paginationOptions = getPaginationOptions(page, limit);
 
+    // Build where clause for search functionality
+    const whereClause = {
+      tipe: "hama",
+      isDeleted: false,
+    };
+
+    // Add search condition if search query exists
+    if (search && search.trim() !== "") {
+      const searchTerm = search.trim();
+      whereClause[Op.or] = [
+        { judul: { [Op.like]: `%${searchTerm}%` } },
+        { catatan: { [Op.like]: `%${searchTerm}%` } },
+        // Search in related models using subqueries
+        {
+          "$Hama.JenisHama.nama$": { [Op.like]: `%${searchTerm}%` },
+        },
+        {
+          "$UnitBudidaya.nama$": { [Op.like]: `%${searchTerm}%` },
+        },
+        {
+          "$user.name$": { [Op.like]: `%${searchTerm}%` },
+        },
+      ];
+    }
+
     const { count, rows } = await Laporan.findAndCountAll({
-      where: {
-        tipe: "hama",
-        isDeleted: false,
-      },
+      where: whereClause,
       include: [
         {
           model: Hama,
           required: true,
-          include: [{ model: JenisHama, attributes: ["id", "nama"] }],
+          include: [
+            {
+              model: JenisHama,
+              attributes: ["id", "nama"],
+              required: false,
+            },
+          ],
         },
         {
           model: UnitBudidaya,
@@ -34,6 +62,7 @@ const getAllLaporanHama = async (req, res) => {
           model: User,
           as: "user",
           attributes: ["id", "name", "avatarUrl"],
+          required: false,
         },
       ],
       order: [["createdAt", "DESC"]],
@@ -41,35 +70,34 @@ const getAllLaporanHama = async (req, res) => {
       ...paginationOptions,
     });
 
-    if (rows.length === 0 && (parseInt(page, 10) || 1) === 1) {
+    const currentPageNum = parseInt(page, 10) || 1;
+    const totalPages = Math.ceil(
+      count / (paginationOptions.limit || parseInt(limit, 10) || 10)
+    );
+
+    if (rows.length === 0) {
       return res.status(200).json({
-        message: "Data not found",
-        data: [],
-        totalItems: 0,
-        totalPages: 0,
-        currentPage: parseInt(page, 10) || 1,
-      });
-    }
-    if (rows.length === 0 && (parseInt(page, 10) || 1) > 1) {
-      return res.status(200).json({
-        message: "No more data",
+        status: true,
+        message: currentPageNum > 1 ? "No more data" : "Data not found",
         data: [],
         totalItems: count,
-        totalPages: Math.ceil(count / paginationOptions.limit),
-        currentPage: parseInt(page, 10) || 1,
+        totalPages: totalPages,
+        currentPage: currentPageNum,
       });
     }
 
     return res.status(200).json({
+      status: true,
       message: "Successfully retrieved all hama reports",
       data: rows,
       totalItems: count,
-      totalPages: Math.ceil(count / paginationOptions.limit),
-      currentPage: parseInt(page, 10) || 1,
+      totalPages: totalPages,
+      currentPage: currentPageNum,
     });
   } catch (error) {
     console.error("Error getAllLaporanHama:", error);
     res.status(500).json({
+      status: false,
       message: error.message,
       detail: error,
     });
@@ -82,27 +110,44 @@ const searchLaporanHama = async (req, res) => {
     const { page, limit } = req.query;
     const paginationOptions = getPaginationOptions(page, limit);
 
-    const searchCondition = {
-      [Op.or]: [
-        { judul: { [Op.like]: `%${query}%` } },
-        { catatan: { [Op.like]: `%${query}%` } },
-        { "$JenisHama.nama$": { [Op.like]: `%${query}%` } },
-        { "$UnitBudidaya.nama$": { [Op.like]: `%${query}%` } },
-        { "$User.name$": { [Op.like]: `%${query}%` } },
-      ],
-    };
+    if (!query || query.trim() === "") {
+      return res.status(400).json({
+        status: false,
+        message: "Search query is required",
+      });
+    }
+
+    const searchTerm = query.trim();
 
     const { count, rows } = await Laporan.findAndCountAll({
       where: {
         tipe: "hama",
         isDeleted: false,
-        ...searchCondition,
+        [Op.or]: [
+          { judul: { [Op.like]: `%${searchTerm}%` } },
+          { catatan: { [Op.like]: `%${searchTerm}%` } },
+          {
+            "$Hama.JenisHama.nama$": { [Op.like]: `%${searchTerm}%` },
+          },
+          {
+            "$UnitBudidaya.nama$": { [Op.like]: `%${searchTerm}%` },
+          },
+          {
+            "$user.name$": { [Op.like]: `%${searchTerm}%` },
+          },
+        ],
       },
       include: [
         {
           model: Hama,
           required: true,
-          include: [{ model: JenisHama, attributes: ["id", "nama", "gambar"] }],
+          include: [
+            {
+              model: JenisHama,
+              attributes: ["id", "nama", "gambar"],
+              required: false,
+            },
+          ],
         },
         {
           model: UnitBudidaya,
@@ -120,35 +165,38 @@ const searchLaporanHama = async (req, res) => {
       ...paginationOptions,
     });
 
-    if (rows.length === 0 && (parseInt(page, 10) || 1) === 1) {
+    const currentPageNum = parseInt(page, 10) || 1;
+    const totalPages = Math.ceil(
+      count / (paginationOptions.limit || parseInt(limit, 10) || 10)
+    );
+
+    if (rows.length === 0) {
       return res.status(200).json({
-        message: "Data not found for the given search criteria",
-        data: [],
-        totalItems: 0,
-        totalPages: 0,
-        currentPage: parseInt(page, 10) || 1,
-      });
-    }
-    if (rows.length === 0 && (parseInt(page, 10) || 1) > 1) {
-      return res.status(200).json({
-        message: "No more data for this search",
+        status: true,
+        message:
+          currentPageNum > 1
+            ? "No more data for this search"
+            : "Data not found for this search",
         data: [],
         totalItems: count,
-        totalPages: Math.ceil(count / paginationOptions.limit),
-        currentPage: parseInt(page, 10) || 1,
+        totalPages: totalPages,
+        currentPage: currentPageNum,
       });
     }
 
     return res.status(200).json({
+      status: true,
       message:
         "Successfully retrieved hama reports matching the search criteria",
       data: rows,
       totalItems: count,
-      totalPages: Math.ceil(count / paginationOptions.limit),
-      currentPage: parseInt(page, 10) || 1,
+      totalPages: totalPages,
+      currentPage: currentPageNum,
     });
   } catch (error) {
+    console.error("Error searchLaporanHama:", error);
     res.status(500).json({
+      status: false,
       message: error.message,
       detail: error,
     });
@@ -178,13 +226,24 @@ const getLaporanHamaById = async (req, res) => {
     });
 
     if (!data) {
-      return res.status(404).json({ message: "Data not found" });
+      return res.status(404).json({
+        status: false,
+        message: "Data not found",
+      });
     }
-    return res
-      .status(200)
-      .json({ message: "Successfully retrieved hama report", data: data });
+
+    return res.status(200).json({
+      status: true,
+      message: "Successfully retrieved hama report",
+      data: data,
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message, detail: error });
+    console.error("Error getLaporanHamaById:", error);
+    res.status(500).json({
+      status: false,
+      message: error.message,
+      detail: error,
+    });
   }
 };
 
