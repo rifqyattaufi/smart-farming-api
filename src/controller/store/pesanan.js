@@ -461,6 +461,7 @@ const CreatebuktiDiterima = async (req, res) => {
             message: "Gagal membuat bukti diterima",
             detail: error.message
         });
+        
     }
 }
 
