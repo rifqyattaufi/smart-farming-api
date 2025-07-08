@@ -91,14 +91,9 @@ const getGradeBySearch = async (req, res) => {
     });
 
     const currentPageNum = parseInt(page, 10) || 1;
-    const totalPages =
-      rows.length > 0
-        ? Math.ceil(
-            (await Grade.count({
-              where: { nama: { [Op.like]: `%${nama}%` }, isDeleted: false },
-            })) / (paginationOptions.limit || parseInt(limit, 10) || 10)
-          )
-        : 0;
+    const totalPages = Math.ceil(
+      count / (paginationOptions.limit || parseInt(limit, 10) || 10)
+    );
 
     if (rows.length === 0) {
       return res.status(200).json({
@@ -107,7 +102,8 @@ const getGradeBySearch = async (req, res) => {
             ? "No more data for this name"
             : "Data not found for this name",
         data: [],
-        totalItems: totalPages,
+        totalItems: 0,
+        totalPages: 0,
         currentPage: currentPageNum,
       });
     }
@@ -168,6 +164,7 @@ const createGrade = async (req, res) => {
       res.locals.createdData = restoredData.toJSON();
 
       return res.status(201).json({
+        status: true,
         message:
           "Data with this name existed before and has been restored with new information",
         data: restoredData,

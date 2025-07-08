@@ -30,6 +30,10 @@ router.get(
   reportController.getStatistikJumlahPanenTanaman
 );
 router.get(
+  "/statistik-panen-grade/:id",
+  reportController.getStatistikPanenGradeByJenisBudidaya
+);
+router.get(
   "/history/harian-tanaman/jenis-budidaya/:jenisBudidayaId",
   reportController.getRiwayatPelaporanHarianTanaman
 );

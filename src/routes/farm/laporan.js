@@ -71,7 +71,10 @@ router.get("/sakit/:id", laporanController.getLaporanSakitById);
 
 router.get("/kematian/:id", laporanController.getLaporanKematianById);
 
-router.get("/jumlah-kematian/:unitBudidayaId", laporanController.getJumlahKematian);
+router.get(
+  "/jumlah-kematian/:unitBudidayaId",
+  laporanController.getJumlahKematian
+);
 
 router.get("/vitamin/:id", laporanController.getLaporanVitaminById);
 
@@ -85,5 +88,15 @@ router.get(
 );
 
 router.get("/panen-kebun/:id", laporanController.getLaporanPanenKebunById);
+
+// New endpoints for harvest data with grades
+router.get(
+  "/hasil-panen-with-grades",
+  laporanController.getHasilPanenWithGrades
+);
+router.get(
+  "/grade-summary-by-komoditas",
+  laporanController.getGradeSummaryByKomoditas
+);
 
 module.exports = router;

@@ -845,6 +845,439 @@ const getJumlahKematian = async (req, res) => {
   }
 };
 
+const getHasilPanenWithGrades = async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      komoditasId,
+      unitBudidayaId,
+      startDate,
+      endDate,
+    } = req.query;
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+
+    // Validate pagination parameters
+    if (parseInt(page) < 1 || parseInt(limit) < 1) {
+      return res.status(400).json({
+        status: false,
+        message: "Page and limit must be positive numbers",
+      });
+    }
+
+    if (parseInt(limit) > 100) {
+      return res.status(400).json({
+        status: false,
+        message: "Limit cannot exceed 100 items per page",
+      });
+    }
+
+    // Build where clause for filtering
+    const whereClause = {
+      isDeleted: false,
+      tipe: "panen",
+    };
+
+    // Validate and apply date filters
+    if (startDate || endDate) {
+      if (startDate && endDate) {
+        try {
+          const start = new Date(startDate);
+          const end = new Date(endDate);
+
+          if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+            return res.status(400).json({
+              status: false,
+              message: "Invalid date format. Please use YYYY-MM-DD format",
+            });
+          }
+
+          if (start > end) {
+            return res.status(400).json({
+              status: false,
+              message: "Start date must be before or equal to end date",
+            });
+          }
+
+          whereClause.createdAt = {
+            [Op.between]: [start, end],
+          };
+        } catch (error) {
+          return res.status(400).json({
+            status: false,
+            message: "Error parsing dates. Please use YYYY-MM-DD format",
+          });
+        }
+      } else {
+        return res.status(400).json({
+          status: false,
+          message:
+            "Both startDate and endDate are required when filtering by date range",
+        });
+      }
+    }
+
+    // Unit budidaya filter
+    if (unitBudidayaId) {
+      whereClause.UnitBudidayaId = unitBudidayaId;
+    }
+
+    // Komoditas filter (will be applied in PanenKebun include)
+    const panenKebunWhere = {};
+    if (komoditasId) {
+      panenKebunWhere.komoditasId = komoditasId;
+    }
+
+    const { count, rows } = await Laporan.findAndCountAll({
+      where: whereClause,
+      attributes: [
+        "id",
+        "judul",
+        "tipe",
+        "gambar",
+        "catatan",
+        "isDeleted",
+        "createdAt",
+        "updatedAt",
+        "UnitBudidayaId",
+        "ObjekBudidayaId",
+        "userId",
+      ],
+      include: [
+        {
+          model: PanenKebun,
+          where: panenKebunWhere,
+          required: true,
+          include: [
+            {
+              model: Komoditas,
+              as: "komoditas",
+              attributes: ["id", "nama"],
+              include: [
+                {
+                  model: Satuan,
+                  attributes: ["nama", "lambang"],
+                },
+              ],
+            },
+            {
+              model: PanenRincianGrade,
+              include: [
+                {
+                  model: Grade,
+                  attributes: ["id", "nama", "deskripsi"],
+                },
+              ],
+              required: false, // Allow harvest records without grades
+            },
+          ],
+        },
+        {
+          model: UnitBudidaya,
+          attributes: ["id", "nama", "tipe"],
+          include: [
+            {
+              model: JenisBudidaya,
+              attributes: ["nama", "tipe"],
+            },
+          ],
+        },
+        {
+          model: User,
+          as: "user",
+          attributes: ["id", "name"],
+        },
+      ],
+      order: [["createdAt", "DESC"]],
+      limit: parseInt(limit),
+      offset: offset,
+    });
+
+    // Transform data for better frontend consumption
+    const transformedData = rows.map((laporan) => {
+      const panenKebun = laporan.PanenKebun;
+      const grades = panenKebun.PanenRincianGrades || [];
+
+      // Calculate grade summary
+      const gradeSummary = grades.map((grade) => ({
+        gradeId: grade.Grade.id,
+        gradeNama: grade.Grade.nama,
+        gradeDeskripsi: grade.Grade.deskripsi,
+        jumlah: grade.jumlah,
+        persentase:
+          panenKebun.realisasiPanen > 0
+            ? ((grade.jumlah / panenKebun.realisasiPanen) * 100).toFixed(2)
+            : 0,
+      }));
+
+      return {
+        laporanId: laporan.id,
+        judul: laporan.judul,
+        tanggalLaporan: laporan.createdAt,
+        tanggalPanen: panenKebun.tanggalPanen,
+        gambar: laporan.gambar,
+        catatan: laporan.catatan,
+        pelapor: {
+          id: laporan.user.id,
+          nama: laporan.user.name,
+        },
+        unitBudidaya: {
+          id: laporan.UnitBudidaya.id,
+          nama: laporan.UnitBudidaya.nama,
+          tipe: laporan.UnitBudidaya.tipe,
+          jenisBudidaya: laporan.UnitBudidaya.JenisBudidaya.nama,
+        },
+        komoditas: {
+          id: panenKebun.komoditas.id,
+          nama: panenKebun.komoditas.nama,
+          jenis: panenKebun.komoditas.jenis,
+          satuan: panenKebun.komoditas.Satuan,
+        },
+        hasilPanen: {
+          estimasiPanen: panenKebun.estimasiPanen,
+          realisasiPanen: panenKebun.realisasiPanen,
+          gagalPanen: panenKebun.gagalPanen,
+          umurTanamanPanen: panenKebun.umurTanamanPanen,
+          efisiensiPanen:
+            panenKebun.estimasiPanen > 0
+              ? (
+                  (panenKebun.realisasiPanen / panenKebun.estimasiPanen) *
+                  100
+                ).toFixed(2)
+              : 0,
+        },
+        rincianGrade: gradeSummary,
+        totalGradeCount: grades.length,
+      };
+    });
+
+    const totalPages = Math.ceil(count / parseInt(limit));
+
+    return res.status(200).json({
+      status: true,
+      message: "Successfully retrieved hasil panen data with grades",
+      data: transformedData,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: totalPages,
+        totalItems: count,
+        itemsPerPage: parseInt(limit),
+        hasNextPage: parseInt(page) < totalPages,
+        hasPrevPage: parseInt(page) > 1,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: false,
+      message: error.message,
+      detail: error,
+    });
+  }
+};
+
+const getGradeSummaryByKomoditas = async (req, res) => {
+  try {
+    const { komoditasId, startDate, endDate, unitBudidayaId } = req.query;
+
+    // Validate required parameter
+    if (!komoditasId || komoditasId.trim() === "") {
+      return res.status(400).json({
+        status: false,
+        message: "Parameter 'komoditasId' is required and cannot be empty",
+      });
+    }
+
+    // Validate that the commodity exists
+    const komoditasExists = await Komoditas.findOne({
+      where: {
+        id: komoditasId.trim(),
+        isDeleted: false,
+      },
+    });
+
+    if (!komoditasExists) {
+      return res.status(404).json({
+        status: false,
+        message: `Komoditas with ID '${komoditasId}' not found or has been deleted`,
+      });
+    }
+
+    // Build where clause for date filtering
+    const whereClause = {
+      isDeleted: false,
+      tipe: "panen",
+    };
+
+    // Validate and apply date filters
+    if (startDate || endDate) {
+      if (startDate && endDate) {
+        try {
+          const start = new Date(startDate);
+          const end = new Date(endDate);
+
+          // Check if dates are valid
+          if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+            return res.status(400).json({
+              status: false,
+              message: "Invalid date format. Please use YYYY-MM-DD format",
+            });
+          }
+
+          // Check if start date is before end date
+          if (start > end) {
+            return res.status(400).json({
+              status: false,
+              message: "Start date must be before or equal to end date",
+            });
+          }
+
+          whereClause.createdAt = {
+            [Op.between]: [start, end],
+          };
+        } catch (error) {
+          return res.status(400).json({
+            status: false,
+            message: "Error parsing dates. Please use YYYY-MM-DD format",
+          });
+        }
+      } else {
+        return res.status(400).json({
+          status: false,
+          message:
+            "Both startDate and endDate are required when filtering by date range",
+        });
+      }
+    }
+
+    if (unitBudidayaId) {
+      whereClause.UnitBudidayaId = unitBudidayaId;
+    }
+
+    // Get all harvest records for the commodity
+    const laporanPanen = await Laporan.findAll({
+      where: whereClause,
+      include: [
+        {
+          model: PanenKebun,
+          where: { komoditasId: komoditasId },
+          required: true,
+          include: [
+            {
+              model: Komoditas,
+              as: "komoditas",
+              attributes: ["id", "nama"],
+              include: [
+                {
+                  model: Satuan,
+                  attributes: ["nama", "lambang"],
+                },
+              ],
+            },
+            {
+              model: PanenRincianGrade,
+              include: [
+                {
+                  model: Grade,
+                  attributes: ["id", "nama", "deskripsi"],
+                },
+              ],
+              required: false,
+            },
+          ],
+        },
+      ],
+    });
+
+    if (laporanPanen.length === 0) {
+      return res.status(404).json({
+        status: false,
+        message: "No harvest data found for this commodity",
+      });
+    }
+
+    // Aggregate grade data
+    const gradeAggregation = {};
+    let totalHarvestAmount = 0;
+    let totalHarvestCount = 0;
+
+    laporanPanen.forEach((laporan) => {
+      const panenKebun = laporan.PanenKebun;
+      totalHarvestAmount += panenKebun.realisasiPanen || 0;
+      totalHarvestCount++;
+
+      panenKebun.PanenRincianGrades.forEach((rincian) => {
+        const gradeId = rincian.Grade.id;
+        const gradeName = rincian.Grade.nama;
+        const gradeDesc = rincian.Grade.deskripsi;
+        const amount = rincian.jumlah;
+
+        if (!gradeAggregation[gradeId]) {
+          gradeAggregation[gradeId] = {
+            gradeId: gradeId,
+            gradeNama: gradeName,
+            gradeDeskripsi: gradeDesc,
+            totalJumlah: 0,
+            harvestCount: 0,
+            averagePerHarvest: 0,
+          };
+        }
+
+        gradeAggregation[gradeId].totalJumlah += amount;
+        gradeAggregation[gradeId].harvestCount++;
+      });
+    });
+
+    // Calculate averages and percentages
+    const gradeSummary = Object.values(gradeAggregation).map((grade) => ({
+      ...grade,
+      averagePerHarvest: (grade.totalJumlah / grade.harvestCount).toFixed(2),
+      persentaseTotal:
+        totalHarvestAmount > 0
+          ? ((grade.totalJumlah / totalHarvestAmount) * 100).toFixed(2)
+          : 0,
+    }));
+
+    // Sort by total amount descending
+    gradeSummary.sort((a, b) => b.totalJumlah - a.totalJumlah);
+
+    // Get commodity info
+    const komoditasInfo = laporanPanen[0].PanenKebun.komoditas;
+
+    return res.status(200).json({
+      status: true,
+      message: "Successfully retrieved grade summary",
+      data: {
+        komoditas: {
+          id: komoditasInfo.id,
+          nama: komoditasInfo.nama,
+          jenis: komoditasInfo.jenis,
+          satuan: komoditasInfo.Satuan,
+        },
+        periodeSummary: {
+          totalHarvestCount: totalHarvestCount,
+          totalHarvestAmount: totalHarvestAmount,
+          averagePerHarvest:
+            totalHarvestCount > 0
+              ? (totalHarvestAmount / totalHarvestCount).toFixed(2)
+              : 0,
+          dateRange: {
+            startDate: startDate || null,
+            endDate: endDate || null,
+          },
+        },
+        gradeSummary: gradeSummary,
+        totalGradeTypes: gradeSummary.length,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: false,
+      message: error.message,
+      detail: error,
+    });
+  }
+};
+
 const getLaporanHarianKebunById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -1399,4 +1832,6 @@ module.exports = {
   getLaporanHamaById,
   getLaporanPenggunaanInventarisById,
   getJumlahKematian,
+  getHasilPanenWithGrades,
+  getGradeSummaryByKomoditas,
 };

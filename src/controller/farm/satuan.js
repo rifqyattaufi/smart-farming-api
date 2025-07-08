@@ -10,11 +10,15 @@ const getAllSatuan = async (req, res) => {
   try {
     const { page, limit, nama, lambang } = req.query;
     const paginationOptions = getPaginationOptions(page, limit);
-
     const whereClause = { isDeleted: false };
-    if (nama && nama.trim() !== "") {
-      whereClause.nama = { [Op.like]: `%${nama}%` };
-      whereClause.lambang = { [Op.like]: `%${nama}%` };
+
+    // Jika ada pencarian, cari di nama ATAU lambang dengan query yang sama
+    if ((nama && nama.trim() !== "") || (lambang && lambang.trim() !== "")) {
+      const searchQuery = nama || lambang; // ambil query dari parameter mana saja yang ada
+      whereClause[Op.or] = [
+        { nama: { [Op.like]: `%${searchQuery}%` } },
+        { lambang: { [Op.like]: `%${searchQuery}%` } },
+      ];
     }
 
     const { count, rows } = await Satuan.findAndCountAll({
@@ -95,20 +99,9 @@ const getSatuanSearch = async (req, res) => {
     });
 
     const currentPageNum = parseInt(page, 10) || 1;
-    const totalPages =
-      rows.length > 0
-        ? Math.ceil(
-            (await Satuan.count({
-              where: {
-                [Op.or]: [
-                  { nama: { [Op.like]: `%${nama}%` } },
-                  { lambang: { [Op.like]: `%${lambang}%` } },
-                ],
-                isDeleted: false,
-              },
-            })) / (paginationOptions.limit || parseInt(limit, 10) || 10)
-          )
-        : 0;
+    const totalPages = Math.ceil(
+      count / (paginationOptions.limit || parseInt(limit, 10) || 10)
+    );
 
     if (rows.length === 0) {
       return res.status(200).json({
@@ -117,13 +110,14 @@ const getSatuanSearch = async (req, res) => {
             ? "No more data for this search"
             : "Data not found for this search",
         data: [],
-        totalItems: totalPages,
+        totalItems: 0,
+        totalPages: 0,
         currentPage: currentPageNum,
       });
     }
 
     return res.status(200).json({
-      message: "Successfully retrieved grade data",
+      message: "Successfully retrieved satuan data",
       data: rows,
       totalItems: count,
       totalPages: totalPages,
@@ -187,18 +181,34 @@ const createSatuan = async (req, res) => {
     }
 
     // Cek apakah ada data aktif dengan nama yang sama
-    const existing = await Satuan.findOne({
+    const existingNama = await Satuan.findOne({
       where: {
         nama: req.body.nama,
         isDeleted: false,
       },
     });
 
-    if (existing) {
+    if (existingNama) {
       return res.status(400).json({
         status: false,
         message:
           "Satuan dengan nama tersebut sudah ada. Silakan gunakan nama yang berbeda.",
+      });
+    }
+
+    // Cek apakah ada data aktif dengan lambang yang sama
+    const existingLambang = await Satuan.findOne({
+      where: {
+        lambang: req.body.lambang,
+        isDeleted: false,
+      },
+    });
+
+    if (existingLambang) {
+      return res.status(400).json({
+        status: false,
+        message:
+          "Satuan dengan lambang tersebut sudah ada. Silakan gunakan lambang yang berbeda.",
       });
     }
 
@@ -252,6 +262,25 @@ const updateSatuan = async (req, res) => {
           status: false,
           message:
             "Satuan dengan nama tersebut sudah ada. Silakan gunakan nama yang berbeda.",
+        });
+      }
+    }
+
+    // Jika lambang diubah, cek apakah lambang baru sudah ada
+    if (req.body.lambang && req.body.lambang !== data.lambang) {
+      const existing = await Satuan.findOne({
+        where: {
+          lambang: req.body.lambang,
+          isDeleted: false,
+          id: { [Op.ne]: req.params.id }, // Exclude current record
+        },
+      });
+
+      if (existing) {
+        return res.status(400).json({
+          status: false,
+          message:
+            "Satuan dengan lambang tersebut sudah ada. Silakan gunakan lambang yang berbeda.",
         });
       }
     }

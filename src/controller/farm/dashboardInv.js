@@ -4,6 +4,7 @@ const sequelize = require("../../model/index");
 const Inventaris = sequelize.Inventaris;
 const KategoriInventaris = sequelize.KategoriInventaris;
 const PenggunaanInventaris = sequelize.PenggunaanInventaris;
+const Vitamin = sequelize.Vitamin;
 const Satuan = sequelize.Satuan;
 const Laporan = sequelize.Laporan;
 const User = sequelize.User;
@@ -92,7 +93,8 @@ const dashboardInventaris = async (req, res) => {
     const seringDigunakanCount = seringDigunakan.length;
     const jarangDigunakanCount = jarangDigunakan.length;
 
-    const daftarPemakaianTerbaruOrm = await PenggunaanInventaris.findAll({
+    // Get all PenggunaanInventaris data
+    const daftarPemakaianPIOrm = await PenggunaanInventaris.findAll({
       attributes: ["id", "jumlah", "createdAt"],
       include: [
         {
@@ -127,10 +129,47 @@ const dashboardInventaris = async (req, res) => {
         isDeleted: false,
       },
       order: [["createdAt", "DESC"]],
-      limit: 5,
     });
 
-    const daftarPemakaianTerbaru = daftarPemakaianTerbaruOrm.map((item) => {
+    // Get all Vitamin data
+    const daftarPemakaianVitaminOrm = await Vitamin.findAll({
+      attributes: ["id", "jumlah", "createdAt"],
+      include: [
+        {
+          model: Inventaris,
+          as: "inventaris",
+          attributes: ["id", "nama"],
+          where: {
+            isDeleted: false,
+          },
+          required: true,
+        },
+        {
+          model: Laporan,
+          attributes: ["id", "userId", "gambar", "createdAt"],
+          where: { isDeleted: false },
+          required: true,
+          include: [
+            {
+              model: User,
+              as: "user",
+              attributes: ["name"],
+              where: {
+                isDeleted: false,
+              },
+              required: true,
+            },
+          ],
+        },
+      ],
+      where: {
+        isDeleted: false,
+      },
+      order: [["createdAt", "DESC"]],
+    });
+
+    // Transform PenggunaanInventaris data to match expected format
+    const daftarPemakaianPI = daftarPemakaianPIOrm.map((item) => {
       const pi = item.toJSON();
       const inventarisData = pi.inventaris || {};
       const laporanData = pi.laporan || {};
@@ -168,14 +207,72 @@ const dashboardInventaris = async (req, res) => {
         createdAt: pi.createdAt,
         inventarisId: inventarisData.id,
         inventarisNama: inventarisData.nama,
-        laporanId: laporanData.id,
         userId: laporanData.userId,
         laporanGambar: laporanData.gambar,
         petugasNama: userData.name,
+        laporanId: laporanData.id,
         laporanTanggal: laporanTanggalFormatted,
         laporanWaktu: laporanWaktuFormatted,
+        sourceTable: "penggunaan",
       };
     });
+
+    // Transform Vitamin data to match expected format
+    const daftarPemakaianVitamin = daftarPemakaianVitaminOrm.map((item) => {
+      const vitamin = item.toJSON();
+      const inventarisData = vitamin.inventaris || {};
+      const laporanData = vitamin.Laporan || {};
+      const userData = laporanData.user || {};
+
+      let laporanTanggalFormatted = null;
+      let laporanWaktuFormatted = null;
+
+      if (laporanData.createdAt) {
+        const laporanDate = new Date(laporanData.createdAt);
+        try {
+          laporanTanggalFormatted = laporanDate.toLocaleDateString("id-ID", {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          });
+          laporanWaktuFormatted = laporanDate.toLocaleTimeString("id-ID", {
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+        } catch (e) {
+          console.warn(
+            "Warning: Locale 'id-ID' not fully supported for date formatting. Using default.",
+            e.message
+          );
+          laporanTanggalFormatted = laporanDate.toDateString();
+          laporanWaktuFormatted = laporanDate.toTimeString().substring(0, 5);
+        }
+      }
+
+      return {
+        id: vitamin.id,
+        jumlah: vitamin.jumlah,
+        createdAt: vitamin.createdAt,
+        inventarisId: inventarisData.id,
+        inventarisNama: inventarisData.nama,
+        userId: laporanData.userId,
+        laporanGambar: laporanData.gambar,
+        petugasNama: userData.name,
+        laporanId: laporanData.id,
+        laporanTanggal: laporanTanggalFormatted,
+        laporanWaktu: laporanWaktuFormatted,
+        sourceTable: "vitamin",
+      };
+    });
+
+    // Combine and sort by createdAt
+    const daftarPemakaian = [
+      ...daftarPemakaianPI,
+      ...daftarPemakaianVitamin,
+    ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    const daftarPemakaianTerbaru = daftarPemakaian.slice(0, 5);
 
     const daftarInventaris = await Inventaris.findAll({
       attributes: [

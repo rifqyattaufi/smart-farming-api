@@ -1645,6 +1645,217 @@ const getRiwayatPelaporanPanenTanaman = (req, res) => {
   });
 };
 
+/**
+ * Get harvest statistics with grade breakdown by jenis budidaya for charts
+ */
+const getStatistikPanenGradeByJenisBudidaya = async (req, res) => {
+  try {
+    const { id: jenisBudidayaId } = req.params;
+    const { startDate, endDate } = req.query;
+
+    if (!jenisBudidayaId) {
+      return res.status(400).json({
+        status: false,
+        message: "Jenis budidaya ID diperlukan",
+      });
+    }
+
+    // Validate that jenis budidaya exists
+    const jenisBudidaya = await JenisBudidaya.findOne({
+      where: { id: jenisBudidayaId, isDeleted: false },
+    });
+
+    if (!jenisBudidaya) {
+      return res.status(404).json({
+        status: false,
+        message: "Jenis budidaya tidak ditemukan",
+      });
+    }
+
+    // Build where clause for date filtering on Laporan
+    const laporanWhereClause = {
+      isDeleted: false,
+      tipe: "panen",
+    };
+
+    // Apply date filters if provided
+    if (startDate && endDate) {
+      try {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+
+        if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+          return res.status(400).json({
+            status: false,
+            message: "Invalid date format. Please use YYYY-MM-DD format",
+          });
+        }
+
+        laporanWhereClause.createdAt = {
+          [Op.between]: [start, end],
+        };
+      } catch (error) {
+        return res.status(400).json({
+          status: false,
+          message: "Error parsing dates. Please use YYYY-MM-DD format",
+        });
+      }
+    }
+
+    // Get all harvest records for the jenis budidaya using Sequelize ORM
+    const laporanPanen = await Laporan.findAll({
+      where: laporanWhereClause,
+      include: [
+        {
+          model: UnitBudidaya,
+          where: { jenisBudidayaId, isDeleted: false },
+          required: true,
+        },
+        {
+          model: PanenKebun,
+          required: true,
+          where: { isDeleted: false },
+          include: [
+            {
+              model: Komoditas,
+              as: "komoditas",
+              attributes: ["id", "nama"],
+              include: [
+                {
+                  model: Satuan,
+                  attributes: ["nama", "lambang"],
+                },
+              ],
+            },
+            {
+              model: PanenRincianGrade,
+              include: [
+                {
+                  model: Grade,
+                  attributes: ["id", "nama", "deskripsi"],
+                },
+              ],
+              required: false,
+              where: { isDeleted: false },
+            },
+          ],
+        },
+      ],
+    });
+
+    if (laporanPanen.length === 0) {
+      return res.status(200).json({
+        status: true,
+        message: "Data statistik panen grade berhasil diambil",
+        data: {
+          chartData: [],
+          summary: {
+            totalHarvest: 0,
+            totalGradeTypes: 0,
+            totalCommodityTypes: 0,
+            gradeLabels: [],
+            commodityLabels: [],
+          },
+          rawData: [],
+        },
+      });
+    }
+
+    // Aggregate grade data
+    const gradeAggregation = {};
+    const commoditySet = new Set();
+    let totalHarvestAmount = 0;
+    let totalHarvestCount = 0;
+
+    laporanPanen.forEach((laporan) => {
+      const panenKebun = laporan.PanenKebun;
+      // Convert to double and handle null/undefined values
+      const realisasiPanen = parseFloat(panenKebun.realisasiPanen) || 0.0;
+      totalHarvestAmount += realisasiPanen;
+      totalHarvestCount++;
+
+      // Add commodity to set
+      if (panenKebun.komoditas) {
+        commoditySet.add(panenKebun.komoditas.nama);
+      }
+
+      // Process grade data
+      panenKebun.PanenRincianGrades.forEach((rincian) => {
+        const gradeId = rincian.Grade.id;
+        const gradeName = rincian.Grade.nama;
+        const gradeDesc = rincian.Grade.deskripsi;
+        // Convert to double and handle null/undefined values
+        const amount = parseFloat(rincian.jumlah) || 0.0;
+
+        if (!gradeAggregation[gradeId]) {
+          gradeAggregation[gradeId] = {
+            gradeId: gradeId,
+            gradeNama: gradeName,
+            gradeDeskripsi: gradeDesc,
+            totalJumlah: 0.0,
+            harvestCount: 0,
+            commodity: panenKebun.komoditas?.nama || "",
+            unit: panenKebun.komoditas?.Satuan?.lambang || "",
+          };
+        }
+
+        gradeAggregation[gradeId].totalJumlah += amount;
+        gradeAggregation[gradeId].harvestCount++;
+      });
+    });
+
+    // Convert aggregation to chart data format with proper double handling
+    const chartData = Object.values(gradeAggregation).map((grade) => ({
+      label: grade.gradeNama,
+      value: parseFloat(grade.totalJumlah.toFixed(2)), // Ensure 2 decimal precision
+      commodity: grade.commodity,
+      unit: grade.unit,
+    }));
+
+    // Sort by total amount descending
+    chartData.sort((a, b) => b.value - a.value);
+
+    // Generate summary data with proper number formatting
+    const gradeLabels = chartData.map((item) => item.label);
+    const commodityLabels = Array.from(commoditySet);
+    const totalGradeTypes = gradeLabels.length;
+    const totalCommodityTypes = commodityLabels.length;
+
+    // Format rawData with proper double precision
+    const formattedRawData = Object.values(gradeAggregation).map((grade) => ({
+      ...grade,
+      totalJumlah: parseFloat(grade.totalJumlah.toFixed(2)),
+      averagePerHarvest:
+        grade.harvestCount > 0
+          ? parseFloat((grade.totalJumlah / grade.harvestCount).toFixed(2))
+          : 0.0,
+    }));
+
+    return res.status(200).json({
+      status: true,
+      message: "Data statistik panen grade berhasil diambil",
+      data: {
+        chartData,
+        summary: {
+          totalHarvest: parseFloat(totalHarvestAmount.toFixed(2)),
+          totalGradeTypes,
+          totalCommodityTypes,
+          gradeLabels,
+          commodityLabels,
+        },
+        rawData: formattedRawData,
+      },
+    });
+  } catch (error) {
+    console.error("Error in getStatistikPanenGradeByJenisBudidaya:", error);
+    return res.status(500).json({
+      status: false,
+      message: "Terjadi kesalahan pada server",
+      error: error.message,
+    });
+  }
+};
+
 // Function to get objekBudidaya that haven't been harvested for X days
 const getObjekBudidayaBelumPanen = async (req, res) => {
   try {
@@ -1748,6 +1959,7 @@ module.exports = {
   getStatistikJumlahPanenTanaman,
   getRiwayatPelaporanPanenTanaman,
   getRiwayatPelaporanHarianTanaman,
+  getStatistikPanenGradeByJenisBudidaya,
 
   getStatistikPemberianNutrisi,
 

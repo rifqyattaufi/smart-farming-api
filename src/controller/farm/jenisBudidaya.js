@@ -5,7 +5,7 @@ const JenisBudidaya = sequelize.JenisBudidaya;
 const UnitBudidaya = sequelize.UnitBudidaya;
 const ObjekBudidaya = sequelize.ObjekBudidaya;
 
-const { getPaginationOptions } = require('../../utils/paginationUtils');
+const { getPaginationOptions } = require("../../utils/paginationUtils");
 
 const getAllJenisBudidaya = async (req, res) => {
   try {
@@ -20,7 +20,7 @@ const getAllJenisBudidaya = async (req, res) => {
       ...paginationOptions,
     });
 
-    if (rows.length === 0 && parseInt(page,10) === 1) {
+    if (rows.length === 0 && parseInt(page, 10) === 1) {
       return res.status(200).json({
         message: "Data not found",
         data: [],
@@ -29,16 +29,15 @@ const getAllJenisBudidaya = async (req, res) => {
         currentPage: parseInt(page, 10) || 1,
       });
     }
-     if (rows.length === 0 && parseInt(page,10) > 1) {
-        return res.status(200).json({
-            message: "No more data",
-            data: [],
-            totalItems: count,
-            totalPages: Math.ceil(count / paginationOptions.limit),
-            currentPage: parseInt(page, 10) || 1,
-        });
+    if (rows.length === 0 && parseInt(page, 10) > 1) {
+      return res.status(200).json({
+        message: "No more data",
+        data: [],
+        totalItems: count,
+        totalPages: Math.ceil(count / paginationOptions.limit),
+        currentPage: parseInt(page, 10) || 1,
+      });
     }
-
 
     return res.status(200).json({
       message: "Successfully retrieved all jenis budidaya data",
@@ -66,7 +65,7 @@ const getJenisBudidayaById = async (req, res) => {
         message: "Data not found",
       });
     }
-    
+
     const dataUnitBudidaya = await UnitBudidaya.findAll({
       where: {
         jenisBudidayaId: req.params.id,
@@ -111,18 +110,17 @@ const getJenisBudidayaSearch = async (req, res) => {
     const paginationOptions = getPaginationOptions(page, limit);
 
     const whereClause = {
-        isDeleted: false,
+      isDeleted: false,
     };
 
-    if (nama && nama.toLowerCase() !== 'all' && nama.trim() !== '') {
-        whereClause.nama = {
-            [Op.like]: `%${nama}%`,
-        };
+    if (nama && nama.toLowerCase() !== "all" && nama.trim() !== "") {
+      whereClause.nama = {
+        [Op.like]: `%${nama}%`,
+      };
     }
-    if (tipe && tipe.toLowerCase() !== 'all' && tipe.trim() !== '') {
-        whereClause.tipe = tipe;
+    if (tipe && tipe.toLowerCase() !== "all" && tipe.trim() !== "") {
+      whereClause.tipe = tipe;
     }
-
 
     const { count, rows } = await JenisBudidaya.findAndCountAll({
       where: whereClause,
@@ -130,7 +128,7 @@ const getJenisBudidayaSearch = async (req, res) => {
       ...paginationOptions,
     });
 
-    if (rows.length === 0 && parseInt(page,10) === 1) {
+    if (rows.length === 0 && parseInt(page, 10) === 1) {
       return res.status(200).json({
         message: "Data not found for the given search criteria",
         data: [],
@@ -139,14 +137,14 @@ const getJenisBudidayaSearch = async (req, res) => {
         currentPage: parseInt(page, 10) || 1,
       });
     }
-    if (rows.length === 0 && parseInt(page,10) > 1) {
-        return res.status(200).json({
-            message: "No more data for this search",
-            data: [],
-            totalItems: count,
-            totalPages: Math.ceil(count / paginationOptions.limit),
-            currentPage: parseInt(page, 10) || 1,
-        });
+    if (rows.length === 0 && parseInt(page, 10) > 1) {
+      return res.status(200).json({
+        message: "No more data for this search",
+        data: [],
+        totalItems: count,
+        totalPages: Math.ceil(count / paginationOptions.limit),
+        currentPage: parseInt(page, 10) || 1,
+      });
     }
 
     return res.status(200).json({
@@ -183,7 +181,7 @@ const getJenisBudidayaByTipe = async (req, res) => {
       ...paginationOptions,
     });
 
-    if (rows.length === 0 && parseInt(page,10) === 1) {
+    if (rows.length === 0 && parseInt(page, 10) === 1) {
       return res.status(200).json({
         message: "Data not found for this type",
         data: [],
@@ -192,14 +190,14 @@ const getJenisBudidayaByTipe = async (req, res) => {
         currentPage: parseInt(page, 10) || 1,
       });
     }
-    if (rows.length === 0 && parseInt(page,10) > 1) {
-        return res.status(200).json({
-            message: "No more data for this type",
-            data: [],
-            totalItems: count,
-            totalPages: Math.ceil(count / paginationOptions.limit),
-            currentPage: parseInt(page, 10) || 1,
-        });
+    if (rows.length === 0 && parseInt(page, 10) > 1) {
+      return res.status(200).json({
+        message: "No more data for this type",
+        data: [],
+        totalItems: count,
+        totalPages: Math.ceil(count / paginationOptions.limit),
+        currentPage: parseInt(page, 10) || 1,
+      });
     }
 
     return res.status(200).json({
@@ -216,7 +214,6 @@ const getJenisBudidayaByTipe = async (req, res) => {
     });
   }
 };
-
 
 const createJenisBudidaya = async (req, res) => {
   try {
@@ -326,7 +323,7 @@ const deleteJenisBudidaya = async (req, res) => {
 
     return res.status(200).json({
       message: "Jenis Budidaya and related data deleted successfully",
-      data: { id: req.params.id }
+      data: { id: req.params.id },
     });
   } catch (error) {
     await t.rollback();

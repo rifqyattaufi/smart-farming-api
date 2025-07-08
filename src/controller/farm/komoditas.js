@@ -5,7 +5,7 @@ const Satuan = sequelize.Satuan;
 const Produk = sequelize.Produk;
 const Op = sequelize.Sequelize.Op;
 
-const { getPaginationOptions } = require('../../utils/paginationUtils');
+const { getPaginationOptions } = require("../../utils/paginationUtils");
 
 const getAllKomoditas = async (req, res) => {
   try {
@@ -20,6 +20,10 @@ const getAllKomoditas = async (req, res) => {
         {
           model: JenisBudidaya,
           required: true,
+        },
+        {
+          model: Satuan,
+          required: false,
         },
       ],
       order: [["createdAt", "DESC"]],
@@ -97,7 +101,7 @@ const getKomoditasSearch = async (req, res) => {
     const whereClause = {
       isDeleted: false,
     };
-    if (nama && nama.toLowerCase() !== 'all' && nama.trim() !== '') {
+    if (nama && nama.toLowerCase() !== "all" && nama.trim() !== "") {
       whereClause.nama = {
         [Op.like]: `%${nama}%`,
       };
@@ -108,11 +112,14 @@ const getKomoditasSearch = async (req, res) => {
         model: JenisBudidaya,
         required: true,
       },
+      {
+        model: Satuan,
+        required: false,
+      },
     ];
-    if (tipe && tipe.toLowerCase() !== 'all' && tipe.trim() !== '') {
+    if (tipe && tipe.toLowerCase() !== "all" && tipe.trim() !== "") {
       includeClause[0].where = { tipe: tipe };
     }
-
 
     const { count, rows } = await Komoditas.findAndCountAll({
       include: includeClause,
@@ -164,7 +171,7 @@ const getKomoditasByTipe = async (req, res) => {
         },
         {
           model: Satuan,
-          required: true,
+          required: false,
         },
       ],
       where: {
@@ -193,7 +200,6 @@ const getKomoditasByTipe = async (req, res) => {
       });
     }
 
-
     return res.status(200).json({
       message: "Successfully retrieved komoditas data by type",
       data: rows,
@@ -219,9 +225,8 @@ const createKomoditas = async (req, res) => {
 
     const createdDataWithIncludes = await Komoditas.findOne({
       where: { id: data.id },
-      include: [{ model: JenisBudidaya }, { model: Satuan }]
+      include: [{ model: JenisBudidaya }, { model: Satuan }],
     });
-
 
     res.locals.createdData = createdDataWithIncludes.toJSON();
 
@@ -253,7 +258,7 @@ const updateKomoditas = async (req, res) => {
 
     const updatedDataWithIncludes = await Komoditas.findOne({
       where: { id: req.params.id },
-      include: [{ model: JenisBudidaya }, { model: Satuan }]
+      include: [{ model: JenisBudidaya }, { model: Satuan }],
     });
 
     res.locals.updatedData = updatedDataWithIncludes.toJSON();
@@ -289,7 +294,7 @@ const deleteKomoditas = async (req, res) => {
 
     return res.status(200).json({
       message: "Successfully deleted komoditas data",
-      data: { id: req.params.id }
+      data: { id: req.params.id },
     });
   } catch (error) {
     res.status(500).json({
@@ -308,8 +313,8 @@ const getAllKomoditasWithoutProduk = async (req, res) => {
       where: {
         isDeleted: false,
         produkId: {
-          [Op.is]: null
-        }
+          [Op.is]: null,
+        },
       },
       include: [
         {
@@ -319,7 +324,7 @@ const getAllKomoditasWithoutProduk = async (req, res) => {
         {
           model: Satuan,
           required: false,
-        }
+        },
       ],
       order: [["createdAt", "DESC"]],
       ...paginationOptions,
@@ -349,7 +354,6 @@ const getAllKomoditasWithoutProduk = async (req, res) => {
     });
   }
 };
-
 
 module.exports = {
   getAllKomoditas,
