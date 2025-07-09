@@ -287,9 +287,16 @@ const deleteProdukById = async (req, res) => {
                 { produkId: null },
                 { where: { produkId: req.params.id } }
             );
+            await Produk.destroy({
+                where: { id: req.params.id },
+            });
         }
-        data.isDeleted = true;
-        await data.save();
+        if (!komoditas) {
+            await Produk.update(
+                { isDeleted: true },
+                { where: { id: req.params.id } }
+            );
+        }
         return res.status(200).json({
             message: "Successfully deleted produk data",
             data: data,
