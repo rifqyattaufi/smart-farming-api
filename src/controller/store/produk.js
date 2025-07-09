@@ -30,7 +30,7 @@ const createProduk = async (req, res) => {
     }
 }
 
-const   createProdukByKomoditas = async (req, res) => {
+const createProdukByKomoditas = async (req, res) => {
     const idToko = await User.findOne({
         include: [{
             model: sequelize.Toko,
@@ -271,16 +271,25 @@ const deleteProdukById = async (req, res) => {
                 isDeleted: false
             },
         });
+        const komoditas = await sequelize.Komoditas.findOne({
+            where: {
+                produkId: req.params.id,
+            },
+        });
 
         if (!data) {
             return res.status(404).json({
                 message: "Produk not found",
             });
         }
-
+        if (komoditas) {
+            await sequelize.Komoditas.update(
+                { produkId: null },
+                { where: { produkId: req.params.id } }
+            );
+        }
         data.isDeleted = true;
         await data.save();
-
         return res.status(200).json({
             message: "Successfully deleted produk data",
             data: data,
