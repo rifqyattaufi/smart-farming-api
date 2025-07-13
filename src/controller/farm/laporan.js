@@ -647,25 +647,62 @@ const createLaporanPanenKebun = async (req, res) => {
     );
 
     if (panen.rincianGrade && panen.rincianGrade.length > 0) {
-      for (const rincianGrade of panen.rincianGrade) {
-        await PanenRincianGrade.create(
-          {
-            panenKebunId: laporanPanen.id,
-            gradeId: rincianGrade.gradeId,
-            jumlah: rincianGrade.jumlah,
-          },
-          { transaction: t }
-        );
-      }
+      const rincianGradeData = panen.rincianGrade.map((rincianGrade) => ({
+        panenKebunId: laporanPanen.id,
+        gradeId: rincianGrade.gradeId,
+        jumlah: rincianGrade.jumlah,
+      }));
+
+      await PanenRincianGrade.bulkCreate(rincianGradeData, { transaction: t });
     }
 
-    const komoditas = await Komoditas.findOne({
-      where: { id: panen.komoditasId },
-    });
+    const [komoditas, unitBudidaya] = await Promise.all([
+      Komoditas.findOne({
+        where: { id: panen.komoditasId },
+        transaction: t,
+      }),
+      UnitBudidaya.findOne({
+        where: { id: req.body.unitBudidayaId },
+        transaction: t,
+      }),
+    ]);
+
+    if (!komoditas) {
+      throw new Error(
+        `Komoditas dengan ID ${panen.komoditasId} tidak ditemukan`
+      );
+    }
+
+    if (!unitBudidaya) {
+      throw new Error(
+        `Unit budidaya dengan ID ${req.body.unitBudidayaId} tidak ditemukan`
+      );
+    }
 
     komoditas.jumlah += panen.realisasiPanen;
-
     await komoditas.save({ transaction: t });
+
+    if (komoditas.hapusObjek === true) {
+      const updateResult = await ObjekBudidaya.update(
+        { isDeleted: true },
+        {
+          where: {
+            unitBudidayaId: req.body.unitBudidayaId,
+            isDeleted: false,
+          },
+          transaction: t,
+        }
+      );
+
+      const deletedCount = updateResult[0];
+      if (deletedCount > 0) {
+        await UnitBudidaya.decrement("jumlah", {
+          by: deletedCount,
+          transaction: t,
+          where: { id: req.body.unitBudidayaId },
+        });
+      }
+    }
 
     await t.commit();
 
