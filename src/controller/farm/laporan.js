@@ -33,6 +33,8 @@ const Komoditas = sequelize.Komoditas;
 const Satuan = sequelize.Satuan;
 const Grade = sequelize.Grade;
 
+const Produk = sequelize.Produk;
+
 const createLaporanHarianKebun = async (req, res) => {
   const t = await db.transaction();
 
@@ -505,6 +507,10 @@ const createLaporanPanen = async (req, res) => {
       where: { id: panen.komoditasId },
     });
 
+    const produk = await Produk.findOne({
+      where: { id: komoditas.produkId, isDeleted: false },
+    });
+
     const data = await Laporan.create(
       {
         ...req.body,
@@ -526,6 +532,16 @@ const createLaporanPanen = async (req, res) => {
 
     komoditas.jumlah += panen.jumlah;
     await komoditas.save({ transaction: t });
+
+    if (produk) {
+      await produk.update(
+        {
+          nama: komoditas.nama,
+          stok: komoditas.jumlah,
+        },
+        { transaction: t }
+      );
+    }
 
     if (komoditas.tipeKomoditas == "individu") {
       if (komoditas.hapusObjek == true) {
@@ -679,8 +695,22 @@ const createLaporanPanenKebun = async (req, res) => {
       );
     }
 
+    const produk = await Produk.findOne({
+      where: { id: komoditas.produkId, isDeleted: false },
+    });
+
     komoditas.jumlah += panen.realisasiPanen;
     await komoditas.save({ transaction: t });
+
+    if (produk) {
+      await produk.update(
+        {
+          nama: komoditas.nama,
+          stok: komoditas.jumlah,
+        },
+        { transaction: t }
+      );
+    }
 
     if (komoditas.hapusObjek === true) {
       const updateResult = await ObjekBudidaya.update(
