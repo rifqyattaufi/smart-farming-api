@@ -216,6 +216,7 @@ const dashboardPerkebunan = async (req, res) => {
       where: {
         tipe: "tumbuhan",
         isDeleted: false,
+        status: true,
       },
       order: [["createdAt", "DESC"]],
     });

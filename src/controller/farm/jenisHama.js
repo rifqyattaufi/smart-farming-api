@@ -28,7 +28,7 @@ const getAlljenisHama = async (req, res) => {
 
     if (rows.length === 0) {
       return res.status(200).json({
-        message: currentPageNum > 1 ? "No more data" : "Data not found",
+        message: currentPageNum > 1 ? "Tidak ada data lagi" : "Data tidak ditemukan",
         data: [],
         totalItems: count,
         totalPages: totalPages,
@@ -37,7 +37,7 @@ const getAlljenisHama = async (req, res) => {
     }
 
     return res.status(200).json({
-      message: "Successfully retrieved all jenis hama data",
+      message: "Berhasil mendapatkan data jenis hama",
       data: rows,
       totalItems: count,
       totalPages: totalPages,
@@ -75,8 +75,8 @@ const getjenisHamaSearch = async (req, res) => {
       return res.status(200).json({
         message:
           currentPageNum > 1
-            ? "No more data for this search"
-            : "Data not found for this search",
+            ? "Tidak ada data lagi untuk pencarian ini"
+            : "Data tidak ditemukan",
         data: [],
         totalItems: 0,
         totalPages: 0,
@@ -85,7 +85,7 @@ const getjenisHamaSearch = async (req, res) => {
     }
 
     return res.status(200).json({
-      message: "Successfully retrieved jenis hama data",
+      message: "Berhasil mendapatkan data jenis hama",
       data: rows,
       totalItems: count,
       totalPages: totalPages,
@@ -110,12 +110,12 @@ const getjenisHamaById = async (req, res) => {
 
     if (!data) {
       return res.status(404).json({
-        message: "Data not found",
+        message: "Data tidak ditemukan",
       });
     }
 
     return res.status(200).json({
-      message: "Successfully retrieved jenis hama data",
+      message: "Berhasil mendapatkan data jenis hama",
       data: data,
     });
   } catch (error) {
@@ -134,7 +134,7 @@ const createjenisHama = async (req, res) => {
   if (validation.message.length > 0) {
     return res.status(400).json({
       error: validation.message,
-      message: "Validation error",
+      message: "Validasi gagal",
     });
   }
   try {
@@ -168,7 +168,7 @@ const createjenisHama = async (req, res) => {
       return res.status(201).json({
         status: true,
         message:
-          "Data with this name existed before and has been restored with new information",
+          "Data dengan nama tersebut sudah ada sebelumnya dan telah dipulihkan.",
         data: restoredData,
       });
     }
@@ -199,7 +199,7 @@ const createjenisHama = async (req, res) => {
 
     return res.status(201).json({
       status: true,
-      message: "Successfully created new jenis hama data",
+      message: "Berhasil membuat data jenis hama baru",
       data: data,
     });
   } catch (error) {
@@ -219,7 +219,7 @@ const updatejenisHama = async (req, res) => {
     if (!data) {
       return res.status(404).json({
         status: false,
-        message: "Data not found",
+        message: "Data tidak ditemukan",
       });
     }
 
@@ -229,7 +229,7 @@ const updatejenisHama = async (req, res) => {
         where: {
           nama: req.body.nama,
           isDeleted: false,
-          id: { [Op.ne]: req.params.id }, // Exclude current record
+          id: { [Op.ne]: req.params.id },
         },
       });
 
@@ -254,7 +254,7 @@ const updatejenisHama = async (req, res) => {
 
     return res.status(200).json({
       status: true,
-      message: "Successfully updated jenis hama data",
+      message: "Berhasil memperbarui data jenis hama",
       data: updated,
     });
   } catch (error) {
@@ -275,7 +275,7 @@ const deletejenisHama = async (req, res) => {
     if (!data) {
       return res.status(404).json({
         status: false,
-        message: "Data not found",
+        message: "Data tidak ditemukan",
       });
     }
 
@@ -286,7 +286,7 @@ const deletejenisHama = async (req, res) => {
 
     return res.status(200).json({
       status: true,
-      message: "Successfully deleted jenis hama data",
+      message: "Berhasil menghapus data jenis hama",
     });
   } catch (error) {
     res.status(500).json({
