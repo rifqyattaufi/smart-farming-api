@@ -294,7 +294,7 @@ const updateKomoditas = async (req, res) => {
       data: updatedDataWithIncludes,
     });
   } catch (error) {
-    // if (t) await t.rollback();
+    await t.rollback();
 
     res.status(500).json({
       message: error.message,
