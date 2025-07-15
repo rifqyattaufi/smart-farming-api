@@ -271,16 +271,11 @@ const updateKomoditas = async (req, res) => {
       );
     }
 
-    await komoditasInstance.update(
-      {
-        ...req.body,
-      },
-      {
-        transaction: t,
-      }
-    );
+    await komoditasInstance.update(req.body, {
+      transaction: t,
+    });
 
-    await t.commit;
+    await t.commit();
 
     const updatedDataWithIncludes = await Komoditas.findOne({
       where: { id: req.params.id },
