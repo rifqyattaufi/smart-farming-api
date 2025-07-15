@@ -1,9 +1,10 @@
-const sequelize = require("../../model/index");
-const Komoditas = sequelize.Komoditas;
-const JenisBudidaya = sequelize.JenisBudidaya;
-const Satuan = sequelize.Satuan;
-const Produk = sequelize.Produk;
-const Op = sequelize.Sequelize.Op;
+const db = require("../../model/index");
+const sequelize = db.sequelize;
+const Komoditas = db.Komoditas;
+const JenisBudidaya = db.JenisBudidaya;
+const Satuan = db.Satuan;
+const Produk = db.Produk;
+const Op = db.Sequelize.Op;
 
 const { getPaginationOptions } = require("../../utils/paginationUtils");
 
@@ -243,7 +244,7 @@ const createKomoditas = async (req, res) => {
 };
 
 const updateKomoditas = async (req, res) => {
-  const t = sequelize.transaction();
+  const t = await sequelize.transaction();
 
   try {
     const komoditasInstance = await Komoditas.findOne({
@@ -256,12 +257,12 @@ const updateKomoditas = async (req, res) => {
       });
     }
 
-    const Produk = await Produk.findOne({
+    const produkInstance = await Produk.findOne({
       where: { id: komoditasInstance.produkId, isDeleted: false },
     });
 
-    if (Produk) {
-      await Produk.update(
+    if (produkInstance) {
+      await produkInstance.update(
         {
           nama: req.body.nama,
           stok: req.body.jumlah,
@@ -296,13 +297,13 @@ const updateKomoditas = async (req, res) => {
 };
 
 const deleteKomoditas = async (req, res) => {
-  const t = sequelize.transaction();
+  const t = await sequelize.transaction();
   try {
     const data = await Komoditas.findOne({
       where: { id: req.params.id, isDeleted: false },
     });
 
-    const Produk = await Produk.findOne({
+    const produkInstance = await Produk.findOne({
       where: { id: data.produkId, isDeleted: false },
     });
 
@@ -312,8 +313,8 @@ const deleteKomoditas = async (req, res) => {
       });
     }
 
-    if (Produk) {
-      await Produk.update(
+    if (produkInstance) {
+      await produkInstance.update(
         {
           isDeleted: true,
         },
@@ -350,10 +351,7 @@ const getAllKomoditasWithoutProduk = async (req, res) => {
     const { count, rows } = await Komoditas.findAndCountAll({
       where: {
         isDeleted: false,
-        [Op.or]: [
-          { ProdukId: null },
-          { '$Produk.isDeleted$': true }
-        ]
+        [Op.or]: [{ ProdukId: null }, { "$Produk.isDeleted$": true }],
       },
       include: [
         {
@@ -367,7 +365,7 @@ const getAllKomoditasWithoutProduk = async (req, res) => {
         {
           model: Produk,
           required: false,
-          attributes: ["id", 'isDeleted'],
+          attributes: ["id", "isDeleted"],
         },
       ],
       order: [["createdAt", "DESC"]],
