@@ -1,5 +1,6 @@
 const sequelize = require("../../model/index");
 const Produk = sequelize.Produk;
+const Komoditas = sequelize.Komoditas;
 const User = sequelize.User;
 
 const createProduk = async (req, res) => {
@@ -38,22 +39,48 @@ const createProdukByKomoditas = async (req, res) => {
         }],
         where: { id: req.user.id },
     })
+    const existingProduk = await Komoditas.findOne({
+        where: {
+            id: req.body.komoditasId,
+            isDeleted: false,
+        },
+        include: [{
+            model: Produk,
+            required: true,
+            attributes: ['id'],
+        }]
+    });
+    // return res.status(500).json({
+    //     existingProduk,
+    // })
     try {
-        const produk = await Produk.create({
-            ...req.body,
-            TokoId: idToko.Toko.id,
-        })
-        const produkId = produk.id;
-        await sequelize.Komoditas.update(
-            { produkId: produkId },
-            { where: { id: req.body.komoditasId } }
-        );
+        if (!existingProduk) {
+            const produk = await Produk.create({
+                ...req.body,
+                TokoId: idToko.Toko.id,
+            })
+            const produkId = produk.id;
+            await sequelize.Komoditas.update(
+                { produkId: produkId },
+                { where: { id: req.body.komoditasId } }
+            );
+
+        } else {
+
+            const produk = await Produk.update(
+                {
+                    ...req.body,
+                    TokoId: idToko.Toko.id,
+                    isDeleted: false,
+                },
+                { where: { id: existingProduk.Produk.id } },
+            );
+        }
         return res.status(201).json({
-            message: "Berhasil menambahkan produk",
+            message: "Berhasil menambahkan produk Komoditas",
             data: req.body,
         })
     }
-
     catch (error) {
         return res.status(500).json({
             message: error.message,
@@ -271,27 +298,12 @@ const deleteProdukById = async (req, res) => {
                 isDeleted: false
             },
         });
-        const komoditas = await sequelize.Komoditas.findOne({
-            where: {
-                produkId: req.params.id,
-            },
-        });
-
         if (!data) {
             return res.status(404).json({
                 message: "Produk not found",
             });
         }
-        if (komoditas) {
-            await sequelize.Komoditas.update(
-                { produkId: null },
-                { where: { produkId: req.params.id } }
-            );
-            await Produk.destroy({
-                where: { id: req.params.id },
-            });
-        }
-        if (!komoditas) {
+        else {
             await Produk.update(
                 { isDeleted: true },
                 { where: { id: req.params.id } }

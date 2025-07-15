@@ -159,7 +159,6 @@ const recreateTransaction = async (req, res) => {
 const handleWebhook = async (req, res) => {
     try {
         const body = req.body;
-
         const orderId = body.order_id;
         const transactionStatus = body.transaction_status;
         const transactionId = body.transaction_id;
