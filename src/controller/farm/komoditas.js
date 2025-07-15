@@ -1,4 +1,5 @@
 const sequelize = require("../../model/index");
+const db = sequelize.sequelize;
 const Komoditas = sequelize.Komoditas;
 const JenisBudidaya = sequelize.JenisBudidaya;
 const Satuan = sequelize.Satuan;
@@ -243,7 +244,7 @@ const createKomoditas = async (req, res) => {
 };
 
 const updateKomoditas = async (req, res) => {
-  const t = sequelize.transaction();
+  const t = await db.transaction();
 
   try {
     const komoditasInstance = await Komoditas.findOne({
@@ -256,12 +257,12 @@ const updateKomoditas = async (req, res) => {
       });
     }
 
-    const Produk = await Produk.findOne({
+    const produk = await Produk.findOne({
       where: { id: komoditasInstance.produkId, isDeleted: false },
     });
 
-    if (Produk) {
-      await Produk.update(
+    if (produk) {
+      await produk.update(
         {
           nama: req.body.nama,
           stok: req.body.jumlah,
@@ -270,9 +271,16 @@ const updateKomoditas = async (req, res) => {
       );
     }
 
-    await komoditasInstance.update(req.body, { transaction: t });
+    await komoditasInstance.update(
+      {
+        ...req.body,
+      },
+      {
+        transaction: t,
+      }
+    );
 
-    await t.commit();
+    await t.commit;
 
     const updatedDataWithIncludes = await Komoditas.findOne({
       where: { id: req.params.id },
@@ -286,7 +294,7 @@ const updateKomoditas = async (req, res) => {
       data: updatedDataWithIncludes,
     });
   } catch (error) {
-    await t.rollback();
+    // if (t) await t.rollback();
 
     res.status(500).json({
       message: error.message,
@@ -350,10 +358,7 @@ const getAllKomoditasWithoutProduk = async (req, res) => {
     const { count, rows } = await Komoditas.findAndCountAll({
       where: {
         isDeleted: false,
-        [Op.or]: [
-          { ProdukId: null },
-          { '$Produk.isDeleted$': true }
-        ]
+        [Op.or]: [{ ProdukId: null }, { "$Produk.isDeleted$": true }],
       },
       include: [
         {
@@ -367,7 +372,7 @@ const getAllKomoditasWithoutProduk = async (req, res) => {
         {
           model: Produk,
           required: false,
-          attributes: ["id", 'isDeleted'],
+          attributes: ["id", "isDeleted"],
         },
       ],
       order: [["createdAt", "DESC"]],
