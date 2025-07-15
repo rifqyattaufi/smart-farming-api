@@ -9,6 +9,7 @@ const { sendNotificationToUser } = require("./notificationService");
 const Pesanan = sequelize.Pesanan;
 const PesananDetail = sequelize.PesananDetail;
 const Produk = sequelize.Produk;
+const Komoditas = sequelize.Komoditas;
 const MidtransOrder = sequelize.MidtransOrder;
 
 async function checkAndSendScheduledNotifications() {
@@ -172,6 +173,9 @@ async function expireUnpaidOrders() {
     for (const order of orders) {
       if (!order.MidtransOrder || order.MidtransOrder.transaction_status === "pending") {
         const t = await sequelize.sequelize.transaction();
+        const komoditas = await Komoditas.findOne({
+          where: { produkId: order.PesananDetails[0].Produk.id, isDeleted: false },
+        });
         try {
           await order.update({ status: "expired" }, { transaction: t });
           for (const detail of order.PesananDetails) {
@@ -181,6 +185,12 @@ async function expireUnpaidOrders() {
                 { stok: prod.stok + detail.jumlah },
                 { where: { id: prod.id }, transaction: t }
               );
+              if (komoditas) {
+                await Komoditas.update(
+                  { jumlah: komoditas.jumlah + detail.jumlah },
+                  { where: { produkId: prod.id }, transaction: t }
+                );
+              }
             }
           }
           await t.commit();

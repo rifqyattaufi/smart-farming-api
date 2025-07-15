@@ -4,6 +4,7 @@ const { sendNotificationToSingleUserById } = require('../../../services/notifica
 const Pesanan = sequelize.Pesanan;
 const PesananDetail = sequelize.PesananDetail;
 const Produk = sequelize.Produk;
+const Komoditas = sequelize.Komoditas;
 const midtransOrder = sequelize.MidtransOrder;
 const { creditUserSaldo } = require('./saldo.js');
 
@@ -75,11 +76,22 @@ const createPesanan = async (req, res) => {
                 PesananId: pesanan.id
             }, { transaction: t });
 
+            const komoditas = await Komoditas.findOne({
+                where: { produkId: produk.id, isDeleted: false },
+            })
+
             if (typeof produk.stok === 'number') {
                 await Produk.update(
                     { stok: produk.stok - jumlah },
                     { where: { id: produk.id }, transaction: t }
+
                 );
+                if (komoditas) {
+                    await Komoditas.update(
+                        { jumlah: komoditas.jumlah - jumlah }
+                        , { where: { produkId: produk.id }, transaction: t }
+                    )
+                }
             }
         }
 
