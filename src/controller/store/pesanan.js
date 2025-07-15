@@ -22,7 +22,7 @@ const createPesanan = async (req, res) => {
 
         let tokoId = null;
         let totalHarga = 0;
-         const produkList = [];
+        const produkList = [];
         for (const item of items) {
             if (!item.produkId || !item.jumlah || item.jumlah < 1) {
                 return res.status(400).json({
@@ -74,7 +74,7 @@ const createPesanan = async (req, res) => {
                 jumlah,
                 PesananId: pesanan.id
             }, { transaction: t });
-            
+
             if (typeof produk.stok === 'number') {
                 await Produk.update(
                     { stok: produk.stok - jumlah },
@@ -248,7 +248,6 @@ const updatePesananStatus = async (req, res) => {
                 console.error(`Error: Pesanan ${pesananId} tidak memiliki UserId (pembeli). Refund gagal.`);
                 return res.status(500).json({ message: "Data pesanan tidak lengkap (tidak ada info pembeli), refund gagal." });
             }
-
             if (jumlahRefund === undefined || jumlahRefund === null || parseFloat(jumlahRefund) <= 0) {
                 await t.rollback();
                 console.error(`Error: Jumlah refund untuk pesanan ${pesananId} tidak valid atau nol (${jumlahRefund}). Refund tidak diproses.`);
@@ -303,7 +302,7 @@ const updatePesananStatusandNotif = async (req, res) => {
             });
         }
 
-       const validStatuses = ['menunggu', 'diterima', 'selesai', 'ditolak', 'expired'];
+        const validStatuses = ['menunggu', 'diterima', 'selesai', 'ditolak', 'expired'];
         if (!status || !validStatuses.includes(status)) {
             return res.status(400).json({
                 message: `Status tidak valid. Status harus salah satu dari: ${validStatuses.join(', ')}`
@@ -461,9 +460,46 @@ const CreatebuktiDiterima = async (req, res) => {
             message: "Gagal membuat bukti diterima",
             detail: error.message
         });
-        
+
     }
 }
+// get bukti diterima by id
+const getBuktiDiterimaById = async (req, res) => {
+    try {
+        const buktiId = req.params.id;
+        if (!buktiId) {
+            return res.status(400).json({
+                message: "ID bukti diterima diperlukan"
+            });
+        }
+
+        const bukti = await sequelize.BuktiDiterima.findOne({
+            where: { id: buktiId, isDeleted: false },
+            include: [{
+                model: Pesanan,
+                as: 'pesanan',
+                attributes: ['id', 'status']
+            }]
+        });
+
+        if (!bukti) {
+            return res.status(404).json({
+                message: "Bukti diterima tidak ditemukan"
+            });
+        }
+
+        return res.status(200).json({
+            message: "Berhasil mengambil bukti diterima",
+            data: bukti
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message: "Gagal mengambil bukti diterima",
+            detail: error.message
+        });
+    }
+};
 
 module.exports = {
     createPesanan,
@@ -471,6 +507,7 @@ module.exports = {
     getPesananById,
     updatePesananStatus,
     getPesananByTokoId,
-    CreatebuktiDiterima
-    , updatePesananStatusandNotif
+    CreatebuktiDiterima,
+    getBuktiDiterimaById,
+    updatePesananStatusandNotif
 };

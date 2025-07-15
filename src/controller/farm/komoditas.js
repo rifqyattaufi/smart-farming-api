@@ -350,9 +350,10 @@ const getAllKomoditasWithoutProduk = async (req, res) => {
     const { count, rows } = await Komoditas.findAndCountAll({
       where: {
         isDeleted: false,
-        produkId: {
-          [Op.is]: null,
-        },
+        [Op.or]: [
+          { ProdukId: null },
+          { '$Produk.isDeleted$': true }
+        ]
       },
       include: [
         {
@@ -362,6 +363,11 @@ const getAllKomoditasWithoutProduk = async (req, res) => {
         {
           model: Satuan,
           required: false,
+        },
+        {
+          model: Produk,
+          required: false,
+          attributes: ["id", 'isDeleted'],
         },
       ],
       order: [["createdAt", "DESC"]],

@@ -15,5 +15,6 @@ router.put('/statusss', pesananController.updatePesananStatusandNotif);
 router.get('/id/:id', pesananController.getPesananById);
 router.get('/toko/:id', pesananController.getPesananByTokoId);
 router.post('/bukti', pesananController.CreatebuktiDiterima);
+router.get('/bukti/:id', pesananController.getBuktiDiterimaById);
 
 module.exports = router;  
