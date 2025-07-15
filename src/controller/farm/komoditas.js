@@ -299,13 +299,13 @@ const updateKomoditas = async (req, res) => {
 };
 
 const deleteKomoditas = async (req, res) => {
-  const t = sequelize.transaction();
+  const t = await sequelize.transaction();
   try {
     const data = await Komoditas.findOne({
       where: { id: req.params.id, isDeleted: false },
     });
 
-    const Produk = await Produk.findOne({
+    const produkInstance = await Produk.findOne({
       where: { id: data.produkId, isDeleted: false },
     });
 
@@ -315,8 +315,8 @@ const deleteKomoditas = async (req, res) => {
       });
     }
 
-    if (Produk) {
-      await Produk.update(
+    if (produkInstance) {
+      await produkInstance.update(
         {
           isDeleted: true,
         },
