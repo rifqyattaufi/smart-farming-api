@@ -1,10 +1,10 @@
-const db = require("../../model/index");
-const sequelize = db.sequelize;
-const Komoditas = db.Komoditas;
-const JenisBudidaya = db.JenisBudidaya;
-const Satuan = db.Satuan;
-const Produk = db.Produk;
-const Op = db.Sequelize.Op;
+const sequelize = require("../../model/index");
+const db = sequelize.sequelize;
+const Komoditas = sequelize.Komoditas;
+const JenisBudidaya = sequelize.JenisBudidaya;
+const Satuan = sequelize.Satuan;
+const Produk = sequelize.Produk;
+const Op = sequelize.Sequelize.Op;
 
 const { getPaginationOptions } = require("../../utils/paginationUtils");
 
@@ -244,7 +244,7 @@ const createKomoditas = async (req, res) => {
 };
 
 const updateKomoditas = async (req, res) => {
-  const t = await sequelize.transaction();
+  const t = await db.transaction();
 
   try {
     const komoditasInstance = await Komoditas.findOne({
@@ -257,12 +257,12 @@ const updateKomoditas = async (req, res) => {
       });
     }
 
-    const produkInstance = await Produk.findOne({
+    const produk = await Produk.findOne({
       where: { id: komoditasInstance.produkId, isDeleted: false },
     });
 
-    if (produkInstance) {
-      await produkInstance.update(
+    if (produk) {
+      await produk.update(
         {
           nama: req.body.nama,
           stok: req.body.jumlah,
@@ -271,7 +271,9 @@ const updateKomoditas = async (req, res) => {
       );
     }
 
-    await komoditasInstance.update(req.body, { transaction: t });
+    await komoditasInstance.update(req.body, {
+      transaction: t,
+    });
 
     await t.commit();
 
