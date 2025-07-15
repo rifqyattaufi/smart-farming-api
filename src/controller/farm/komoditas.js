@@ -243,6 +243,8 @@ const createKomoditas = async (req, res) => {
 };
 
 const updateKomoditas = async (req, res) => {
+  const t = sequelize.transaction();
+
   try {
     const komoditasInstance = await Komoditas.findOne({
       where: { id: req.params.id, isDeleted: false },
@@ -254,7 +256,23 @@ const updateKomoditas = async (req, res) => {
       });
     }
 
-    await komoditasInstance.update(req.body);
+    const Produk = await Produk.findOne({
+      where: { id: komoditasInstance.produkId, isDeleted: false },
+    });
+
+    if (Produk) {
+      await Produk.update(
+        {
+          nama: req.body.nama,
+          stok: req.body.jumlah,
+        },
+        { transaction: t }
+      );
+    }
+
+    await komoditasInstance.update(req.body, { transaction: t });
+
+    await t.commit();
 
     const updatedDataWithIncludes = await Komoditas.findOne({
       where: { id: req.params.id },
@@ -268,6 +286,8 @@ const updateKomoditas = async (req, res) => {
       data: updatedDataWithIncludes,
     });
   } catch (error) {
+    await t.rollback();
+
     res.status(500).json({
       message: error.message,
       detail: error,
@@ -276,9 +296,14 @@ const updateKomoditas = async (req, res) => {
 };
 
 const deleteKomoditas = async (req, res) => {
+  const t = sequelize.transaction();
   try {
     const data = await Komoditas.findOne({
       where: { id: req.params.id, isDeleted: false },
+    });
+
+    const Produk = await Produk.findOne({
+      where: { id: data.produkId, isDeleted: false },
     });
 
     if (!data) {
@@ -287,8 +312,19 @@ const deleteKomoditas = async (req, res) => {
       });
     }
 
+    if (Produk) {
+      await Produk.update(
+        {
+          isDeleted: true,
+        },
+        { transaction: t }
+      );
+    }
+
     data.isDeleted = true;
-    await data.save();
+    await data.save({ transaction: t });
+
+    await t.commit();
 
     res.locals.updatedData = data.toJSON();
 
@@ -297,6 +333,8 @@ const deleteKomoditas = async (req, res) => {
       data: { id: req.params.id },
     });
   } catch (error) {
+    await t.rollback();
+
     res.status(500).json({
       message: error.message,
       detail: error,
@@ -312,9 +350,10 @@ const getAllKomoditasWithoutProduk = async (req, res) => {
     const { count, rows } = await Komoditas.findAndCountAll({
       where: {
         isDeleted: false,
-        produkId: {
-          [Op.is]: null,
-        },
+        [Op.or]: [
+          { ProdukId: null },
+          { '$Produk.isDeleted$': true }
+        ]
       },
       include: [
         {
@@ -324,6 +363,11 @@ const getAllKomoditasWithoutProduk = async (req, res) => {
         {
           model: Satuan,
           required: false,
+        },
+        {
+          model: Produk,
+          required: false,
+          attributes: ["id", 'isDeleted'],
         },
       ],
       order: [["createdAt", "DESC"]],

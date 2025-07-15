@@ -53,7 +53,7 @@ module.exports = (sequelize, DataTypes) => {
     Komoditas.hasMany(models.Panen, {
       foreignKey: "komoditasId",
     });
-
+    Komoditas.belongsTo(models.Produk);
     Komoditas.belongsTo(models.Satuan);
     Komoditas.belongsTo(models.JenisBudidaya);
   };

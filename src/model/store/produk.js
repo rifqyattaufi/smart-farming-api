@@ -40,7 +40,7 @@ module.exports = (sequelize, DataTypes) => {
 
   Produk.associate = (models) => {
     Produk.belongsTo(models.Toko);
-
+    Produk.hasOne(models.Komoditas);
     Produk.hasMany(models.Keranjang);
     Produk.hasMany(models.PesananDetail);
   };
