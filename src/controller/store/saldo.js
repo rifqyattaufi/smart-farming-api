@@ -338,8 +338,8 @@ const prosesPenarikanSaldo = async (req, res) => {
                 await t.rollback();
                 return res.status(500).json({ message: "Saldo user record not found." });
             }
-            const saldoSebelumMutasi = saldoUser.saldoTersedia + jumlahDiminta;
-            const saldoSesudahMutasi = saldoUser.saldoTersedia;
+            const saldoSebelumMutasi = parseFloat(saldoUser.saldoTersedia) + parseFloat(jumlahDiminta);
+            const saldoSesudahMutasi = parseFloat(saldoUser.saldoTersedia);
 
 
             await MutasiSaldoUser.create({
@@ -378,11 +378,11 @@ const prosesPenarikanSaldo = async (req, res) => {
                 userId: userId,
                 tipeTransaksi: 'penarikan_dibatalkan_dikembalikan',
                 jumlah: parseFloat(jumlahDiminta),
-                saldoSebelum: saldoUser.saldoTersedia - parseFloat(jumlahDiminta),
-                saldoSesudah: saldoUser.saldoTersedia,
+                saldoSebelum: saldoSebelumPengembalian,
+                saldoSesudah: saldoSesudahPengembalian,
                 referensiId: penarikan.id,
                 referensiTabel: 'penarikan_saldo',
-                keterangan: `Penarikan dana ditolak, dana dikembalikan. ID: ${penarikan.id}. Alasan: ${penarikan.catatanAdmin}`,
+                keterangan: `Penarikan dana ditolak, dana dikembalikan. ID: ${penarikan.id}. Alasan: ${catatanAdmin}`,
             }, { transaction: t });
             penarikan.status = 'rejected';
             penarikan.catatanAdmin = catatanAdmin;
@@ -424,7 +424,7 @@ const prosesPenarikanSaldo = async (req, res) => {
  */
 const creditUserSaldo = async (userId, jumlahTambah, tipeTransaksi, referensiId, referensiTabel, keterangan, transaction) => {
     const internalTransaction = !transaction; // Jika tidak ada transaksi eksternal, buat internal
-    const t = internalTransaction ? await sequelize.transaction() : transaction;
+    const t = internalTransaction ? await sequelizeInstance.transaction() : transaction;
 
     try {
         if (jumlahTambah <= 0) {

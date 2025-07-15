@@ -2,7 +2,7 @@ const { where } = require('sequelize');
 const db = require("../../model/index");
 const Pesanan = db.Pesanan;
 const Toko = db.Toko;
-const Pendapatan = db.Pendapatan;       
+const Pendapatan = db.Pendapatan;
 const { creditUserSaldo } = require('./saldo.js');
 
 
@@ -53,7 +53,7 @@ const addPendapatan = async (req, res) => {
             'pendapatan_masuk_penjual',
             pendapatan.id,
             'pendapatan',
-            `Pendapatan dari toko "<span class="math-inline">\{namaToko\}" untuk pesanan \#</span>{pesananId}`,
+            `Pendapatan dari penjualan pesanan ID : ${pesananId}`,
             t
         );
 
