@@ -31,6 +31,9 @@ module.exports = (sequelize, DataTypes) => {
     Panen.belongsTo(models.Laporan);
 
     Panen.hasMany(models.DetailPanen);
+    Panen.hasMany(models.PanenRincianGrade, {
+      foreignKey: "panenId",
+    });
   };
 
   return Panen;
