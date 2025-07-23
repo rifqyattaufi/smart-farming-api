@@ -9,9 +9,11 @@ const Rekening = sequelize.Rekening;
 
 
 
-router.get('id/:id', rekeningController.getRekeningById);
+router.get('/idUser/:id', rekeningController.getRekeningByUserId);
 
-router.get('/user', rekeningController.getRekeningByUserId);
+router.get('/idUser/:id/raw', rekeningController.getRekeningByUserIdRaw);
+
+router.get('/user', rekeningController.getRekeningById);
 
 router.post('/', auditMiddleware({ model: Rekening, tableName: "Rekening" }), rekeningController.createRekening);
 

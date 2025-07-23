@@ -22,4 +22,10 @@ router.delete("/:id", UsersController.deleteUser);
 
 router.get("/seller", UsersController.getPenjual);
 
+router.get("/pjawab", UsersController.getUsersPjawab);
+
+router.put("/pjawab/:id", UsersController.updateUserRolePjawab);
+
+router.post("/pjawab/:id", UsersController.deleteUserRolePjawab);
+
 module.exports = router;

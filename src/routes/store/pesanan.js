@@ -16,5 +16,7 @@ router.get('/id/:id', pesananController.getPesananById);
 router.get('/toko/:id', pesananController.getPesananByTokoId);
 router.post('/bukti', pesananController.CreatebuktiDiterima);
 router.get('/bukti/:id', pesananController.getBuktiDiterimaById);
+router.get('/toko/:id/selesai', pesananController.getPesananSelesaiByTokoId);
+router.get('/toko/bulan/:id', pesananController.getAvailableMonthsByTokoId);
 
 module.exports = router;  

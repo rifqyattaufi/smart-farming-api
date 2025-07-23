@@ -16,6 +16,7 @@ const { generateOTP } = require("../config/otp");
 const passport = require("passport");
 const { where } = require("sequelize");
 const { encrypt } = require("../config/bcrypt");
+const Toko = sequelize.Toko;
 
 const login = async (req, res, next) => {
   try {
@@ -74,7 +75,17 @@ const login = async (req, res, next) => {
         message: "Email sudah dibanned",
       });
     }
+    let idAsli = null;
+    if (userExist.isActive && userExist.role == "pjawab") {
+      idAsli = await Toko.findOne({
+        where: {
+          TypeToko: "rfc"
+        },
+        attributes: ["UserId"]
 
+      })
+      console.log("idAsli", idAsli.UserId);
+    }
     const usr = {
       id: userExist.id,
       name: userExist.name,
@@ -82,6 +93,7 @@ const login = async (req, res, next) => {
       phone: userExist.phone,
       role: userExist.role,
       avatar: userExist.avatarUrl,
+      idAsli: idAsli ? idAsli.UserId : null,
     };
 
     const token = generateAccessToken(usr);

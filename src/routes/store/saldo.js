@@ -10,11 +10,20 @@ const Saldo = sequelize.Saldo;
 
 router.get('/user', saldoController.getMySaldo);
 
+router.get('/idUser/:id', saldoController.getMySaldoByUserId);
+
+
 router.get('/mutasi', saldoController.getMyMutasiSaldo);
+
+router.get('/mutasi/idUser/:id', saldoController.getMyMutasiSaldoByIdUser);
 
 router.post('/tarik-saldo', auditMiddleware({ model: penarikanSaldo, tableName: "penarikan_saldo" }), saldoController.createPenarikanSaldo);
 
+router.post('/tarik-saldo/idUser/:id', auditMiddleware({ model: penarikanSaldo, tableName: "penarikan_saldo" }), saldoController.createPenarikanSaldoByIdUser);
+
 router.get('/histori-penarikan', saldoController.getMyPenarikanSaldoHistory);
+
+router.get('/histori-penarikan/idUser/:id', saldoController.getMyPenarikanSaldoHistoryByIdUser);
 
 router.get(
     '/admin/request-penarikan', saldoController.getAllPenarikanSaldoRequests
