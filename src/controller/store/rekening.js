@@ -1,11 +1,38 @@
 const sequelize = require("../../model/index");
 const Rekening = sequelize.Rekening;
 
-const getRekeningById = async (req, res) => {
+const getRekeningByUserId = async (req, res) => {
   try {
     const data = await Rekening.findOne({
       where: {
-        id: req.params.id,
+        UserId: req.params.id,
+        isDeleted: false,
+      },
+    });
+
+    if (!data) {
+      return res.status(404).json({
+        message: "Rekening not found",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Successfully retrieved rekening data",
+      data: data,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
+  }
+};
+
+const getRekeningByUserIdRaw = async (req, res) => {
+  try {
+    const data = await Rekening.findOne({
+      where: {
+        UserId: req.params.id,
         isDeleted: false,
       },
     });
@@ -59,7 +86,7 @@ const updateRekening = async (req, res) => {
   try {
     const data = await Rekening.findOne({
       where: {
-        Userid: req.user.id,
+        Userid: req.params.id,
         isDeleted: false
       },
     });
@@ -72,7 +99,7 @@ const updateRekening = async (req, res) => {
 
     await Rekening.update(req.body, {
       where: {
-        Userid: req.user.id,
+        Userid: req.params.id,
       },
     });
 
@@ -90,7 +117,7 @@ const updateRekening = async (req, res) => {
   }
 };
 
-const getRekeningByUserId = async (req, res) => {
+const getRekeningById = async (req, res) => {
   try {
 
     const rekening = await Rekening.findOne({
@@ -123,4 +150,5 @@ module.exports = {
   createRekening,
   updateRekening,
   getRekeningByUserId,
+  getRekeningByUserIdRaw,
 };

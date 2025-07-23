@@ -217,7 +217,6 @@ const updatePesananStatus = async (req, res) => {
     const t = await sequelize.sequelize.transaction();
     try {
         const { pesananId, status } = req.body;
-        const userId = req.user.id;
 
         if (!pesananId) {
             await t.rollback();
@@ -512,6 +511,170 @@ const getBuktiDiterimaById = async (req, res) => {
         });
     }
 };
+const getPesananSelesaiByTokoId = async (req, res) => {
+    try {
+        const tokoId = req.params.id;
+        const { bulan, tahun } = req.query; // Optional filter dari frontend
+
+        if (!tokoId) {
+            return res.status(400).json({
+                message: "ID toko diperlukan"
+            });
+        }
+
+        // Setup filter tanggal jika bulan dan tahun disediakan
+        let dateFilter = {};
+        if (bulan && tahun) {
+            const startDate = new Date(tahun, bulan - 1, 1); // bulan dimulai dari 0
+            const endDate = new Date(tahun, bulan, 0, 23, 59, 59); // hari terakhir bulan tersebut
+
+            dateFilter.updatedAt = {
+                [sequelize.Sequelize.Op.between]: [startDate, endDate]
+            };
+        }
+
+        const pesanan = await Pesanan.findAll({
+            where: {
+                TokoId: tokoId,
+                status: 'selesai',
+                isDeleted: false,
+                ...dateFilter
+            },
+            include: [
+                {
+                    model: PesananDetail,
+                    include: [
+                        {
+                            model: Produk,
+                            attributes: ['id', 'nama', 'gambar', 'satuan', 'harga'],
+                        }
+                    ]
+                }
+            ],
+            order: [['updatedAt', 'DESC']]
+        });
+
+        if (pesanan.length === 0) {
+            return res.status(404).json({
+                message: bulan && tahun ?
+                    `Tidak ada pesanan dengan status selesai ditemukan untuk toko ini pada ${bulan}/${tahun}` :
+                    "Tidak ada pesanan dengan status selesai ditemukan untuk toko ini"
+            });
+        }
+
+        // Agregasi data produk untuk grafik
+        const produkSales = {};
+        let totalPenjualanKeseluruhan = 0;
+
+        pesanan.forEach(order => {
+            order.PesananDetails.forEach(detail => {
+                const produk = detail.Produk;
+                const jumlahTerjual = detail.jumlah;
+                const totalHargaProduk = produk.harga * jumlahTerjual;
+
+                if (produkSales[produk.id]) {
+                    produkSales[produk.id].jumlahTerjual += jumlahTerjual;
+                    produkSales[produk.id].totalPenjualan += totalHargaProduk;
+                } else {
+                    produkSales[produk.id] = {
+                        id: produk.id,
+                        nama: produk.nama,
+                        gambar: produk.gambar,
+                        satuan: produk.satuan,
+                        harga: produk.harga,
+                        jumlahTerjual: jumlahTerjual,
+                        totalPenjualan: totalHargaProduk
+                    };
+                }
+                totalPenjualanKeseluruhan += totalHargaProduk;
+            });
+        });
+
+        // Convert object ke array dan urutkan berdasarkan total penjualan
+        const produkArray = Object.values(produkSales).sort((a, b) => b.totalPenjualan - a.totalPenjualan);
+
+        return res.status(200).json({
+            message: "Berhasil mengambil data penjualan produk",
+            data: {
+                produkTerlaris: produkArray,
+                totalPenjualanKeseluruhan: totalPenjualanKeseluruhan,
+                totalPesananSelesai: pesanan.length,
+                periode: bulan && tahun ? { bulan: parseInt(bulan), tahun: parseInt(tahun) } : "Semua waktu"
+            }
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message: "Gagal mengambil data penjualan produk",
+            detail: error.message
+        });
+    }
+};
+
+// Endpoint baru untuk mendapatkan daftar bulan-tahun yang tersedia
+const getAvailableMonthsByTokoId = async (req, res) => {
+    try {
+        const tokoId = req.params.id;
+
+        if (!tokoId) {
+            return res.status(400).json({
+                message: "ID toko diperlukan"
+            });
+        }
+
+        const pesanan = await Pesanan.findAll({
+            where: {
+                TokoId: tokoId,
+                status: 'selesai',
+                isDeleted: false
+            },
+            attributes: ['updatedAt'],
+            order: [['updatedAt', 'ASC']]
+        });
+
+        if (pesanan.length === 0) {
+            return res.status(404).json({
+                message: "Tidak ada pesanan dengan status selesai ditemukan untuk toko ini"
+            });
+        }
+
+        // Ekstrak bulan dan tahun unik
+        const monthsSet = new Set();
+        pesanan.forEach(order => {
+            const date = new Date(order.updatedAt);
+            const bulan = date.getMonth() + 1; // +1 karena getMonth() return 0-11
+            const tahun = date.getFullYear();
+            monthsSet.add(`${bulan}-${tahun}`);
+        });
+
+        // Convert ke array of objects dan urutkan
+        const availableMonths = Array.from(monthsSet).map(monthYear => {
+            const [bulan, tahun] = monthYear.split('-');
+            return {
+                bulan: parseInt(bulan),
+                tahun: parseInt(tahun),
+                label: `${new Date(tahun, bulan - 1).toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}`
+            };
+        }).sort((a, b) => {
+            if (a.tahun !== b.tahun) return b.tahun - a.tahun; // Tahun terbaru dulu
+            return b.bulan - a.bulan; // Bulan terbaru dulu dalam tahun yang sama
+        });
+
+        return res.status(200).json({
+            message: "Berhasil mengambil daftar bulan yang tersedia",
+            data: {
+                availableMonths,
+                totalMonths: availableMonths.length
+            }
+        });
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json({
+            message: "Gagal mengambil daftar bulan yang tersedia",
+            detail: error.message
+        });
+    }
+};
 
 module.exports = {
     createPesanan,
@@ -521,5 +684,7 @@ module.exports = {
     getPesananByTokoId,
     CreatebuktiDiterima,
     getBuktiDiterimaById,
-    updatePesananStatusandNotif
+    updatePesananStatusandNotif,
+    getPesananSelesaiByTokoId,
+    getAvailableMonthsByTokoId
 };

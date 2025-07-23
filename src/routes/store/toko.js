@@ -14,6 +14,7 @@ router.get('/', tokoController.getAllToko);
 router.get('/id/:id', tokoController.getTokoById);
 
 router.get('/user', tokoController.getTokoByUserId);
+router.get('/idUser/:id', tokoController.getTokoByIdUser);
 
 router.post('/', auditMiddleware({ model: Toko, tableName: "Toko" }), tokoController.createToko);
 
@@ -28,5 +29,13 @@ router.put('/reject/:id', auditMiddleware({ model: Toko, tableName: "Toko" }), t
 router.delete('/:id', auditMiddleware({ model: Toko, tableName: "Toko" }), tokoController.deleteToko);
 
 router.put('/changeType/:id', auditMiddleware({ model: Toko, tableName: "Toko" }), tokoController.changeTokoType);
+
+router.get('/rfc', tokoController.getTokoByType);
+
+router.post('/createRFC', auditMiddleware({ model: Toko, tableName: "Toko" }), tokoController.createTokoWithTypeTokoRFC);
+
+router.put('/rfc/update', auditMiddleware({ model: Toko, tableName: "Toko" }), tokoController.updateRFC);
+router.put('/rfc/status/$tokoId', auditMiddleware({ model: Toko, tableName: "Toko" }), tokoController.StatusToko);
+
 
 module.exports = router;

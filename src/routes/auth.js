@@ -20,7 +20,7 @@ router.post("/getPhoneByEmail", authController.getPhoneByEmail);
 router.post("/checkOtp", authController.checkOtp);
 router.put(
   "/fcmToken",
-  authenticate(["pjawab", "inventor", "petugas", "penjual", "user"]),
+  authenticate(["admin", "pjawab", "inventor", "petugas", "penjual", "user"]),
   authController.updateFcmToken
 );
 module.exports = router;

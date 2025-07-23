@@ -29,7 +29,7 @@ const getAllToko = async (req, res) => {
   }
 };
 
-const   getTokoById = async (req, res) => {
+const getTokoById = async (req, res) => {
   try {
     const data = await Toko.findOne({
       where: {
@@ -83,6 +83,88 @@ const getTokoByUserId = async (req, res) => {
     });
   }
 }
+const getTokoByIdUser = async (req, res) => {
+  try {
+
+    const toko = await Toko.findOne({
+      where: {
+        UserId: req.params.id,
+        isDeleted: false,
+      },
+    });
+
+    if (!toko) {
+      return res.status(404).json({
+        message: "Toko not found for this user",
+      });
+    }
+
+    return res.status(200).json({
+      message: "Successfully retrieved toko data for user",
+      data: [toko],
+    });
+  } catch (error) {
+    return res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
+  }
+}
+const getTokoByType = async (req, res) => {
+  try {
+    const data = await Toko.findAll({
+      where: {
+        TypeToko: 'rfc',
+        isDeleted: false,
+      },
+    });
+    if (data.length === 0) {
+      return res.status(404).json({
+        message: "No toko found with type RFC",
+      });
+    }
+    return res.status(200).json({
+      message: "Successfully retrieved all toko with type RFC",
+      data: data,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
+  }
+};
+const createTokoWithTypeTokoRFC = async (req, res) => {
+  try {
+    const { nama, phone, alamat, logoToko, deskripsi } = req.body;
+
+    if (!nama || !phone || !alamat) {
+      return res.status(400).json({
+        message: "nama, phone, and alamat are required",
+      });
+    }
+
+    const data = await Toko.create({
+      nama,
+      phone,
+      alamat,
+      logoToko,
+      deskripsi,
+      TypeToko: 'rfc',
+      UserId: req.user.id,
+    });
+
+    return res.status(201).json({
+      message: "Successfully created new toko with type RFC",
+      data: data,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
+  }
+};
 
 const createToko = async (req, res) => {
   try {
@@ -115,13 +197,75 @@ const createToko = async (req, res) => {
   }
 };
 
+const updateRFC = async (req, res) => {
+  try {
+    const { tokoId, nama, phone, alamat, logoToko, deskripsi } = req.body;
+    if (!tokoId || !nama || !phone || !alamat || !deskripsi || !logoToko) {
+      return res.status(400).json({
+        message: "tokoId, nama, phone, alamat, deskripsi, and logoToko are required",
+      });
+    }
+    const data = await Toko.findOne({
+      where: { id: tokoId, isDeleted: false },
+    })
+    if (!data) {
+      return res.status(404).json({
+        message: "Toko not found",
+      }); 
+    }   
+    await Toko.update(
+      { nama, phone, alamat, logoToko, deskripsi },
+      { where: { id: tokoId } }
+    );
+    const updated = await Toko.findOne({ where: { id: tokoId, isDeleted: false } });
+    return res.status(200).json({
+      message: "Successfully updated toko",
+      data: updated,
+    });
+  } catch (error) {
+    res.status(500).json({
 
+      message: error.message,
+      detail: error,
+    });
+  }
+};
+
+ const StatusToko = async (req, res) => {
+  try {
+    const {  isDeleted } = req.body;
+    const toko = await Toko.findOne({
+      where: {
+        id: req.params.id,
+      },
+    });
+
+    if (!toko) {
+      return res.status(404).json({
+        message: "Toko not found for this user",
+      });
+    }
+    toko.isDeleted = isDeleted;
+    await toko.save();
+    if (isDeleted) {
+      return res.status(200).json({
+        message: "Successfully change status toko",
+        data: toko,
+      });
+    }
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
+  }
+};
 
 const updateToko = async (req, res) => {
   try {
     const data = await Toko.findOne({
       where: {
-        UserId: req.user.id,
+        UserId: req.params.id,
         isDeleted: false,
       },
     });
@@ -132,10 +276,9 @@ const updateToko = async (req, res) => {
       });
     }
 
-    // Update toko details
     await Toko.update(req.body, {
       where: {
-        UserId: req.user.id,
+        UserId: req.params.id,
       },
     });
 
@@ -310,7 +453,12 @@ const changeTokoType = async (req, res) => {
 module.exports = {
   getAllToko,
   getTokoById,
+  getTokoByType,
   getTokoByUserId,
+  updateRFC,
+  StatusToko,
+  getTokoByIdUser,
+  createTokoWithTypeTokoRFC,
   createToko,
   updateToko,
   deleteToko,

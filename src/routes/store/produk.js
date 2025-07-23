@@ -10,16 +10,16 @@ const Produk = sequelize.Produk;
 
 
 router.get('/id/:id', produkController.getProdukById);
-router.get('/token', produkController.getProdukByToken);
+router.get('/idUser/:id', produkController.getAllProdukByIdUser);
 router.get('/idToko/:id', produkController.getProdukbyTokoId);
 router.get('/rfc', produkController.getProdukByRFC);
 router.get('/umkm', produkController.getProdukUMKM);
-router.get('/stok/:id', produkController.getStokByProdukId); 
+router.get('/stok/:id', produkController.getStokByProdukId);
 router.get('/all/', produkController.getAll);
 router.delete('/:id', produkController.deleteProdukById);
+router.put('/activate/:id', produkController.activateProdukById);
 router.post('/', auditMiddleware({ model: Produk, tableName: "Produk" }), produkController.createProduk);
 router.post('/komoditas', auditMiddleware({ model: Produk, tableName: "Produk" }), produkController.createProdukByKomoditas);
-
 router.put('/id/:id', auditMiddleware({ model: Produk, tableName: "Produk" }), produkController.updateProduk);
 
 module.exports = router;

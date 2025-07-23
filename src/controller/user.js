@@ -32,10 +32,10 @@ const getUsersGroupByRole = async (req, res) => {
   try {
     const users = await User.findAll({
       where: { isDeleted: false },
-      attributes: { exclude: ["password"] }, // exclude password if exists
+      attributes: { exclude: ["password"] },
     });
 
-    // Grouping users by role
+
     const grouped = {
       pjawab: [],
       petugas: [],
@@ -315,6 +315,89 @@ const activateUser = async (req, res) => {
   }
 };
 
+
+const getUsersPjawab = async (req, res) => {
+  try {
+    const data = await User.findAll({
+      where: { role: "pjawab", isDeleted: false },
+    });
+
+    if (data.length === 0) {
+      return res.status(404).json({
+        message: "No users found with the specified role",
+      });
+    }
+
+    return res.status(200).json({
+      message: `Successfully retrieved users with role pjawab`,
+      data: data,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
+  }
+};
+const updateUserRolePjawab = async (req, res) => {
+  try {
+    const { name, email, phone } = req.body;
+
+    const data = await User.findOne({
+      where: { id: req.params.id, isDeleted: false },
+    });
+
+    if (!data) {
+      return res.status(404).json({
+        message: "Data not found",
+      });
+    }
+
+    await User.update(
+      { role: "pjawab", name, email, phone },
+      { where: { id: req.params.id } }
+    );
+
+    return res.status(200).json({
+      message: "Successfully updated user role  pjawab",
+      data: { role: "pjawab", name, email, phone },
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
+  }
+};
+const deleteUserRolePjawab = async (req, res) => {
+  try {
+    const { isDeleted } = req.body;
+    const data = await User.findOne({
+      where: { id: req.params.id, isDeleted: false },
+    });
+
+    if (!data) {
+      return res.status(404).json({
+        message: "Data not found",
+      });
+    }
+
+    await User.update(
+      { isDeleted: true },
+      { where: { id: req.params.id } }
+    );
+
+    return res.status(200).json({
+      message: "Successfully deleted user role pjawab",
+      data: { role: null },
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+      detail: error,
+    });
+  }
+}
 module.exports = {
   getAllUsers,
   getUserById,
@@ -326,4 +409,7 @@ module.exports = {
   getUsersGroupByRole,
   deactivateUser,
   activateUser,
+  getUsersPjawab,
+  updateUserRolePjawab,
+  deleteUserRolePjawab
 };
