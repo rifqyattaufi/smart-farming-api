@@ -530,6 +530,17 @@ const createLaporanPanen = async (req, res) => {
       { transaction: t }
     );
 
+    // Handle grade data for livestock harvest (similar to plant harvest)
+    if (panen.rincianGrade && panen.rincianGrade.length > 0) {
+      const rincianGradeData = panen.rincianGrade.map((rincianGrade) => ({
+        panenId: laporanPanen.id, // Use panenId for livestock instead of panenKebunId
+        gradeId: rincianGrade.gradeId,
+        jumlah: rincianGrade.jumlah,
+      }));
+
+      await PanenRincianGrade.bulkCreate(rincianGradeData, { transaction: t });
+    }
+
     komoditas.jumlah += panen.jumlah;
     await komoditas.save({ transaction: t });
 
@@ -1689,6 +1700,16 @@ const getLaporanPanenById = async (req, res) => {
                 },
               ],
             },
+            {
+              model: PanenRincianGrade,
+              include: [
+                {
+                  model: Grade,
+                  attributes: ["id", "nama", "deskripsi"],
+                },
+              ],
+              required: false, // Allow harvest records without grades
+            },
           ],
         },
         {
@@ -1878,6 +1899,243 @@ const getLaporanPenggunaanInventarisById = async (req, res) => {
   }
 };
 
+const getHasilPanenTernakWithGrades = async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      komoditasId,
+      unitBudidayaId,
+      startDate,
+      endDate,
+    } = req.query;
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+
+    // Validate pagination parameters
+    if (parseInt(page) < 1 || parseInt(limit) < 1) {
+      return res.status(400).json({
+        status: false,
+        message: "Page and limit must be positive numbers",
+      });
+    }
+
+    if (parseInt(limit) > 100) {
+      return res.status(400).json({
+        status: false,
+        message: "Limit cannot exceed 100 items per page",
+      });
+    }
+
+    // Build where clause for filtering
+    const whereClause = {
+      isDeleted: false,
+      tipe: "panen",
+    };
+
+    // Validate and apply date filters
+    if (startDate || endDate) {
+      if (startDate && endDate) {
+        try {
+          const start = new Date(startDate);
+          const end = new Date(endDate);
+
+          if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+            return res.status(400).json({
+              status: false,
+              message: "Invalid date format. Please use YYYY-MM-DD format",
+            });
+          }
+
+          if (start > end) {
+            return res.status(400).json({
+              status: false,
+              message: "Start date must be before or equal to end date",
+            });
+          }
+
+          whereClause.createdAt = {
+            [Op.between]: [start, end],
+          };
+        } catch (error) {
+          return res.status(400).json({
+            status: false,
+            message: "Error parsing dates. Please use YYYY-MM-DD format",
+          });
+        }
+      } else {
+        return res.status(400).json({
+          status: false,
+          message:
+            "Both startDate and endDate are required when filtering by date range",
+        });
+      }
+    }
+
+    // Unit budidaya filter
+    if (unitBudidayaId) {
+      whereClause.UnitBudidayaId = unitBudidayaId;
+    }
+
+    // Komoditas filter (will be applied in Panen include)
+    const panenWhere = {};
+    if (komoditasId) {
+      panenWhere.komoditasId = komoditasId;
+    }
+
+    const { count, rows } = await Laporan.findAndCountAll({
+      where: whereClause,
+      attributes: [
+        "id",
+        "judul",
+        "tipe",
+        "gambar",
+        "catatan",
+        "isDeleted",
+        "createdAt",
+        "updatedAt",
+        "UnitBudidayaId",
+        "ObjekBudidayaId",
+        "userId",
+      ],
+      include: [
+        {
+          model: Panen,
+          where: panenWhere,
+          required: true,
+          include: [
+            {
+              model: Komoditas,
+              as: "komoditas",
+              attributes: ["id", "nama"],
+              include: [
+                {
+                  model: Satuan,
+                  attributes: ["nama", "lambang"],
+                },
+              ],
+            },
+            {
+              model: PanenRincianGrade,
+              include: [
+                {
+                  model: Grade,
+                  attributes: ["id", "nama", "deskripsi"],
+                },
+              ],
+              required: false, // Allow harvest records without grades
+            },
+            {
+              model: DetailPanen,
+              include: [
+                {
+                  model: ObjekBudidaya,
+                  attributes: ["id", "namaId"],
+                },
+              ],
+              required: false, // Allow harvest records without detail panen
+            },
+          ],
+        },
+        {
+          model: UnitBudidaya,
+          attributes: ["id", "nama", "tipe"],
+          include: [
+            {
+              model: JenisBudidaya,
+              attributes: ["nama", "tipe"],
+            },
+          ],
+        },
+        {
+          model: User,
+          as: "user",
+          attributes: ["id", "name"],
+        },
+      ],
+      order: [["createdAt", "DESC"]],
+      limit: parseInt(limit),
+      offset: offset,
+    });
+
+    // Transform data for better frontend consumption
+    const transformedData = rows.map((laporan) => {
+      const panen = laporan.Panen;
+      const grades = panen.PanenRincianGrades || [];
+      const detailPanen = panen.DetailPanens || [];
+
+      // Calculate grade summary
+      const gradeSummary = grades.map((grade) => ({
+        gradeId: grade.Grade.id,
+        gradeNama: grade.Grade.nama,
+        gradeDeskripsi: grade.Grade.deskripsi,
+        jumlah: grade.jumlah,
+        persentase:
+          panen.jumlah > 0
+            ? ((grade.jumlah / panen.jumlah) * 100).toFixed(2)
+            : 0,
+      }));
+
+      // Get harvested animals info
+      const harvestedAnimals = detailPanen.map((detail) => ({
+        objekBudidayaId: detail.ObjekBudidaya.id,
+        namaId: detail.ObjekBudidaya.namaId,
+      }));
+
+      return {
+        laporanId: laporan.id,
+        judul: laporan.judul,
+        tanggalLaporan: laporan.createdAt,
+        gambar: laporan.gambar,
+        catatan: laporan.catatan,
+        pelapor: {
+          id: laporan.user.id,
+          nama: laporan.user.name,
+        },
+        unitBudidaya: {
+          id: laporan.UnitBudidaya.id,
+          nama: laporan.UnitBudidaya.nama,
+          tipe: laporan.UnitBudidaya.tipe,
+          jenisBudidaya: laporan.UnitBudidaya.JenisBudidaya.nama,
+        },
+        komoditas: {
+          id: panen.komoditas.id,
+          nama: panen.komoditas.nama,
+          satuan: panen.komoditas.Satuan,
+        },
+        hasilPanen: {
+          jumlahPanen: panen.jumlah,
+          jumlahHewanDipanen: harvestedAnimals.length,
+        },
+        rincianGrade: gradeSummary,
+        hewanDipanen: harvestedAnimals,
+        totalGradeCount: grades.length,
+      };
+    });
+
+    const totalPages = Math.ceil(count / parseInt(limit));
+
+    return res.status(200).json({
+      status: true,
+      message: "Successfully retrieved hasil panen ternak data with grades",
+      data: transformedData,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: totalPages,
+        totalItems: count,
+        itemsPerPage: parseInt(limit),
+        hasNextPage: parseInt(page) < totalPages,
+        hasPrevPage: parseInt(page) > 1,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: false,
+      message: error.message,
+      detail: error,
+    });
+  }
+};
+
 module.exports = {
   createLaporanHarianKebun,
   getLastHarianKebunByObjekBudidayaId,
@@ -1900,5 +2158,6 @@ module.exports = {
   getLaporanPenggunaanInventarisById,
   getJumlahKematian,
   getHasilPanenWithGrades,
+  getHasilPanenTernakWithGrades,
   getGradeSummaryByKomoditas,
 };

@@ -29,7 +29,11 @@ module.exports = (sequelize, DataTypes) => {
   PanenRincianGrade.associate = (models) => {
     PanenRincianGrade.belongsTo(models.PanenKebun, {
       foreignKey: "panenKebunId",
-      allowNull: false,
+      allowNull: true, // Make nullable since livestock harvest won't have this
+    });
+    PanenRincianGrade.belongsTo(models.Panen, {
+      foreignKey: "panenId",
+      allowNull: true, // Make nullable since plant harvest won't have this
     });
     PanenRincianGrade.belongsTo(models.Grade, {
       foreignKey: "gradeId",
