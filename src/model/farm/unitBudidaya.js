@@ -22,6 +22,11 @@ module.exports = (sequelize, DataTypes) => {
       luas: {
         type: DataTypes.FLOAT,
       },
+      kapasitas: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        defaultValue: 0,
+      },
       jumlah: {
         type: DataTypes.INTEGER,
       },

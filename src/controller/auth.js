@@ -84,7 +84,7 @@ const login = async (req, res, next) => {
         attributes: ["UserId"]
 
       })
-      console.log("idAsli", idAsli.UserId);
+      // console.log("idAsli", idAsli);
     }
     const usr = {
       id: userExist.id,
