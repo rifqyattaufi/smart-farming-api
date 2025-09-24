@@ -63,7 +63,7 @@ const dashboardInventaris = async (req, res) => {
     const penggunaan = await Inventaris.findAll({
       attributes: [
         "id",
-        [fn("SUM", col("penggunaanInventaris.jumlah")), "totalJumlah"],
+        [fn("SUM", col("PenggunaanInventaris.jumlah")), "totalJumlah"],
       ],
       include: [
         {
