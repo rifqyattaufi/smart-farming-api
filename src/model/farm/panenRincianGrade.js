@@ -21,7 +21,7 @@ module.exports = (sequelize, DataTypes) => {
       },
     },
     {
-      tableName: "panenrinciangrade",
+      tableName: "panenRincianGrade",
       freezeTableName: true,
     }
   );
